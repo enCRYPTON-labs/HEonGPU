@@ -15,7 +15,7 @@ Before building the library, ensure your development environment meets the follo
 * **CMake**: Version 3.26.4 or higher
 * **GCC**: A modern C++ compiler with C++17 support
 * **GMP**: The GNU Multiple Precision Arithmetic Library
-* **CUDA Toolkit**: Version 11.4 or higher
+* **CUDA Toolkit**: Version 12.0 or higher
 * **OpenSSL**: Version 1.1.0 or higher
 * **ZLIB**: The data compression library
 

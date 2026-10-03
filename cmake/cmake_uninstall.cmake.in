@@ -149,7 +149,7 @@ if(user_choice STREQUAL "yes" OR user_choice STREQUAL "y")
     message(STATUS "")
     message(STATUS "Cleaning up empty directories under known install roots...")
     set(known_roots
-        "/usr/local/include/HEonGPU-1.1"
+        "/usr/local/include/HEonGPU-@HEonGPU_INSTALL_VERSION@"
         "/usr/local/include/GPUFFT-1.0"
         "/usr/local/include/GPUNTT-1.0"
         "/usr/local/include/RNGonGPU-1.0"
@@ -157,7 +157,7 @@ if(user_choice STREQUAL "yes" OR user_choice STREQUAL "y")
         "/usr/local/include/fmt"
         "/usr/local/include/spdlog"
         "/usr/local/include/nvtx3"
-        "/usr/local/lib/cmake/HEonGPU-1.1"
+        "/usr/local/lib/cmake/HEonGPU-@HEonGPU_INSTALL_VERSION@"
         "/usr/local/lib/cmake/GPUFFT-1.0"
         "/usr/local/lib/cmake/GPUNTT-1.0"
         "/usr/local/lib/cmake/RNGonGPU-1.0"
@@ -196,7 +196,7 @@ if(user_choice STREQUAL "yes" OR user_choice STREQUAL "y")
     endif()
     
     # Check if HEonGPU include directory still exists and is not empty (legacy files)
-    set(HEONGPU_INCLUDE_DIR "/usr/local/include/HEonGPU-1.1")
+    set(HEONGPU_INCLUDE_DIR "/usr/local/include/HEonGPU-@HEonGPU_INSTALL_VERSION@")
     if(IS_DIRECTORY "${HEONGPU_INCLUDE_DIR}")
         file(GLOB HEONGPU_LEFTOVERS "${HEONGPU_INCLUDE_DIR}/*")
         if(HEONGPU_LEFTOVERS)
