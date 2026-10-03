@@ -56,10 +56,6 @@ namespace heongpu
             Secretkey<Scheme::CKKS>& sk,
             const ExecutionOptions& options = ExecutionOptions());
 
-        __host__ void generate_secret_key_v2(
-            Secretkey<Scheme::CKKS>& sk,
-            const ExecutionOptions& options = ExecutionOptions());
-
         /**
          * @brief Generates a public key using a secret key.
          *

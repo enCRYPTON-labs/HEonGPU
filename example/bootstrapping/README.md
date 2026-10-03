@@ -27,7 +27,7 @@ In cases where the message is a complex number, Regular Bootstrapping is applied
 m(x) = Encode(<b>m</b>) where <b>m</b> &in; &#8450 
 </div>
 
-The [1_ckks_regular_bootstrapping.cpp](1_ckks_regular_bootstrapping.cpp) provides a basic example of `Regular` bootstrapping with a polynomial degree of 4096. While functional, these parameters are insecure for practical use, as `CKKS` bootstrapping typically requires a modulus of 65536 for sufficient noise budget and security. This example is intended for demonstration purposes only and should not be used in a production environment.
+The [1_ckks_regular_bootstrapping.cpp](1_ckks_regular_bootstrapping.cpp) provides an example of `Regular` bootstrapping with a polynomial degree of 65536, a dense secret key (h=192) and a temporary sparse secret key (h=32) that is only used around `ModRaise` (dense-to-sparse and sparse-to-dense switch keys).
 
 #### [CKKS Slim Bootstrapping](2_ckks_slim_bootstrapping.cpp)
 
@@ -48,32 +48,32 @@ Unlike `Regular` Bootstrapping, `Slim` Bootstrapping is designed for messages in
 m(x) = Encode(<b>m</b>) where <b>m</b> &in; &reals;
 </div>
 
-The [2_ckks_slim_bootstrapping.cpp](2_ckks_slim_bootstrapping.cpp) provides a basic example of `Slim` bootstrapping with a polynomial degree of 4096. While functional, these parameters are insecure for practical use, as `CKKS` bootstrapping typically requires a modulus of 65536 for sufficient noise budget and security. This example is intended for demonstration purposes only and should not be used in a production environment.
+The [2_ckks_slim_bootstrapping.cpp](2_ckks_slim_bootstrapping.cpp) provides an example of `Slim` bootstrapping with a polynomial degree of 65536. Since slot values become coefficients directly after `SlotToCoeff`, `Slim` bootstrapping uses a larger `message_ratio` (1024) than `Regular` bootstrapping.
 
 #### [CKKS Bit Bootstrapping](3_ckks_bit_bootstrapping.cpp)
 
-CKKS `Bit` Bootstrapping, like Slim Bootstrapping, starts with `Slot To Coeff` (StoC). Unlike `Slim` Bootstrapping, message that will be applied `Bit` Bootstrapping, is in the binary domain. As the message is binary, Eval<sub>f<sub>Binboot</sub></sub> is applied instead of EvalMod. Eval<sub>f<sub>Binboot</sub></sub> is more efficient since it requires a lower multiplication depth compared to EvalMod, allowing it to operate even at degree 32768. However, for `Bit` Bootstrapping to function correctly, the last modulus(q) must be exatly twice the value of delta(&Delta;); otherwise, it will fail.For a comprehensive explanation and technical details, please refer to the papers listed below.
+CKKS `Bit` Bootstrapping, like Slim Bootstrapping, starts with `Slot To Coeff` (StoC). Unlike `Slim` Bootstrapping, message that will be applied `Bit` Bootstrapping, is in the binary domain. As the message is binary, Eval<sub>f<sub>Binboot</sub></sub> is applied instead of EvalMod. The bits are placed at q/2 before `ModRaise`, so the ciphertext scale (&Delta;) does not need to be related to the last modulus (q). For a comprehensive explanation and technical details, please refer to the papers listed below.
 
 <div align="center">
 m(x) = Encode(<b>m</b>) where <b>m</b> &in; &#120121;
 </div>
 
-The [3_ckks_bit_bootstrapping.cpp](3_ckks_bit_bootstrapping.cpp) provides a basic example of `Bit` bootstrapping with a polynomial degree of 4096. 
+The [3_ckks_bit_bootstrapping.cpp](3_ckks_bit_bootstrapping.cpp) provides an example of `Bit` bootstrapping with a polynomial degree of 65536.
 
 #### [CKKS Gate Bootstrapping](4_ckks_gate_bootstrapping.cpp)
 
-CKKS `Gate` Bootstrapping is quite similar to `Bit` Bootstrapping, but instead of Eval<sub>f<sub>Binboot</sub></sub>, it uses Eval<sub>f<sub>Gateboot</sub></sub>. For correct functionality, just like in `Bit` Bootstrapping, a specific condition must be met: the last modulus(q) must be exatly three times the value of delta(&Delta;); otherwise, it will fail. Unlike other bootstrapping types, `Gate` Bootstrapping does not require an extra level to continue operations after bootstrapping. This is because it applies the logic operation directly during the bootstrapping process, similar to how it is done in `TFHE`. For a comprehensive explanation and technical details, please refer to the papers listed below.
+CKKS `Gate` Bootstrapping is quite similar to `Bit` Bootstrapping, but instead of Eval<sub>f<sub>Binboot</sub></sub>, it uses Eval<sub>f<sub>Gateboot</sub></sub>. The sum of the two input bits is placed at q/3 before `ModRaise`, so, as in `Bit` Bootstrapping, the ciphertext scale (&Delta;) does not need to be related to the last modulus (q). `Gate` Bootstrapping applies the logic operation directly during the bootstrapping process, similar to how it is done in `TFHE`. For a comprehensive explanation and technical details, please refer to the papers listed below.
 
 <div align="center">
 m(x) = Encode(<b>m</b>) where <b>m</b> &in; &#120121;
 </div>
 
-The [4_ckks_gate_bootstrapping.cpp](4_ckks_gate_bootstrapping.cpp) provides a basic example of `Bit` bootstrapping with a polynomial degree of 4096. 
+The [4_ckks_gate_bootstrapping.cpp](4_ckks_gate_bootstrapping.cpp) provides an example of `Gate` bootstrapping with a polynomial degree of 65536.
 
 All logic gate can be applied with CKKS `Gate` Bootstrapping:
-- AND_boot - NAND_boot
-- OR_boot - NOR_boot
-- XOR_boot - XNOR_boot
+- AND_bootstrapping - NAND_bootstrapping
+- OR_bootstrapping - NOR_bootstrapping
+- XOR_bootstrapping - XNOR_bootstrapping
 
 ### Implementation Details
 
@@ -90,11 +90,9 @@ Homomorphic operation number and depth consume for homomorphic DFT(from [paper](
 | Depth            | 1           | 1           | O(log<sub>r</sub> n)    | O(log<sub>r</sub> n)      |
 
 </div>
-Although this method results in higher depth consumption in stages `Coeff to Slot` and `Slot to Coeff` compared to Naive and BSGS approaches, it provides a significant performance improvement. The HEonGPU `BootstrappingConfig` class allows selecting the level loss for operations in stages `Coeff to Slot` and `Slot to Coeff` (currently limited to 2, 3, 4, or 5).
+Although this method results in higher depth consumption in stages `Coeff to Slot` and `Slot to Coeff` compared to Naive and BSGS approaches, it provides a significant performance improvement. The `EncodingMatrixConfig` of each stage sets its start level, its level loss and its baby-step/giant-step ratio. The matrix multiplications use double hoisting and require `KEYSWITCHING_METHOD_II` (more than one P prime). There is also an option to store all galois keys on the CPU, but this would significantly slow down the bootstrapping process. However, the key size still considerably large, so it is important to keep this in mind while perfoming bootstrapping!
 
-Additionally, the `BootstrappingConfig` class allows specifying the number of galois keys to be used for rotations in stages `Coeff to Slot` and `Slot to Coeff`. If the `less_key_mode` mode is false, a unique galois key is generated for each rotation index, leading to significant memory usage. When `less_key_mode` mode is true, this memory overhead can be reduced at the cost of some performance. To further reduce this, `KEYSWITCHING_METHOD_II` is utilized. There is also an option to store all galois keys on the CPU, but this would significantly slow down the bootstrapping process. However, the key size still considerably large, so it is important to keep this in mind while perfoming bootstrapping!
-
-Currently, taylor approximation is used for `Approximate Modular Reduction`; however, chebyshev implementation will be added in the near future. Additionally, the `BootstrappingConfig` class allows configuring the precision of the taylor approximation.
+`Approximate Modular Reduction` evaluates a Chebyshev interpolation of the cosine followed by double-angle steps. The `EvalModConfig` class configures it (`K`, polynomial degree, number of double-angle steps, `message_ratio`).
 
 The vandermonde matrix is automatically generated on GPU based on the `BootstrappingConfig` class and stored on the GPU in a ready-to-use and encoded format for processing.
 

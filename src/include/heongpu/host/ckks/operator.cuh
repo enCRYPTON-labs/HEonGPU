@@ -32,24 +32,18 @@ namespace heongpu
         int StoC_piece_; // [2, 5]
         int CtoS_start_level_; // ciphertext level where CoeffToSlot starts
         int StoC_start_level_; // ciphertext level where SlotToCoeff starts
-        bool less_key_mode_;
 
-        CKKSEncodingTransformConfig(int CtoS_piece = 3, int StoC_piece = 3,
-                                    bool less_key_mode = true)
+        CKKSEncodingTransformConfig(int CtoS_piece = 3, int StoC_piece = 3)
             : CtoS_piece_(CtoS_piece), StoC_piece_(StoC_piece),
-              CtoS_start_level_(-1), StoC_start_level_(-1),
-              less_key_mode_(less_key_mode)
+              CtoS_start_level_(-1), StoC_start_level_(-1)
         {
         }
 
         CKKSEncodingTransformConfig(int CtoS_piece, int StoC_piece,
-                                    int CtoS_start_level,
-                                    int StoC_start_level,
-                                    bool less_key_mode = true)
+                                    int CtoS_start_level, int StoC_start_level)
             : CtoS_piece_(CtoS_piece), StoC_piece_(StoC_piece),
               CtoS_start_level_(CtoS_start_level),
-              StoC_start_level_(StoC_start_level),
-              less_key_mode_(less_key_mode)
+              StoC_start_level_(StoC_start_level)
         {
         }
     };
@@ -57,8 +51,6 @@ namespace heongpu
     struct CKKSEncodingTransformContext
     {
         bool generated_ = false;
-        bool less_key_mode_ = false;
-        double scale_boot_ = 0.0;
 
         int CtoS_piece_ = 0;
         int StoC_piece_ = 0;
@@ -74,11 +66,11 @@ namespace heongpu
         std::vector<std::vector<std::vector<int>>> diags_matrices_bsgs_;
         std::vector<std::vector<std::vector<int>>> diags_matrices_inv_bsgs_;
 
-        std::vector<std::vector<std::vector<int>>> real_shift_n2_bsgs_;
-        std::vector<std::vector<std::vector<int>>> real_shift_n2_inv_bsgs_;
+        std::vector<std::vector<int>> diags_matrices_bsgs_rot_n1_;
+        std::vector<std::vector<int>> diags_matrices_bsgs_rot_n2_;
 
-        DeviceVector<Data64> encoded_complex_minus_iover2_;
-        DeviceVector<Data64> encoded_complex_i_;
+        std::vector<std::vector<int>> diags_matrices_inv_bsgs_rot_n1_;
+        std::vector<std::vector<int>> diags_matrices_inv_bsgs_rot_n2_;
     };
 
     /**
@@ -577,16 +569,16 @@ namespace heongpu
 
         /**
          * @brief Adds a complex constant to a ciphertext and stores the result
-         * in the output (v2 version).
+         * in the output.
          *
          * @param input1 Input ciphertext to be added.
          * @param c Complex constant to be added (not multiplied by scale).
          * @param output Ciphertext where the result of the addition is stored.
          */
         __host__ void
-        add_plain_v2(Ciphertext<Scheme::CKKS>& input1, Complex64 c,
-                     Ciphertext<Scheme::CKKS>& output,
-                     const ExecutionOptions& options = ExecutionOptions())
+        add_plain_complex(Ciphertext<Scheme::CKKS>& input1, Complex64 c,
+                          Ciphertext<Scheme::CKKS>& output,
+                          const ExecutionOptions& options = ExecutionOptions())
         {
             input_storage_manager(
                 input1,
@@ -596,8 +588,8 @@ namespace heongpu
                         output,
                         [&](Ciphertext<Scheme::CKKS>& output_)
                         {
-                            add_constant_plain_ckks_v2(input1_, c, output_,
-                                                       options.stream_);
+                            add_constant_plain_complex_ckks(input1_, c, output_,
+                                                            options.stream_);
 
                             output_.scheme_ = context_->scheme_;
                             output_.ring_size_ = context_->n;
@@ -606,7 +598,7 @@ namespace heongpu
                                 input1_.relinearization_required_ ? 3 : 2;
                             output_.depth_ = input1_.depth_;
                             output_.in_ntt_domain_ = input1_.in_ntt_domain_;
-                                    output_.encoding_ = input1_.encoding_;
+                            output_.encoding_ = input1_.encoding_;
                             output_.scale_ = input1_.scale_;
                             output_.rescale_required_ =
                                 input1_.rescale_required_;
@@ -874,17 +866,17 @@ namespace heongpu
 
         /**
          * @brief Multiplies a ciphertext by a complex constant and stores the
-         * result in the output (v2 version).
+         * result in the output.
          *
          * @param input1 Input ciphertext to be multiplied.
          * @param c Complex constant to multiply with the ciphertext.
          * @param output Ciphertext where the result of the multiplication is
          * stored.
          */
-        __host__ void
-        multiply_plain_v2(Ciphertext<Scheme::CKKS>& input1, Complex64 c,
-                          Ciphertext<Scheme::CKKS>& output,
-                          const ExecutionOptions& options = ExecutionOptions())
+        __host__ void multiply_plain_complex(
+            Ciphertext<Scheme::CKKS>& input1, Complex64 c,
+            Ciphertext<Scheme::CKKS>& output,
+            const ExecutionOptions& options = ExecutionOptions())
         {
             input_storage_manager(
                 input1,
@@ -894,8 +886,8 @@ namespace heongpu
                         output,
                         [&](Ciphertext<Scheme::CKKS>& output_)
                         {
-                            multiply_const_plain_ckks_v2(input1_, c, output_,
-                                                         options.stream_);
+                            multiply_const_plain_complex_ckks(
+                                input1_, c, output_, options.stream_);
 
                             output_.scheme_ = context_->scheme_;
                             output_.ring_size_ = context_->n;
@@ -904,7 +896,7 @@ namespace heongpu
                                 input1_.relinearization_required_ ? 3 : 2;
                             output_.depth_ = input1_.depth_;
                             output_.in_ntt_domain_ = input1_.in_ntt_domain_;
-                                    output_.encoding_ = input1_.encoding_;
+                            output_.encoding_ = input1_.encoding_;
                             output_.rescale_required_ =
                                 input1_.rescale_required_;
                             output_.relinearization_required_ =
@@ -1638,11 +1630,11 @@ namespace heongpu
                                         double input2,
                                         const cudaStream_t stream);
 
-        __host__ void add_constant_plain_ckks_v2(
+        __host__ void add_constant_plain_complex_ckks(
             Ciphertext<Scheme::CKKS>& input1, Complex64 c,
             Ciphertext<Scheme::CKKS>& output, const cudaStream_t stream);
 
-        __host__ void multiply_const_plain_ckks_v2(
+        __host__ void multiply_const_plain_complex_ckks(
             Ciphertext<Scheme::CKKS>& input1, Complex64 c,
             Ciphertext<Scheme::CKKS>& output, const cudaStream_t stream);
 
@@ -1799,10 +1791,6 @@ namespace heongpu
           public:
             __host__ Vandermonde(const int poly_degree, const int CtoS_piece,
                                  const int StoC_piece,
-                                 const bool less_key_mode);
-
-            __host__ Vandermonde(const int poly_degree, const int CtoS_piece,
-                                 const int StoC_piece,
                                  const double CtoS_Scaling,
                                  const double StoC_Scaling,
                                  const float CtoS_bsgs_ratio,
@@ -1820,22 +1808,14 @@ namespace heongpu
 
             __host__ void generate_E_inv_diagonals();
 
-            __host__ void generate_V_n_lists();
-
-            __host__ void generate_V_n_lists_v2(float CtoS_bsgs_ratio,
-                                                float StoC_bsgs_ratio);
+            __host__ void generate_V_n_lists(float CtoS_bsgs_ratio,
+                                             float StoC_bsgs_ratio);
 
             __host__ void generate_pre_comp_V();
 
             __host__ void generate_pre_comp_V_inv();
 
-            __host__ void generate_pre_comp_V_v2();
-
-            __host__ void generate_pre_comp_V_inv_v2();
-
-            __host__ void generate_key_indexs(const bool less_key_mode);
-
-            __host__ void generate_key_indexs_v2();
+            __host__ void generate_key_indexs();
 
             Vandermonde() = delete;
 
@@ -1886,9 +1866,6 @@ namespace heongpu
 
             std::vector<std::vector<std::vector<int>>> diags_matrices_bsgs_;
             std::vector<std::vector<std::vector<int>>> diags_matrices_inv_bsgs_;
-
-            std::vector<std::vector<std::vector<int>>> real_shift_n2_bsgs_;
-            std::vector<std::vector<std::vector<int>>> real_shift_n2_inv_bsgs_;
 
             std::vector<std::vector<int>> diags_matrices_bsgs_rot_n1_;
             std::vector<std::vector<int>> diags_matrices_bsgs_rot_n2_;
@@ -1941,10 +1918,6 @@ namespace heongpu
 
         int CtoS_piece_;
         int StoC_piece_;
-        int taylor_number_;
-        bool less_key_mode_;
-        int CtoS_level_;
-        int StoC_level_;
 
         EncodingMatrixConfig cts_config_;
         EncodingMatrixConfig stc_config_;
@@ -1963,9 +1936,6 @@ namespace heongpu
 
         std::vector<std::vector<std::vector<int>>> diags_matrices_bsgs_;
         std::vector<std::vector<std::vector<int>>> diags_matrices_inv_bsgs_;
-
-        std::vector<std::vector<std::vector<int>>> real_shift_n2_bsgs_;
-        std::vector<std::vector<std::vector<int>>> real_shift_n2_inv_bsgs_;
 
         std::vector<std::vector<int>> diags_matrices_bsgs_rot_n1_;
         std::vector<std::vector<int>> diags_matrices_inv_bsgs_rot_n1_;
@@ -2001,18 +1971,10 @@ namespace heongpu
                                                           const double scale);
 
         __host__ std::vector<heongpu::DeviceVector<Data64>>
-        encode_V_matrixs(Vandermonde& vandermonde, const double scale,
-                         int rns_count);
+        encode_V_matrixs(Vandermonde& vandermonde, int start_level);
 
         __host__ std::vector<heongpu::DeviceVector<Data64>>
-        encode_V_inv_matrixs(Vandermonde& vandermonde, const double scale,
-                             int rns_count);
-
-        __host__ std::vector<heongpu::DeviceVector<Data64>>
-        encode_V_matrixs_v2(Vandermonde& vandermonde, int start_level);
-
-        __host__ std::vector<heongpu::DeviceVector<Data64>>
-        encode_V_inv_matrixs_v2(Vandermonde& vandermonde, int start_level);
+        encode_V_inv_matrixs(Vandermonde& vandermonde, int start_level);
 
         __host__ Polynomial generate_eval_mod_poly(const EvalModConfig& config,
                                                    int max_deg);
@@ -2023,30 +1985,10 @@ namespace heongpu
             Ciphertext<Scheme::CKKS>& cipher,
             std::vector<heongpu::DeviceVector<Data64>>& matrix,
             std::vector<std::vector<std::vector<int>>>& diags_matrices_bsgs_,
-            Galoiskey<Scheme::CKKS>& galois_key,
-            const ExecutionOptions& options = ExecutionOptions());
-
-        __host__ Ciphertext<Scheme::CKKS> multiply_matrix_v2(
-            Ciphertext<Scheme::CKKS>& cipher,
-            std::vector<heongpu::DeviceVector<Data64>>& matrix,
-            std::vector<std::vector<std::vector<int>>>& diags_matrices_bsgs_,
             std::vector<std::vector<int>>& diags_matrices_bsgs_rot_n1_,
             std::vector<std::vector<int>>& diags_matrices_bsgs_rot_n2_,
             Galoiskey<Scheme::CKKS>& galois_key,
             const ExecutionOptions& options = ExecutionOptions());
-
-        __host__ Ciphertext<Scheme::CKKS> multiply_matrix_less_memory(
-            Ciphertext<Scheme::CKKS>& cipher,
-            std::vector<heongpu::DeviceVector<Data64>>& matrix,
-            std::vector<std::vector<std::vector<int>>>& diags_matrices_bsgs_,
-            std::vector<std::vector<std::vector<int>>>& real_shift,
-            Galoiskey<Scheme::CKKS>& galois_key,
-            const ExecutionOptions& options = ExecutionOptions());
-
-        __host__ std::vector<Ciphertext<Scheme::CKKS>>
-        coeff_to_slot(Ciphertext<Scheme::CKKS>& cipher,
-                      Galoiskey<Scheme::CKKS>& galois_key,
-                      const ExecutionOptions& options = ExecutionOptions());
 
         __host__ std::vector<Ciphertext<Scheme::CKKS>>
         coeff_to_slot(Ciphertext<Scheme::CKKS>& cipher,
@@ -2055,9 +1997,9 @@ namespace heongpu
                       const ExecutionOptions& options = ExecutionOptions());
 
         __host__ std::vector<Ciphertext<Scheme::CKKS>>
-        coeff_to_slot_v2(Ciphertext<Scheme::CKKS>& cipher,
-                         Galoiskey<Scheme::CKKS>& galois_key,
-                         const ExecutionOptions& options = ExecutionOptions());
+        coeff_to_slot(Ciphertext<Scheme::CKKS>& cipher,
+                      Galoiskey<Scheme::CKKS>& galois_key,
+                      const ExecutionOptions& options = ExecutionOptions());
 
         __host__ Ciphertext<Scheme::CKKS> solo_coeff_to_slot(
             Ciphertext<Scheme::CKKS>& cipher,
@@ -2068,20 +2010,14 @@ namespace heongpu
         slot_to_coeff(Ciphertext<Scheme::CKKS>& cipher0,
                       Ciphertext<Scheme::CKKS>& cipher1,
                       Galoiskey<Scheme::CKKS>& galois_key,
+                      CKKSEncodingTransformContext& transform_context,
                       const ExecutionOptions& options = ExecutionOptions());
 
         __host__ Ciphertext<Scheme::CKKS>
         slot_to_coeff(Ciphertext<Scheme::CKKS>& cipher0,
                       Ciphertext<Scheme::CKKS>& cipher1,
                       Galoiskey<Scheme::CKKS>& galois_key,
-                      CKKSEncodingTransformContext& transform_context,
                       const ExecutionOptions& options = ExecutionOptions());
-
-        __host__ Ciphertext<Scheme::CKKS>
-        slot_to_coeff_v2(Ciphertext<Scheme::CKKS>& cipher0,
-                         Ciphertext<Scheme::CKKS>& cipher1,
-                         Galoiskey<Scheme::CKKS>& galois_key,
-                         const ExecutionOptions& options = ExecutionOptions());
 
         __host__ Ciphertext<Scheme::CKKS> solo_slot_to_coeff(
             Ciphertext<Scheme::CKKS>& cipher,
@@ -2095,17 +2031,13 @@ namespace heongpu
                        const ExecutionOptions& options = ExecutionOptions());
 
         __host__ Ciphertext<Scheme::CKKS>
-        exp_scaled(Ciphertext<Scheme::CKKS>& cipher,
-                   Relinkey<Scheme::CKKS>& relin_key,
-                   const ExecutionOptions& options = ExecutionOptions());
-
-        __host__ Ciphertext<Scheme::CKKS> exp_taylor_approximation(
-            Ciphertext<Scheme::CKKS>& cipher, Relinkey<Scheme::CKKS>& relin_key,
-            const ExecutionOptions& options = ExecutionOptions());
-
-        __host__ Ciphertext<Scheme::CKKS>
         eval_mod(Ciphertext<Scheme::CKKS>& cipher,
                  Relinkey<Scheme::CKKS>& relin_key,
+                 const ExecutionOptions& options = ExecutionOptions());
+
+        __host__ Ciphertext<Scheme::CKKS>
+        eval_mod(Ciphertext<Scheme::CKKS>& cipher, const Polynomial& poly,
+                 double shift, Relinkey<Scheme::CKKS>& relin_key,
                  const ExecutionOptions& options = ExecutionOptions());
 
         __host__ void
@@ -2129,82 +2061,6 @@ namespace heongpu
             std::unordered_map<int, Ciphertext<Scheme::CKKS>>& powered_ciphers,
             Relinkey<Scheme::CKKS>& relin_key,
             const ExecutionOptions& options = ExecutionOptions());
-
-        // Double-hoisting BSGS matrix×vector algorithm
-        __host__ DeviceVector<Data64>
-        fast_single_hoisting_rotation_ckks(Ciphertext<Scheme::CKKS>& input1,
-                                           std::vector<int>& bsgs_shift, int n1,
-                                           Galoiskey<Scheme::CKKS>& galois_key,
-                                           const cudaStream_t stream)
-        {
-            if (input1.rescale_required_ || input1.relinearization_required_)
-            {
-                throw std::invalid_argument("Ciphertext can not be rotated!");
-            }
-
-            int current_decomp_count = context_->Q_size - input1.depth_;
-
-            if (input1.memory_size() < (2 * context_->n * current_decomp_count))
-            {
-                throw std::invalid_argument("Invalid Ciphertexts size!");
-            }
-
-            switch (static_cast<int>(galois_key.key_type))
-            {
-                case 1: // KEYSWITHING_METHOD_I
-                    if (context_->scheme_ == scheme_type::ckks)
-                    {
-                        DeviceVector<Data64> result =
-                            fast_single_hoisting_rotation_ckks_method_I(
-                                input1, bsgs_shift, n1, galois_key, stream);
-                        return result;
-                    }
-                    else
-                    {
-                        throw std::invalid_argument("Invalid Scheme Type");
-                    }
-                    break;
-                case 2: // KEYSWITHING_METHOD_II
-                    if (context_->scheme_ == scheme_type::ckks)
-                    {
-                        DeviceVector<Data64> result =
-                            fast_single_hoisting_rotation_ckks_method_II(
-                                input1, bsgs_shift, n1, galois_key, stream);
-                        return result;
-                    }
-                    else
-                    {
-                        throw std::invalid_argument("Invalid Scheme Type");
-                    }
-                    break;
-                default:
-                    throw std::invalid_argument("Invalid Key Switching Type");
-                    break;
-            }
-        }
-
-        __host__ DeviceVector<Data64>
-        fast_single_hoisting_rotation_ckks_method_I(
-            Ciphertext<Scheme::CKKS>& first_cipher,
-            std::vector<int>& bsgs_shift, int n1,
-            Galoiskey<Scheme::CKKS>& galois_key, const cudaStream_t stream);
-
-        __host__ DeviceVector<Data64>
-        fast_single_hoisting_rotation_ckks_method_II(
-            Ciphertext<Scheme::CKKS>& first_cipher,
-            std::vector<int>& bsgs_shift, int n1,
-            Galoiskey<Scheme::CKKS>& galois_key, const cudaStream_t stream);
-
-        // Pre-computed encoded parameters
-        // CtoS part
-        DeviceVector<Data64> encoded_complex_minus_iover2_;
-        // StoC part
-        DeviceVector<Data64> encoded_complex_i_;
-        // Scale part
-        DeviceVector<Data64> encoded_complex_minus_iscale_;
-        // Exponentiate part
-        DeviceVector<Data64> encoded_complex_iscaleoverr_;
-        // Sinus taylor part
     };
 
     /**
@@ -2226,7 +2082,6 @@ namespace heongpu
 
         __host__ void generate_encoding_transform_context(
             CKKSEncodingTransformContext& transform_context,
-            const double scale,
             const CKKSEncodingTransformConfig& config =
                 CKKSEncodingTransformConfig());
 
@@ -2235,14 +2090,12 @@ namespace heongpu
          *
          * @param scale Scaling factor.
          * @param config Bootstrapping configuration.
+         * @param boot_type Regular or slim bootstrapping.
          */
         __host__ void generate_bootstrapping_params(
             const double scale, const BootstrappingConfig& config,
-            const arithmetic_bootstrapping_type& boot_type);
-
-        __host__ void
-        generate_bootstrapping_params_v2(const double scale,
-                                         const BootstrappingConfigV2& config);
+            const arithmetic_bootstrapping_type& boot_type =
+                arithmetic_bootstrapping_type::REGULAR_BOOTSTRAPPING);
 
         __host__ std::vector<int> bootstrapping_key_indexs()
         {
@@ -2257,24 +2110,7 @@ namespace heongpu
         }
 
         /**
-         * @brief Performs regular bootstrapping on a ciphertext.(For more
-         * detail please check README.md)
-         *
-         * @param input1 Input ciphertext.
-         * @param galois_key Galois key.
-         * @param relin_key Relinearization key.
-         * @param options Execution options.
-         * @return Ciphertext Bootstrapped ciphertext.
-         */
-        __host__ Ciphertext<Scheme::CKKS> regular_bootstrapping(
-            Ciphertext<Scheme::CKKS>& input1,
-            Galoiskey<Scheme::CKKS>& galois_key,
-            Relinkey<Scheme::CKKS>& relin_key,
-            const ExecutionOptions& options = ExecutionOptions());
-
-        /**
-         * @brief Performs regular bootstrapping with non-sparse key support
-         * (v2).
+         * @brief Performs regular bootstrapping with non-sparse key support.
          *
          * Implements the optimized bootstrapping algorithm from the paper:
          * "Efficient Bootstrapping for Approximate Homomorphic Encryption with
@@ -2297,7 +2133,7 @@ namespace heongpu
          * initialized.
          * @throws std::logic_error if input ciphertext not at maximum depth.
          */
-        __host__ Ciphertext<Scheme::CKKS> regular_bootstrapping_v2(
+        __host__ Ciphertext<Scheme::CKKS> regular_bootstrapping(
             Ciphertext<Scheme::CKKS>& input1,
             Galoiskey<Scheme::CKKS>& galois_key,
             Relinkey<Scheme::CKKS>& relin_key,
@@ -2306,12 +2142,13 @@ namespace heongpu
             const ExecutionOptions& options = ExecutionOptions());
 
         /**
-         * @brief Performs slim bootstrapping on a ciphertext.(For more detail
-         * please check README.md)
+         * @brief Performs slim bootstrapping (supports only real numbers).
          *
-         * @param input1 Input ciphertext.
+         * @param input1 Input ciphertext at the SlotToCoeff start level.
          * @param galois_key Galois key.
          * @param relin_key Relinearization key.
+         * @param swk_dense_to_sparse Optional dense to sparse switch key.
+         * @param swk_sparse_to_dense Optional sparse to dense switch key.
          * @param options Execution options.
          * @return Ciphertext Bootstrapped ciphertext.
          */
@@ -2319,6 +2156,8 @@ namespace heongpu
             Ciphertext<Scheme::CKKS>& input1,
             Galoiskey<Scheme::CKKS>& galois_key,
             Relinkey<Scheme::CKKS>& relin_key,
+            Switchkey<Scheme::CKKS>* swk_dense_to_sparse = nullptr,
+            Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
             const ExecutionOptions& options = ExecutionOptions());
 
         using HEOperator<Scheme::CKKS>::coeff_to_slot;
@@ -3251,6 +3090,7 @@ namespace heongpu
          *
          * @param scale Scaling factor.
          * @param config Bootstrapping configuration.
+         * @param boot_type Bit or gate bootstrapping.
          */
         __host__ void generate_bootstrapping_params(
             const double scale, const BootstrappingConfig& config,
@@ -3260,7 +3100,6 @@ namespace heongpu
          * @brief Retrieves galois key indexes required for bootstrapping.
          *
          * @return std::vector<int> Bootstrapping key indexes.
-         * @throws std::invalid_argument if parameters are not generated.
          */
         __host__ std::vector<int> bootstrapping_key_indexs()
         {
@@ -3278,17 +3117,21 @@ namespace heongpu
          * @brief Performs bit-level bootstrapping on a ciphertext.(For more
          * detail please check README.md)
          *
-         * @param input1 Input ciphertext.
+         * @param input1 Input ciphertext at the SlotToCoeff start level.
          * @param galois_key Galois key for rotations.
          * @param relin_key Relinearization key.
+         * @param swk_dense_to_sparse Optional dense to sparse switch key.
+         * @param swk_sparse_to_dense Optional sparse to dense switch key.
          * @param options Execution options.
          * @return Ciphertext Bootstrapped ciphertext.
          */
-        __host__ Ciphertext<Scheme::CKKS>
-        bit_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
-                          Galoiskey<Scheme::CKKS>& galois_key,
-                          Relinkey<Scheme::CKKS>& relin_key,
-                          const ExecutionOptions& options = ExecutionOptions());
+        __host__ Ciphertext<Scheme::CKKS> bit_bootstrapping(
+            Ciphertext<Scheme::CKKS>& input1,
+            Galoiskey<Scheme::CKKS>& galois_key,
+            Relinkey<Scheme::CKKS>& relin_key,
+            Switchkey<Scheme::CKKS>* swk_dense_to_sparse = nullptr,
+            Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
+            const ExecutionOptions& options = ExecutionOptions());
 
         /**
          * @brief Bootstrapped logical AND gate.(For more detail please check
@@ -3298,18 +3141,22 @@ namespace heongpu
          * @param input2 Second input ciphertext.
          * @param galois_key Galois key for rotations.
          * @param relin_key Relinearization key.
+         * @param swk_dense_to_sparse Optional dense to sparse switch key.
+         * @param swk_sparse_to_dense Optional sparse to dense switch key.
          * @param options Execution options.
          * @return Ciphertext Bootstrapped result.
          */
-        __host__ Ciphertext<Scheme::CKKS>
-        AND_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
-                          Ciphertext<Scheme::CKKS>& input2,
-                          Galoiskey<Scheme::CKKS>& galois_key,
-                          Relinkey<Scheme::CKKS>& relin_key,
-                          const ExecutionOptions& options = ExecutionOptions())
+        __host__ Ciphertext<Scheme::CKKS> AND_bootstrapping(
+            Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& input2,
+            Galoiskey<Scheme::CKKS>& galois_key,
+            Relinkey<Scheme::CKKS>& relin_key,
+            Switchkey<Scheme::CKKS>* swk_dense_to_sparse = nullptr,
+            Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
+            const ExecutionOptions& options = ExecutionOptions())
         {
-            return gate_bootstrapping(logic_gate::AND, input1, input2,
-                                      galois_key, relin_key, options);
+            return gate_bootstrapping(
+                logic_gate::AND, input1, input2, galois_key, relin_key,
+                swk_dense_to_sparse, swk_sparse_to_dense, options);
         }
 
         /**
@@ -3320,6 +3167,8 @@ namespace heongpu
          * @param input2 Second input ciphertext.
          * @param galois_key Galois key for rotations.
          * @param relin_key Relinearization key.
+         * @param swk_dense_to_sparse Optional dense to sparse switch key.
+         * @param swk_sparse_to_dense Optional sparse to dense switch key.
          * @param options Execution options.
          * @return Ciphertext Bootstrapped result.
          */
@@ -3328,10 +3177,13 @@ namespace heongpu
                          Ciphertext<Scheme::CKKS>& input2,
                          Galoiskey<Scheme::CKKS>& galois_key,
                          Relinkey<Scheme::CKKS>& relin_key,
+                         Switchkey<Scheme::CKKS>* swk_dense_to_sparse = nullptr,
+                         Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
                          const ExecutionOptions& options = ExecutionOptions())
         {
-            return gate_bootstrapping(logic_gate::OR, input1, input2,
-                                      galois_key, relin_key, options);
+            return gate_bootstrapping(
+                logic_gate::OR, input1, input2, galois_key, relin_key,
+                swk_dense_to_sparse, swk_sparse_to_dense, options);
         }
 
         /**
@@ -3342,18 +3194,22 @@ namespace heongpu
          * @param input2 Second input ciphertext.
          * @param galois_key Galois key for rotations.
          * @param relin_key Relinearization key.
+         * @param swk_dense_to_sparse Optional dense to sparse switch key.
+         * @param swk_sparse_to_dense Optional sparse to dense switch key.
          * @param options Execution options.
          * @return Ciphertext Bootstrapped result.
          */
-        __host__ Ciphertext<Scheme::CKKS>
-        XOR_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
-                          Ciphertext<Scheme::CKKS>& input2,
-                          Galoiskey<Scheme::CKKS>& galois_key,
-                          Relinkey<Scheme::CKKS>& relin_key,
-                          const ExecutionOptions& options = ExecutionOptions())
+        __host__ Ciphertext<Scheme::CKKS> XOR_bootstrapping(
+            Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& input2,
+            Galoiskey<Scheme::CKKS>& galois_key,
+            Relinkey<Scheme::CKKS>& relin_key,
+            Switchkey<Scheme::CKKS>* swk_dense_to_sparse = nullptr,
+            Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
+            const ExecutionOptions& options = ExecutionOptions())
         {
-            return gate_bootstrapping(logic_gate::XOR, input1, input2,
-                                      galois_key, relin_key, options);
+            return gate_bootstrapping(
+                logic_gate::XOR, input1, input2, galois_key, relin_key,
+                swk_dense_to_sparse, swk_sparse_to_dense, options);
         }
 
         /**
@@ -3364,18 +3220,22 @@ namespace heongpu
          * @param input2 Second input ciphertext.
          * @param galois_key Galois key for rotations.
          * @param relin_key Relinearization key.
+         * @param swk_dense_to_sparse Optional dense to sparse switch key.
+         * @param swk_sparse_to_dense Optional sparse to dense switch key.
          * @param options Execution options.
          * @return Ciphertext Bootstrapped result.
          */
-        __host__ Ciphertext<Scheme::CKKS>
-        NAND_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
-                           Ciphertext<Scheme::CKKS>& input2,
-                           Galoiskey<Scheme::CKKS>& galois_key,
-                           Relinkey<Scheme::CKKS>& relin_key,
-                           const ExecutionOptions& options = ExecutionOptions())
+        __host__ Ciphertext<Scheme::CKKS> NAND_bootstrapping(
+            Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& input2,
+            Galoiskey<Scheme::CKKS>& galois_key,
+            Relinkey<Scheme::CKKS>& relin_key,
+            Switchkey<Scheme::CKKS>* swk_dense_to_sparse = nullptr,
+            Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
+            const ExecutionOptions& options = ExecutionOptions())
         {
-            return gate_bootstrapping(logic_gate::NAND, input1, input2,
-                                      galois_key, relin_key, options);
+            return gate_bootstrapping(
+                logic_gate::NAND, input1, input2, galois_key, relin_key,
+                swk_dense_to_sparse, swk_sparse_to_dense, options);
         }
 
         /**
@@ -3386,18 +3246,22 @@ namespace heongpu
          * @param input2 Second input ciphertext.
          * @param galois_key Galois key for rotations.
          * @param relin_key Relinearization key.
+         * @param swk_dense_to_sparse Optional dense to sparse switch key.
+         * @param swk_sparse_to_dense Optional sparse to dense switch key.
          * @param options Execution options.
          * @return Ciphertext Bootstrapped result.
          */
-        __host__ Ciphertext<Scheme::CKKS>
-        NOR_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
-                          Ciphertext<Scheme::CKKS>& input2,
-                          Galoiskey<Scheme::CKKS>& galois_key,
-                          Relinkey<Scheme::CKKS>& relin_key,
-                          const ExecutionOptions& options = ExecutionOptions())
+        __host__ Ciphertext<Scheme::CKKS> NOR_bootstrapping(
+            Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& input2,
+            Galoiskey<Scheme::CKKS>& galois_key,
+            Relinkey<Scheme::CKKS>& relin_key,
+            Switchkey<Scheme::CKKS>* swk_dense_to_sparse = nullptr,
+            Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
+            const ExecutionOptions& options = ExecutionOptions())
         {
-            return gate_bootstrapping(logic_gate::NOR, input1, input2,
-                                      galois_key, relin_key, options);
+            return gate_bootstrapping(
+                logic_gate::NOR, input1, input2, galois_key, relin_key,
+                swk_dense_to_sparse, swk_sparse_to_dense, options);
         }
 
         /**
@@ -3408,18 +3272,22 @@ namespace heongpu
          * @param input2 Second input ciphertext.
          * @param galois_key Galois key for rotations.
          * @param relin_key Relinearization key.
+         * @param swk_dense_to_sparse Optional dense to sparse switch key.
+         * @param swk_sparse_to_dense Optional sparse to dense switch key.
          * @param options Execution options.
          * @return Ciphertext Bootstrapped result.
          */
-        __host__ Ciphertext<Scheme::CKKS>
-        XNOR_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
-                           Ciphertext<Scheme::CKKS>& input2,
-                           Galoiskey<Scheme::CKKS>& galois_key,
-                           Relinkey<Scheme::CKKS>& relin_key,
-                           const ExecutionOptions& options = ExecutionOptions())
+        __host__ Ciphertext<Scheme::CKKS> XNOR_bootstrapping(
+            Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& input2,
+            Galoiskey<Scheme::CKKS>& galois_key,
+            Relinkey<Scheme::CKKS>& relin_key,
+            Switchkey<Scheme::CKKS>* swk_dense_to_sparse = nullptr,
+            Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
+            const ExecutionOptions& options = ExecutionOptions())
         {
-            return gate_bootstrapping(logic_gate::XNOR, input1, input2,
-                                      galois_key, relin_key, options);
+            return gate_bootstrapping(
+                logic_gate::XNOR, input1, input2, galois_key, relin_key,
+                swk_dense_to_sparse, swk_sparse_to_dense, options);
         }
 
         using HEOperator<Scheme::CKKS>::apply_galois;
@@ -3446,42 +3314,16 @@ namespace heongpu
             Ciphertext<Scheme::CKKS>& input2,
             Galoiskey<Scheme::CKKS>& galois_key,
             Relinkey<Scheme::CKKS>& relin_key,
+            Switchkey<Scheme::CKKS>* swk_dense_to_sparse,
+            Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
             const ExecutionOptions& options = ExecutionOptions());
 
-        __host__ Ciphertext<Scheme::CKKS>
-        AND_approximation(Ciphertext<Scheme::CKKS>& cipher,
-                          Galoiskey<Scheme::CKKS>& galois_key,
-                          Relinkey<Scheme::CKKS>& relin_key,
-                          const ExecutionOptions& options = ExecutionOptions());
-
-        __host__ Ciphertext<Scheme::CKKS>
-        OR_approximation(Ciphertext<Scheme::CKKS>& cipher,
-                         Galoiskey<Scheme::CKKS>& galois_key,
-                         Relinkey<Scheme::CKKS>& relin_key,
-                         const ExecutionOptions& options = ExecutionOptions());
-
-        __host__ Ciphertext<Scheme::CKKS>
-        XOR_approximation(Ciphertext<Scheme::CKKS>& cipher,
-                          Galoiskey<Scheme::CKKS>& galois_key,
-                          Relinkey<Scheme::CKKS>& relin_key,
-                          const ExecutionOptions& options = ExecutionOptions());
-
-        __host__ Ciphertext<Scheme::CKKS> NAND_approximation(
-            Ciphertext<Scheme::CKKS>& cipher,
+        __host__ Ciphertext<Scheme::CKKS> logic_bootstrapping(
+            Ciphertext<Scheme::CKKS>& input1, int function_index,
             Galoiskey<Scheme::CKKS>& galois_key,
             Relinkey<Scheme::CKKS>& relin_key,
-            const ExecutionOptions& options = ExecutionOptions());
-
-        __host__ Ciphertext<Scheme::CKKS>
-        NOR_approximation(Ciphertext<Scheme::CKKS>& cipher,
-                          Galoiskey<Scheme::CKKS>& galois_key,
-                          Relinkey<Scheme::CKKS>& relin_key,
-                          const ExecutionOptions& options = ExecutionOptions());
-
-        __host__ Ciphertext<Scheme::CKKS> XNOR_approximation(
-            Ciphertext<Scheme::CKKS>& cipher,
-            Galoiskey<Scheme::CKKS>& galois_key,
-            Relinkey<Scheme::CKKS>& relin_key,
+            Switchkey<Scheme::CKKS>* swk_dense_to_sparse,
+            Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
             const ExecutionOptions& options = ExecutionOptions());
 
         __host__ void
@@ -3496,9 +3338,11 @@ namespace heongpu
         // Encoded One
         DeviceVector<Data64> encoded_constant_one_;
 
-        // Gate bootstrapping
-        DeviceVector<Data64> encoded_complex_minus_2over6j_;
-        DeviceVector<Data64> encoded_complex_2over6j_;
+        // Bit/gate bootstrapping: one cosine polynomial, input shift and
+        // output constant per function (bit, or AND..XNOR in logic_gate order)
+        std::vector<Polynomial> logic_polys_;
+        std::vector<double> logic_shifts_;
+        std::vector<double> logic_constants_;
     };
 
 } // namespace heongpu

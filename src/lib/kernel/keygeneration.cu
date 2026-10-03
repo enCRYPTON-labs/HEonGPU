@@ -35,28 +35,17 @@ namespace heongpu
         }
     }
 
-    // Collision-free secret key generation
-    __global__ void secretkey_gen_kernel_v2(int* secret_key,
-                                            int* nonzero_positions,
-                                            int* nonzero_values,
-                                            int hamming_weight, int n_power)
+    // Collision-free secret key generation (secret_key must be zeroed)
+    __global__ void secretkey_gen_kernel(int* secret_key,
+                                         int* nonzero_positions,
+                                         int* nonzero_values,
+                                         int hamming_weight)
     {
-        int idx = blockIdx.x * blockDim.x + threadIdx.x; // Ring Sizes
-        int n = 1 << n_power;
+        int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-        // Initialize all positions to 0
-        if (idx < n)
-        {
-            secret_key[idx] = 0;
-        }
-        __syncthreads();
-
-        // Fill non-zero positions (no collision possible)
         if (idx < hamming_weight)
         {
-            int position = nonzero_positions[idx];
-            int value = nonzero_values[idx];
-            secret_key[position] = value;
+            secret_key[nonzero_positions[idx]] = nonzero_values[idx];
         }
     }
 

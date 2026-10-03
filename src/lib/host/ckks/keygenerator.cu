@@ -43,59 +43,6 @@ namespace heongpu
                                 context_->n * sizeof(int), options.stream_);
                 HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                secretkey_gen_kernel<<<dim3((context_->n >> 8), 1, 1), 256, 0,
-                                       options.stream_>>>(
-                    secret_key_without_rns.data(), sk_.hamming_weight_,
-                    context_->n_power, seed_);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
-
-                DeviceVector<Data64> secret_key_rns(
-                    (sk_.coeff_modulus_count() * context_->n), options.stream_);
-
-                secretkey_rns_kernel<<<dim3((context_->n >> 8), 1, 1), 256, 0,
-                                       options.stream_>>>(
-                    secret_key_without_rns.data(), secret_key_rns.data(),
-                    context_->modulus_->data(), context_->n_power,
-                    context_->Q_prime_size);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
-
-                gpuntt::ntt_rns_configuration<Data64> cfg_ntt = {
-                    .n_power = context_->n_power,
-                    .ntt_type = gpuntt::FORWARD,
-                    .ntt_layout = gpuntt::PerPolynomial,
-                    .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-                    .zero_padding = false,
-                    .stream = options.stream_};
-
-                gpuntt::GPU_NTT_Inplace(
-                    secret_key_rns.data(), context_->ntt_table_->data(),
-                    context_->modulus_->data(), cfg_ntt, context_->Q_prime_size,
-                    context_->Q_prime_size);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
-
-                sk_.in_ntt_domain_ = true;
-                sk_.secret_key_generated_ = true;
-
-                sk_.memory_set(std::move(secret_key_rns));
-            },
-            options, true);
-    }
-
-    __host__ void HEKeyGenerator<Scheme::CKKS>::generate_secret_key_v2(
-        Secretkey<Scheme::CKKS>& sk, const ExecutionOptions& options)
-    {
-        if (sk.secret_key_generated_)
-        {
-            throw std::logic_error("Secretkey is already generated!");
-        }
-
-        input_storage_manager(
-            sk,
-            [&](Secretkey<Scheme::CKKS>& sk_)
-            {
-                DeviceVector<int> secret_key_without_rns((context_->n),
-                                                         options.stream_);
-
                 std::vector<int> nonzero_positions_host;
                 std::vector<int> nonzero_values_host;
 
@@ -118,18 +65,19 @@ namespace heongpu
                     int value = (value_dist(rng) == 0) ? -1 : 1;
                     nonzero_values_host.push_back(value);
                 }
+                // Next secret key from this generator must be independent.
+                seed_ = static_cast<int>(rng());
 
                 DeviceVector<int> nonzero_positions_device =
                     DeviceVector<int>(nonzero_positions_host, options.stream_);
                 DeviceVector<int> nonzero_values_device =
                     DeviceVector<int>(nonzero_values_host, options.stream_);
 
-                secretkey_gen_kernel_v2<<<dim3((context_->n >> 8), 1, 1), 256,
-                                          0, options.stream_>>>(
+                secretkey_gen_kernel<<<dim3((context_->n >> 8), 1, 1), 256, 0,
+                                       options.stream_>>>(
                     secret_key_without_rns.data(),
                     nonzero_positions_device.data(),
-                    nonzero_values_device.data(), sk_.hamming_weight_,
-                    context_->n_power);
+                    nonzero_values_device.data(), sk_.hamming_weight_);
                 HEONGPU_CUDA_CHECK(cudaGetLastError());
 
                 DeviceVector<Data64> secret_key_rns(

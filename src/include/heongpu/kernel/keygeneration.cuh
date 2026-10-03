@@ -19,10 +19,10 @@ namespace heongpu
     __global__ void secretkey_gen_kernel(int* secret_key, int hamming_weight,
                                          int n_power, int seed);
 
-    __global__ void secretkey_gen_kernel_v2(int* secret_key,
-                                            int* nonzero_positions,
-                                            int* nonzero_values,
-                                            int hamming_weight, int n_power);
+    __global__ void secretkey_gen_kernel(int* secret_key,
+                                         int* nonzero_positions,
+                                         int* nonzero_values,
+                                         int hamming_weight);
 
     __global__ void secretkey_rns_kernel(int* input, Data64* output,
                                          Modulus64* modulus, int n_power,

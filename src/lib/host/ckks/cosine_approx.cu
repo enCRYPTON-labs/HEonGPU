@@ -172,10 +172,10 @@ namespace heongpu
     // function values at those points, totdeg)
     std::tuple<std::vector<RR>, std::vector<RR>, int>
     genNodes(const std::vector<int>& deg, double dev, int totdeg, int K,
-             int scnum)
+             int scnum, int period, double shift)
     {
         RR PI = RR(M_PIl);
-        RR scfac = RR(1 << scnum);
+        RR scfac = RR(period * (1 << scnum));
         RR intersize = RR(1.0 / dev);
 
         // Allocate interpolation nodes
@@ -222,12 +222,12 @@ namespace heongpu
             cnt++;
         }
 
-        // Compute d = cos(2*pi*(z-0.25)/scfac) for Newton interpolation
+        // Compute d = cos(2*pi*(z-shift)/scfac) for Newton interpolation
         std::vector<RR> d(totdeg);
         for (int i = 0; i < totdeg; i++)
         {
-            // Transform node: z[i] = (z[i] - 0.25) / scfac
-            z[i] = (z[i] - RR(0.25)) / scfac;
+            // Transform node: z[i] = (z[i] - shift) / scfac
+            z[i] = (z[i] - RR(shift)) / scfac;
 
             // d[i] = cos(2 * PI * z[i])
             d[i] = BigintCos(RR(2.0) * PI * z[i]);
@@ -269,19 +269,21 @@ namespace heongpu
 
     // ApproximateCos: Main function
     std::vector<std::complex<double>> ApproximateCos(int K, int degree,
-                                                     double dev, int scnum)
+                                                     double dev, int scnum,
+                                                     int period, double shift)
     {
         // Set NTL precision (1000 bits, same as Go's big.Float precision)
         RR::SetPrecision(1000);
 
         RR PI = RR(M_PIl);
-        RR scfac = RR(1 << scnum);
+        RR scfac = RR(period * (1 << scnum));
 
         // Step 1: Generate adaptive degrees
         auto [deg, totdeg] = genDegrees(degree, K, dev);
 
         // Step 2: Generate nodes and Newton coefficients
-        auto [x, p, final_totdeg] = genNodes(deg, dev, totdeg, K, scnum);
+        auto [x, p, final_totdeg] =
+            genNodes(deg, dev, totdeg, K, scnum, period, shift);
         totdeg = final_totdeg;
 
         // Step 3: Build Chebyshev basis matrix T

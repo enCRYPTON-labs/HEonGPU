@@ -8,37 +8,27 @@
 
 int main(int argc, char* argv[])
 {
-    // Initialize encryption parameters for the CKKS scheme.
     heongpu::HEContext<heongpu::Scheme::CKKS> context =
         heongpu::GenHEContext<heongpu::Scheme::CKKS>(
             heongpu::sec_level_type::none);
-    size_t poly_modulus_degree = 4096;
+    size_t poly_modulus_degree = 1 << 16;
     context->set_poly_modulus_degree(poly_modulus_degree);
 
-    // Last modulus has to be three times the value of scale, otherwise, it will
-    // fail. 3298535538689ULL =~ 3 * pow(2.0, 40)
-    context->set_coeff_modulus_values(
-        {3298535538689ULL, 1099512938497ULL, 1099515691009ULL,
-         1099516870657ULL, 1099521458177ULL, 1099522375681ULL,
-         1099523555329ULL, 1099525128193ULL, 1099526176769ULL,
-         1099529060353ULL, 1099535220737ULL, 1099536138241ULL,
-         1099537580033ULL, 1099538104321ULL, 1099540725761ULL,
-         1099540856833ULL, 1099543085057ULL, 1099544002561ULL,
-         1099544395777ULL, 1099548327937ULL},
-        {3298535669761ULL, 3298538684417ULL, 3298540650497ULL});
+    // Q0 | 3 SlotToCoeff + 7 user levels | 10 EvalMod levels | 4 CoeffToSlot
+    context->set_coeff_modulus_bit_sizes({60, 40, 40, 40, 40, 40, 40, 40, 40,
+                                          40, 40, 60, 60, 60, 60, 60, 60, 60,
+                                          60, 60, 60, 56, 56, 56, 56},
+                                         {60, 60, 60, 60, 60});
     context->generate();
     context->print_parameters();
 
-    // The scale is set to 2^40, resulting in 40 bits of precision before the
-    // decimal point.
+    int h = 192;
+    int ephemeral_secret_weight = 32;
+
     double scale = pow(2.0, 40);
 
-    // Generate keys: the public key for encryption, the secret key for
-    // decryption and evaluation key(relinkey) for relinearization.
     heongpu::HEKeyGenerator<heongpu::Scheme::CKKS> keygen(context);
-    heongpu::Secretkey<heongpu::Scheme::CKKS> secret_key(
-        context,
-        16); // hamming weight is 16 in this example
+    heongpu::Secretkey<heongpu::Scheme::CKKS> secret_key(context, h);
     keygen.generate_secret_key(secret_key);
 
     heongpu::Publickey<heongpu::Scheme::CKKS> public_key(context);
@@ -47,49 +37,49 @@ int main(int argc, char* argv[])
     heongpu::Relinkey<heongpu::Scheme::CKKS> relin_key(context);
     keygen.generate_relin_key(relin_key, secret_key);
 
-    // Initialize Encoder, Encryptor, Evaluator, and Decryptor. The Encoder will
-    // encode the message for SIMD operations. The Encryptor will use the public
-    // key to encrypt data, while the Decryptor will use the secret key to
-    // decrypt it. The Evaluator will handle operations on the encrypted data.
+    heongpu::Secretkey<heongpu::Scheme::CKKS> sparse_secret_key(
+        context, ephemeral_secret_weight);
+    keygen.generate_secret_key(sparse_secret_key);
+
+    heongpu::Switchkey<heongpu::Scheme::CKKS> swk_dense_to_sparse(context);
+    keygen.generate_switch_key(swk_dense_to_sparse, sparse_secret_key,
+                               secret_key);
+    heongpu::Switchkey<heongpu::Scheme::CKKS> swk_sparse_to_dense(context);
+    keygen.generate_switch_key(swk_sparse_to_dense, secret_key,
+                               sparse_secret_key);
+
     heongpu::HEEncoder<heongpu::Scheme::CKKS> encoder(context);
     heongpu::HEEncryptor<heongpu::Scheme::CKKS> encryptor(context, public_key);
     heongpu::HEDecryptor<heongpu::Scheme::CKKS> decryptor(context, secret_key);
-    // heongpu::HEOperator operators(context);
     heongpu::HELogicOperator<heongpu::Scheme::CKKS> operators(context, encoder,
                                                               scale);
 
-    // Generate simple vector in CPU.
     const int slot_count = poly_modulus_degree / 2;
-    std::cout << "Plaintext vector size: " << slot_count << std::endl;
     std::vector<double> message1(slot_count, 1);
     message1[0] = 0;
     message1[2] = 0;
-
     std::vector<double> message2(slot_count, 1);
+    message2[0] = 0;
+    message2[1] = 0;
 
-    //  Transfer that vector from CPU to GPU and Encode that simple vector in
-    //  GPU.
     heongpu::Plaintext<heongpu::Scheme::CKKS> P1(context);
     encoder.encode(P1, message1, scale);
-
     heongpu::Plaintext<heongpu::Scheme::CKKS> P2(context);
     encoder.encode(P2, message2, scale);
 
     heongpu::Ciphertext<heongpu::Scheme::CKKS> C1(context);
     encryptor.encrypt(C1, P1);
-
     heongpu::Ciphertext<heongpu::Scheme::CKKS> C2(context);
     encryptor.encrypt(C2, P2);
 
-    // Check README.md for more detail information
-    // CtoS_piece_ = [2,5]
-    // StoC_piece_ = [2,5]
-    // taylor_number_ = [6,15]
-    // less_key_mode_ = true or false
-    int StoC_piece = 3;
-    heongpu::BootstrappingConfig boot_config(3, StoC_piece, 6, true);
-    // Generates all bootstrapping parameters before bootstrapping
-    // operators.generate_bootstrapping_parameters(encoder, scale, boot_config);
+    heongpu::EvalModConfig eval_mod_config(20);
+    heongpu::BootstrappingConfig boot_config(
+        heongpu::EncodingMatrixConfig(
+            heongpu::LinearTransformType::SLOTS_TO_COEFFS, 3),
+        eval_mod_config,
+        heongpu::EncodingMatrixConfig(
+            heongpu::LinearTransformType::COEFFS_TO_SLOTS, 24));
+
     operators.generate_bootstrapping_params(
         scale, boot_config,
         heongpu::logic_bootstrapping_type::GATE_BOOTSTRAPPING);
@@ -98,28 +88,23 @@ int main(int argc, char* argv[])
     std::cout << "Total galois key needed for CKKS bootstrapping: "
               << key_index.size() << std::endl;
     heongpu::Galoiskey<heongpu::Scheme::CKKS> galois_key(context, key_index);
+    keygen.generate_galois_key(galois_key, secret_key);
 
-    // Generates all galois key needed for bootstrapping
-    keygen.generate_galois_key(galois_key,
-                               secret_key); // all galois keys are stored in GPU
-    // keygen.generate_galois_key(galois_key, secret_key,
-    // heongpu::ExecutionOptions().set_storage_type(heongpu::storage_type::HOST));
-    // // all galois keys are stored in CPU
-
-    // Drop all level until one level remain
-    for (int i = 0; i < (19 - StoC_piece); i++)
+    // Drop levels until the SlotToCoeff start level
+    while (C1.level() > 3)
     {
         operators.mod_drop_inplace(C1);
         operators.mod_drop_inplace(C2);
     }
 
-    std::cout << "Depth before bootstrapping: " << C1.depth() << std::endl;
+    std::cout << "Level before bootstrapping: " << C1.level() << std::endl;
 
-    // Bootstapping Operation
+    // Also available: OR, XOR, NAND, NOR and XNOR bootstrapping.
     heongpu::Ciphertext<heongpu::Scheme::CKKS> cipher_boot =
-        operators.AND_bootstrapping(C1, C2, galois_key, relin_key);
+        operators.AND_bootstrapping(C1, C2, galois_key, relin_key,
+                                    &swk_dense_to_sparse, &swk_sparse_to_dense);
 
-    std::cout << "Depth after bootstrapping: " << cipher_boot.depth()
+    std::cout << "Level after bootstrapping: " << cipher_boot.level()
               << std::endl;
 
     heongpu::Plaintext<heongpu::Scheme::CKKS> P_res1(context);
@@ -134,14 +119,12 @@ int main(int argc, char* argv[])
             static_cast<double>(int(message1[i]) & int(message2[i]));
     }
 
-    // Compute and print precision statistics
     heongpu::PrecisionStats prec_stats =
         heongpu::get_precision_stats(expected_message, decrypted_1);
 
     std::cout << "\n=== Bootstrapping Precision Statistics ===" << std::endl;
     std::cout << prec_stats.to_string() << std::endl;
 
-    // for(int j = 0; j < slot_count; j++){
     for (int j = 0; j < 16; j++)
     {
         std::cout << j << "-> EXPECTED:" << expected_message[j]

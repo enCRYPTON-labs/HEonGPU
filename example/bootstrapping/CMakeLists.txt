@@ -10,7 +10,6 @@ set(EXECUTABLES
     2_ckks_slim_bootstrapping 2_ckks_slim_bootstrapping.cpp
     3_ckks_bit_bootstrapping 3_ckks_bit_bootstrapping.cpp
     4_ckks_gate_bootstrapping 4_ckks_gate_bootstrapping.cpp
-    5_ckks_regular_bootstrapping_v2 5_ckks_regular_bootstrapping_v2.cpp
 )
 
 function(add_example exe source)

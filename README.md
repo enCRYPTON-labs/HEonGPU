@@ -96,22 +96,120 @@ The Logic Operations supported:
 
 ### Execution times of the HEonGPU Bootstrapping Operations (on RTX 4090)
 
-| Bootstrapping Type   | N    | Slot Count| LKM | Remaining Level | Total Time | Amortized Time |
-|:--------------------:|:----:|:----:|:---:|:---------------:|:----------:|:--------------:|
-| **Slim Bootstrapping**    | 2^16 | 2^15 | ON  | 0 Level        | 99.12 ms   | 3.02 µs        |
-|                      | 2^16 | 2^15 | ON  | 2 Level        | 114.13 ms  | 3.48 µs        |
-|                      | 2^16 | 2^15 | ON  | 4 Level        | 164.20 ms  | 5.01 µs        |
-| **Bit Bootstrapping**     | 2^15 | 2^14 | OFF | 0 Level        | 33.74 ms   | 2.06 µs        |
-|                      | 2^15 | 2^14 | OFF | 2 Level        | 39.36 ms   | 2.40 µs        |
-|                      | 2^15 | 2^14 | OFF | 4 Level        | 46.54 ms   | 2.84 µs        |
-|                      | 2^15 | 2^14 | OFF | 6 Level        | 55.66 ms   | 3.40 µs        |
-|                      | 2^16 | 2^15 | OFF | 0 Level        | 86.69 ms   | 2.73 µs        |
-|                      | 2^16 | 2^15 | OFF | 2 Level        | 100.72 ms  | 3.07 µs        |
-|                      | 2^16 | 2^15 | OFF | 4 Level        | 115.88 ms  | 3.53 µs        |
-| **Gate Bootstrapping***    | 2^15 | 2^14 | OFF | 0 Level        | 27.03 ms   | 1.64 µs        |
-|                      | 2^16 | 2^15 | OFF | 0 Level        | 70.73 ms   | 2.16 µs        |
+<table>
+  <tr>
+    <th>Bootstrapping Type</th>
+    <th>N</th>
+    <th>Slot Count</th>
+    <th>Remaining Level</th>
+    <th>Total Time</th>
+    <th>Amortized Time</th>
+  </tr>
+  <tr>
+    <td rowspan="2"><b>Regular Bootstrapping</b></td>
+    <td>2<sup>15</sup></td>
+    <td>2<sup>14</sup></td>
+    <td>9 Level</td>
+    <td>51.02 ms</td>
+    <td>3.11 µs</td>
+  </tr>
+  <tr>
+    <td>2<sup>16</sup></td>
+    <td>2<sup>15</sup></td>
+    <td>9 Level</td>
+    <td>109.28 ms</td>
+    <td>3.33 µs</td>
+  </tr>
+  <tr>
+    <td rowspan="4"><b>Slim Bootstrapping</b></td>
+    <td>2<sup>15</sup></td>
+    <td>2<sup>14</sup></td>
+    <td>0 Level</td>
+    <td>17.56 ms</td>
+    <td>1.07 µs</td>
+  </tr>
+  <tr>
+    <td>2<sup>15</sup></td>
+    <td>2<sup>14</sup></td>
+    <td>9 Level</td>
+    <td>30.87 ms</td>
+    <td>1.88 µs</td>
+  </tr>
+  <tr>
+    <td>2<sup>16</sup></td>
+    <td>2<sup>15</sup></td>
+    <td>0 Level</td>
+    <td>38.55 ms</td>
+    <td>1.18 µs</td>
+  </tr>
+  <tr>
+    <td>2<sup>16</sup></td>
+    <td>2<sup>15</sup></td>
+    <td>9 Level</td>
+    <td>70.59 ms</td>
+    <td>2.15 µs</td>
+  </tr>
+  <tr>
+    <td rowspan="4"><b>Bit Bootstrapping</b></td>
+    <td>2<sup>15</sup></td>
+    <td>2<sup>14</sup></td>
+    <td>0 Level</td>
+    <td>22.53 ms</td>
+    <td>1.38 µs</td>
+  </tr>
+  <tr>
+    <td>2<sup>15</sup></td>
+    <td>2<sup>14</sup></td>
+    <td>8 Level</td>
+    <td>37.51 ms</td>
+    <td>2.29 µs</td>
+  </tr>
+  <tr>
+    <td>2<sup>16</sup></td>
+    <td>2<sup>15</sup></td>
+    <td>0 Level</td>
+    <td>50.72 ms</td>
+    <td>1.55 µs</td>
+  </tr>
+  <tr>
+    <td>2<sup>16</sup></td>
+    <td>2<sup>15</sup></td>
+    <td>8 Level</td>
+    <td>82.43 ms</td>
+    <td>2.52 µs</td>
+  </tr>
+  <tr>
+    <td rowspan="4"><b>Gate Bootstrapping*</b></td>
+    <td>2<sup>15</sup></td>
+    <td>2<sup>14</sup></td>
+    <td>0 Level</td>
+    <td>29.96–31.85 ms</td>
+    <td>1.83–1.94 µs</td>
+  </tr>
+  <tr>
+    <td>2<sup>15</sup></td>
+    <td>2<sup>14</sup></td>
+    <td>7 Level</td>
+    <td>45.36–47.50 ms</td>
+    <td>2.77–2.90 µs</td>
+  </tr>
+  <tr>
+    <td>2<sup>16</sup></td>
+    <td>2<sup>15</sup></td>
+    <td>0 Level</td>
+    <td>62.90–66.55 ms</td>
+    <td>1.92–2.03 µs</td>
+  </tr>
+  <tr>
+    <td>2<sup>16</sup></td>
+    <td>2<sup>15</sup></td>
+    <td>7 Level</td>
+    <td>99.45–102.17 ms</td>
+    <td>3.04–3.12 µs</td>
+  </tr>
+</table>
 </div>
-LKM: Less Key Mode is a bootstrapping optimization in HEonGPU. Its purpose is to reduce the required amount of Galois keys by 30% while sacrificing 15–20% performance. This is useful in cases where GPU memory is insufficient.
+Dense secret key (h=192) with a temporary sparse secret key (h=32), median of 5 runs. Remaining Level is the number of levels left before the next bootstrapping.
 
 *: For all gates
 
@@ -120,7 +218,7 @@ LKM: Less Key Mode is a bootstrapping optimization in HEonGPU. Its purpose is to
 ### 🚨 **New Feature: [CKKS Regular Bootstrapping](example/bootstrapping/README.md)**
 
 HEonGPU now includes support for `CKKS Regular` Bootstrapping, enabling efficient evaluation of deep computational circuits with high precision and security. On an NVIDIA RTX 4090, it performs `CKKS` Regular Bootstrapping for 
-N=65536 in under 170 ms.
+N=65536 in about 110 ms.
 
 ### 🚨 **New Feature: [Multiparty Computation (MPC) Support](example/mpc/README.md)**
 

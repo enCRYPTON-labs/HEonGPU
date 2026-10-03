@@ -49,57 +49,105 @@ This table compares the latency (in milliseconds) of homomorphic unsigned intege
 
 **CKKS Bootstrapping**
 
-This table details the execution times for various CKKS bootstrapping operations implemented in HEonGPU.
+This table details the execution times for various CKKS bootstrapping operations implemented in HEonGPU (dense secret key h=192 with a temporary sparse secret key h=32, median of 5 runs).
 
-* **LKM (Less Key Mode)**: An optimization that reduces the number of required Galois keys by 30% at the cost of a 15-20% performance decrease. This is useful when GPU memory is a constraint.
+* **Remaining Level**: The number of levels left before the next bootstrapping.
 * **Amortized Time**: The total execution time divided by the number of slots, providing a per-slot performance metric.
 
 .. list-table:: CKKS Bootstrapping Performance
-   :widths: 20 10 15 10 15 15 15
+   :widths: 20 10 15 15 15 15
    :header-rows: 1
 
    * - Bootstrapping Type
      - :math:`N`
      - Slot Count
-     - LKM
      - Remaining Level
      - Total Time
      - Amortized Time
+   * - **Regular**
+     - :math:`2^{15}`
+     - :math:`2^{14}`
+     - 9
+     - 51.02 ms
+     - 3.11 µs
+   * - **Regular**
+     - :math:`2^{16}`
+     - :math:`2^{15}`
+     - 9
+     - 109.28 ms
+     - 3.33 µs
+   * - **Slim**
+     - :math:`2^{15}`
+     - :math:`2^{14}`
+     - 0
+     - 17.56 ms
+     - 1.07 µs
+   * - **Slim**
+     - :math:`2^{15}`
+     - :math:`2^{14}`
+     - 9
+     - 30.87 ms
+     - 1.88 µs
    * - **Slim**
      - :math:`2^{16}`
      - :math:`2^{15}`
-     - ON
-     - 4
-     - 164.20 ms
-     - 5.01 µs
+     - 0
+     - 38.55 ms
+     - 1.18 µs
+   * - **Slim**
+     - :math:`2^{16}`
+     - :math:`2^{15}`
+     - 9
+     - 70.59 ms
+     - 2.15 µs
    * - **Bit**
      - :math:`2^{15}`
      - :math:`2^{14}`
-     - OFF
-     - 6
-     - 55.66 ms
-     - 3.40 µs
+     - 0
+     - 22.53 ms
+     - 1.38 µs
+   * - **Bit**
+     - :math:`2^{15}`
+     - :math:`2^{14}`
+     - 8
+     - 37.51 ms
+     - 2.29 µs
    * - **Bit**
      - :math:`2^{16}`
      - :math:`2^{15}`
-     - OFF
-     - 4
-     - 115.88 ms
-     - 3.53 µs
+     - 0
+     - 50.72 ms
+     - 1.55 µs
+   * - **Bit**
+     - :math:`2^{16}`
+     - :math:`2^{15}`
+     - 8
+     - 82.43 ms
+     - 2.52 µs
    * - **Gate\***
      - :math:`2^{15}`
      - :math:`2^{14}`
-     - OFF
      - 0
-     - 27.03 ms
-     - 1.64 µs
+     - 29.96–31.85 ms
+     - 1.83–1.94 µs
+   * - **Gate\***
+     - :math:`2^{15}`
+     - :math:`2^{14}`
+     - 7
+     - 45.36–47.50 ms
+     - 2.77–2.90 µs
    * - **Gate\***
      - :math:`2^{16}`
      - :math:`2^{15}`
-     - OFF
      - 0
-     - 70.73 ms
-     - 2.16 µs
+     - 62.90–66.55 ms
+     - 1.92–2.03 µs
+   * - **Gate\***
+     - :math:`2^{16}`
+     - :math:`2^{15}`
+     - 7
+     - 99.45–102.17 ms
+     - 3.04–3.12 µs
 
 \*For all logic gates.
 

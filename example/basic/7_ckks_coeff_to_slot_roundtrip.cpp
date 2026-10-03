@@ -21,8 +21,8 @@ int main(int argc, char* argv[])
 
     const std::size_t poly_modulus_degree = 4096;
     context->set_poly_modulus_degree(poly_modulus_degree);
-    context->set_coeff_modulus_bit_sizes(
-        {50, 40, 40, 40, 40, 40, 40, 40, 40}, {50});
+    context->set_coeff_modulus_bit_sizes({50, 40, 40, 40, 40, 40, 40, 40, 40},
+                                         {50, 50});
     context->generate();
 
     const double scale = std::pow(2.0, 40);
@@ -43,12 +43,12 @@ int main(int argc, char* argv[])
     // Build transform context and Vandermonde-related precomputations.
     // ctos_start_level and stoc_start_level define where transforms begin.
     const int ctos_start_level = 0;
-    const int stoc_start_level = 4;
+    const int stoc_start_level = 3;
     heongpu::CKKSEncodingTransformConfig transform_config(
-        3, 3, ctos_start_level, stoc_start_level, false);
+        3, 3, ctos_start_level, stoc_start_level);
     heongpu::CKKSEncodingTransformContext transform_context;
-    operators.generate_encoding_transform_context(
-        transform_context, scale, transform_config);
+    operators.generate_encoding_transform_context(transform_context,
+                                                  transform_config);
 
     std::vector<int> key_index = transform_context.key_indexs_;
     heongpu::Galoiskey<Scheme> galois_key(context, key_index);

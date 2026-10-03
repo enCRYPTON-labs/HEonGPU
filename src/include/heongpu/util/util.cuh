@@ -175,20 +175,6 @@ namespace heongpu
 
     struct BootstrappingConfig
     {
-        int CtoS_piece_; // Default: 3
-        int StoC_piece_; // Default: 3
-        int taylor_number_; // Default: 11
-        bool less_key_mode_; // Default: false
-
-        BootstrappingConfig(int CtoS = 3, int StoC = 3, int taylor = 11,
-                            bool less_key_mode = false);
-
-      private:
-        void validate(); // Validates the configuration input values
-    };
-
-    struct BootstrappingConfigV2
-    {
         int CtoS_piece_;
         int StoC_piece_;
 
@@ -196,9 +182,9 @@ namespace heongpu
         EncodingMatrixConfig stc_config_;
         EvalModConfig eval_mod_config_;
 
-        BootstrappingConfigV2(EncodingMatrixConfig stc_config,
-                              EvalModConfig eval_mod_config,
-                              EncodingMatrixConfig cts_config);
+        BootstrappingConfig(EncodingMatrixConfig stc_config,
+                            EvalModConfig eval_mod_config,
+                            EncodingMatrixConfig cts_config);
     };
 
     Data64 extendedGCD(Data64 a, Data64 b, Data64& x, Data64& y);
@@ -250,22 +236,15 @@ namespace heongpu
 
     __global__ void fill_device_vector(Data64* vector, Data64 number, int size);
 
-    int find_closest_divisor(int N);
-
-    std::vector<std::vector<int>> split_array(const std::vector<int>& array,
-                                              int chunk_size);
-
-    std::vector<std::vector<int>> seperate_func(const std::vector<int>& A);
-
     std::vector<std::vector<int>> bsgs_index(const std::vector<int>& array,
                                              int N1, std::vector<int>& rot_n1,
                                              std::vector<int>& rot_n2);
 
-    std::vector<std::vector<int>> seperate_func_v2(const std::vector<int>& A,
-                                                   int slots,
-                                                   std::vector<int>& rot_n1,
-                                                   std::vector<int>& rot_n2,
-                                                   float bsgs_ratio);
+    std::vector<std::vector<int>> seperate_func(const std::vector<int>& A,
+                                                int slots,
+                                                std::vector<int>& rot_n1,
+                                                std::vector<int>& rot_n2,
+                                                float bsgs_ratio);
 
     std::vector<int> unique_sort(const std::vector<int>& input);
 

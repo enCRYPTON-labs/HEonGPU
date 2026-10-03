@@ -19,8 +19,10 @@ The implementation is heavily optimized for GPU execution and is based on techni
 
 * **Efficient DFT**: Instead of naive or BSGS methods for the homomorphic DFT, HEonGPU employs a more optimized approach described in the paper "Faster Homomorphic Discrete Fourier Transforms and Improved FHE Bootstrapping" (`ePrint 2018/1073 <https://eprint.iacr.org/2018/1073.pdf>`_). While this method consumes more circuit depth, it significantly minimizes the number of multiplications and rotations, leading to a substantial performance improvement.
 * **Full Slot Utilization**: The library utilizes all available slots in the CKKS ciphertext, avoiding the sparse packing method described in some earlier works.
-* **Configurable Precision**: The `Approximate Modular Reduction` stage currently uses a Taylor approximation. The `BootstrappingConfig` class allows the user to configure the precision of this approximation.
-* **Memory Management**: Bootstrapping is extremely memory-intensive, particularly due to the large size of the Galois keys required for rotations. The `BootstrappingConfig` class provides a ``less_key_mode``. When enabled, this mode reduces the number of required Galois keys by 30% at the cost of a 15-20% performance decrease, making it a valuable option for systems with limited GPU memory.
+* **Double Hoisting**: The `Coeff to Slot` and `Slot to Coeff` matrix multiplications use double hoisting and require ``KEYSWITCHING_METHOD_II`` (more than one P prime).
+* **Configurable Precision**: The `Approximate Modular Reduction` stage evaluates a Chebyshev interpolation of the cosine followed by double-angle steps. The `EvalModConfig` class configures it (``K``, polynomial degree, number of double-angle steps, ``message_ratio``).
+* **Non-Sparse Keys**: Bootstrapping works with a dense secret key; an optional temporary sparse secret key is used only around `ModRaise` through dense-to-sparse and sparse-to-dense switch keys (`ePrint 2020/1203 <https://eprint.iacr.org/2020/1203.pdf>`_).
+* **Memory Management**: Bootstrapping is extremely memory-intensive, particularly due to the large size of the Galois keys required for rotations. Galois keys can also be stored on the CPU at the cost of performance.
 
 CKKS Bootstrapping Variants
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -56,12 +58,12 @@ This is a more efficient variant designed for messages in the **real number doma
 3. Bit Bootstrapping
 """"""""""""""""""""
 
-This variant is highly optimized for messages in the **binary domain**. It replaces the standard `EvalMod` function with a more efficient `EvalBinboot` function, which requires a lower multiplication depth. For this method to function correctly, the last modulus in the coefficient chain (:math:`q_L`) must be exactly twice the value of the CKKS scaling factor (:math:`\Delta`).
+This variant is designed for messages in the **binary domain**. It replaces the standard `EvalMod` function with an `EvalBinboot` function. The bits are placed at :math:`q_0/2` before `ModRaise`, so the scaling factor (:math:`\Delta`) does not need to be related to :math:`q_0`.
 
 4. Gate Bootstrapping
 """""""""""""""""""""
 
-This is the most specialized variant, also designed for **binary messages**. It is similar to Bit Bootstrapping but uses an `EvalGateboot` function. This function applies a logic gate (e.g., AND, OR, XOR) *directly during the bootstrapping process*, similar to how gate bootstrapping is performed in TFHE. This is extremely efficient as it does not require an extra level to continue operations after bootstrapping. For this method to function correctly, the last modulus (:math:`q_L`) must be exactly three times the value of the scaling factor (:math:`\Delta`).
+This is the most specialized variant, also designed for **binary messages**. It is similar to Bit Bootstrapping but uses an `EvalGateboot` function. This function applies a logic gate (e.g., AND, OR, XOR) *directly during the bootstrapping process*, similar to how gate bootstrapping is performed in TFHE. The sum of the two input bits is placed at :math:`q_0/3` before `ModRaise`.
 
 TFHE Bootstrapping
 ------------------

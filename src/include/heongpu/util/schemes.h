@@ -120,10 +120,8 @@ namespace heongpu
     enum class logic_bootstrapping_type : std::uint8_t
     {
         NONE = 0x0,
-        BIT_BOOTSTRAPPING = 0x1, // scale = q0 / 2. More detail:
-                                 // https://eprint.iacr.org/2024/767.pdf
-        GATE_BOOTSTRAPPING = 0x2, // scale = q0 / 3. More detail:
-                                  // https://eprint.iacr.org/2024/767.pdf
+        BIT_BOOTSTRAPPING = 0x1, // https://eprint.iacr.org/2024/767.pdf
+        GATE_BOOTSTRAPPING = 0x2, // https://eprint.iacr.org/2024/767.pdf
     };
 
     enum class encoding : std::uint8_t
