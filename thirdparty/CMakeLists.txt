@@ -27,6 +27,22 @@ FetchContent_Declare(
 )
 
 set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+
+# RMM 25.08 is written against the CCCL version it pins (3.0.x) and uses
+# cuda::mr::async_resource_ref, which newer CCCL releases removed. CUDA 13.x
+# ships such a newer CCCL (e.g. 3.4 in CUDA 13.4), and rapids-cmake would pick
+# it up since it satisfies the minimum version. Always fetch the pinned CCCL.
+# (CUDA 12.x ships CCCL 2.x, which is too old anyway, so it was already fetched.)
+set(CPM_DOWNLOAD_CCCL ON CACHE BOOL "Fetch the CCCL version pinned by RMM instead of using the CUDA Toolkit one")
+if(CPM_DOWNLOAD_CCCL)
+    # Drop package locations cached by an earlier configure (e.g. pointing at the
+    # CUDA Toolkit's CCCL); otherwise the fetched Thrust would be paired with a
+    # mismatched CUB/libcudacxx from the toolkit.
+    foreach(_cccl_pkg IN ITEMS CCCL Thrust CUB libcudacxx)
+        unset(${_cccl_pkg}_DIR CACHE)
+    endforeach()
+endif()
+
 FetchContent_MakeAvailable(rmm)
 
 add_subdirectory(GPU-FFT)

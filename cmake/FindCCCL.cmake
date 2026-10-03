@@ -16,7 +16,10 @@ list(REMOVE_DUPLICATES _CCCL_HINT_PREFIXES)
 set(_CCCL_CONFIG_PATHS)
 foreach(_prefix IN LISTS _CCCL_HINT_PREFIXES)
     if(_prefix AND EXISTS "${_prefix}")
+        # The hint may already be the config directory itself (e.g. rmm's
+        # installed config sets CCCL_ROOT to <prefix>/lib/rapids/cmake/cccl).
         list(APPEND _CCCL_CONFIG_PATHS
+            "${_prefix}"
             "${_prefix}/lib64/cmake/cccl"
             "${_prefix}/lib/cmake/cccl"
             "${_prefix}/share/cmake/cccl")
