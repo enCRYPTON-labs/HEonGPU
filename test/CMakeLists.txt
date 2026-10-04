@@ -31,17 +31,23 @@ set(EXECUTABLES
     ckks_addition_testcases test_ckks_addition.cpp
     ckks_encoding_testcases test_ckks_encoding.cpp
     ckks_encryption_testcases test_ckks_encryption.cpp
+    ckks_secretkey_randomness_testcases test_ckks_secretkey_randomness.cpp
     ckks_multiplication_testcases test_ckks_multiplication.cpp
     ckks_relinearization_testcases test_ckks_relinearization.cpp
     ckks_rotation_method_1_testcases test_ckks_rotation_method_1.cpp
     ckks_rotation_method_2_testcases test_ckks_rotation_method_2.cpp
 
+    secretkey_security_testcases test_secretkey_security.cpp
     tfhe_gate_boot_testcases test_tfhe_gate_boot.cpp
 )
 
 function(add_test exe source)
     add_executable(${exe} ${source})
     target_link_libraries(${exe} PRIVATE heongpu CUDA::cudart gtest_main)
+    if((exe STREQUAL "ckks_secretkey_randomness_testcases" OR exe STREQUAL "secretkey_security_testcases") AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        target_compile_definitions(${exe} PRIVATE HEONGPU_TEST_WRAP_RAND_PRIV_BYTES)
+        target_link_options(${exe} PRIVATE "-Wl,--wrap=RAND_priv_bytes")
+    endif()
     set_target_properties(${exe} PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON
         POSITION_INDEPENDENT_CODE ON

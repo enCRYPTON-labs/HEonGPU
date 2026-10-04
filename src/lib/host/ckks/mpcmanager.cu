@@ -122,6 +122,7 @@ namespace heongpu
         MultipartyRelinkey<Scheme::CKKS>& rk, Secretkey<Scheme::CKKS>& sk,
         const ExecutionOptions& options)
     {
+        sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
             throw std::logic_error("Secretkey is not generated!");
@@ -233,6 +234,7 @@ namespace heongpu
         MultipartyRelinkey<Scheme::CKKS>& rk_stage_2,
         Secretkey<Scheme::CKKS>& sk, const ExecutionOptions& options)
     {
+        sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
             throw std::logic_error("Secretkey is not generated!");
@@ -348,6 +350,7 @@ namespace heongpu
             MultipartyRelinkey<Scheme::CKKS>& rk, Secretkey<Scheme::CKKS>& sk,
             const ExecutionOptions& options)
     {
+        sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
             throw std::logic_error("Secretkey is not generated!");
@@ -467,6 +470,7 @@ namespace heongpu
             MultipartyRelinkey<Scheme::CKKS>& rk_stage_2,
             Secretkey<Scheme::CKKS>& sk, const ExecutionOptions& options)
     {
+        sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
             throw std::logic_error("Secretkey is not generated!");
@@ -752,6 +756,7 @@ namespace heongpu
         MultipartyGaloiskey<Scheme::CKKS>& gk, Secretkey<Scheme::CKKS>& sk,
         const ExecutionOptions& options)
     {
+        sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
             throw std::logic_error("Secretkey is not generated!");
@@ -1020,6 +1025,7 @@ namespace heongpu
         MultipartyGaloiskey<Scheme::CKKS>& gk, Secretkey<Scheme::CKKS>& sk,
         const ExecutionOptions& options)
     {
+        sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
             throw std::logic_error("Secretkey is not generated!");

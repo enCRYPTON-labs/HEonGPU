@@ -1,4 +1,4 @@
-﻿// Copyright 2024-2026 Alişah Özcan
+// Copyright 2024-2026 Alişah Özcan
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 // Developer: Alişah Özcan
@@ -9,33 +9,6 @@ namespace heongpu
 {
     // Secret Key Generation
 
-    // Not cryptographically secure, will be fixed later.
-    __global__ void secretkey_gen_kernel(int* secret_key, int hamming_weight,
-                                         int n_power, int seed)
-    {
-        int idx = blockIdx.x * blockDim.x + threadIdx.x;
-        if (idx >= hamming_weight)
-            return;
-
-        const int N = 1 << n_power;
-        const int mask = N - 1;
-
-        curandState_t state;
-        curand_init(seed, idx, 0, &state);
-
-        int value = (curand(&state) & 1U) ? 1 : -1; // // -1 or 1
-
-        int start = (int) (curand(&state) & (unsigned) mask);
-
-        for (int probe = 0; probe < N; ++probe)
-        {
-            int loc = (start + probe) & mask;
-            if (atomicCAS(&secret_key[loc], 0, value) == 0)
-                return;
-        }
-    }
-
-    // Collision-free secret key generation (secret_key must be zeroed)
     __global__ void secretkey_gen_kernel(int* secret_key,
                                          int* nonzero_positions,
                                          int* nonzero_values,
@@ -1017,54 +990,6 @@ namespace heongpu
         }
     }
 
-    // Not cryptographically secure, will be fixed later.
-    __global__ void tfhe_secretkey_gen_kernel(int32_t* secret_key, int size,
-                                              int seed)
-    {
-        int idx = blockIdx.x * blockDim.x + threadIdx.x;
-
-        if (idx >= size)
-            return;
-
-        curandState_t state;
-        curand_init(seed, idx, 0, &state);
-
-        int32_t value = (curand(&state) & 1); // 0 or 1
-        secret_key[idx] = value;
-    }
-
-    __global__ void tfhe_generate_noise_kernel(double* output, int seed, int n,
-                                               double stddev)
-    {
-        int idx = blockIdx.x * blockDim.x + threadIdx.x;
-
-        if (idx < n)
-        {
-            curandState_t thread_state;
-            curand_init(seed, idx, 0, &thread_state);
-
-            double z = curand_normal_double(&thread_state);
-
-            output[idx] = stddev * z;
-        }
-    }
-
-    __global__ void tfhe_generate_uniform_random_number_kernel(int32_t* output,
-                                                               int seed, int n)
-    {
-        int idx = blockIdx.x * blockDim.x + threadIdx.x;
-
-        if (idx < n)
-        {
-            curandState_t thread_state;
-            curand_init(seed, idx, 0, &thread_state);
-
-            int32_t result = curand(&thread_state);
-
-            output[idx] = result;
-        }
-    }
-
     __global__ void tfhe_generate_switchkey_kernel(
         const int32_t* sk_rlwe, const int32_t* sk_lwe, const double* noise,
         int32_t* input_a, int32_t* output_b, int n, int base_bit, int length)
@@ -1135,65 +1060,6 @@ namespace heongpu
                     }
                 }
                 __syncthreads();
-            }
-        }
-    }
-
-    __global__ void tfhe_generate_bootkey_random_numbers_kernel(
-        int32_t* boot_key, int N, int k, int bk_length, int seed, double stddev)
-    {
-        const int idx_x = threadIdx.x;
-        const int block_x = blockIdx.x;
-        const int g_idx = block_x * blockDim.x + idx_x;
-
-        const int N_reg = N;
-        const int k_reg = k;
-        const int length_reg = bk_length;
-
-        const double stddev_reg = stddev;
-
-        curandState_t thread_state;
-        curand_init(seed, g_idx, 0, &thread_state);
-
-        Data64 offset_block = block_x * (Data64) (k_reg + 1) *
-                              ((Data64) length_reg * (k_reg + 1) * N_reg);
-
-        for (int loop1 = 0; loop1 < (k_reg + 1); loop1++)
-        {
-            int offset1 = loop1 * (length_reg * (k_reg + 1) * N_reg);
-
-            for (int loop2 = 0; loop2 < length_reg; loop2++)
-            {
-                int offset2 = loop2 * ((k_reg + 1) * N_reg);
-
-                for (int loop3 = 0; loop3 < k_reg; loop3++) // (k_reg + 1)
-                {
-                    Data64 offset = offset_block + offset1 + offset2;
-                    offset = offset + (loop3 * N_reg);
-
-                    boot_key[offset + idx_x] = curand(&thread_state);
-                    boot_key[offset + idx_x + blockDim.x] =
-                        curand(&thread_state);
-                }
-
-                Data64 offset = offset_block + offset1 + offset2;
-                offset = offset + (k_reg * N_reg);
-
-                double r0 = curand_normal_double(&thread_state);
-                double r1 = curand_normal_double(&thread_state);
-                r0 = r0 * stddev_reg;
-                r1 = r1 * stddev_reg;
-
-                double frac0 = r0 - trunc(r0);
-                double frac1 = r1 - trunc(r1);
-                double x0 = frac0 * 4294967296.0;
-                double x1 = frac1 * 4294967296.0;
-                uint32_t u0 = static_cast<uint32_t>(floor(x0 + 0.5));
-                uint32_t u1 = static_cast<uint32_t>(floor(x1 + 0.5));
-
-                boot_key[offset + idx_x] = static_cast<int32_t>(u0);
-                boot_key[offset + idx_x + blockDim.x] =
-                    static_cast<int32_t>(u1);
             }
         }
     }

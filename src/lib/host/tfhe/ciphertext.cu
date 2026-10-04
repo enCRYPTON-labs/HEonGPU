@@ -35,11 +35,13 @@ namespace heongpu
             {
                 a_device_location_ =
                     DeviceVector<int32_t>(a_host_location_, stream);
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
                 a_host_location_.resize(0);
                 a_host_location_.shrink_to_fit();
 
                 b_device_location_ =
                     DeviceVector<int32_t>(b_host_location_, stream);
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
                 b_host_location_.resize(0);
                 b_host_location_.shrink_to_fit();
             }
@@ -58,25 +60,26 @@ namespace heongpu
         {
             if (ciphertext_generated_)
             {
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(this->stream()));
                 a_host_location_ =
                     HostVector<int32_t>(a_device_location_.size());
-                cudaMemcpyAsync(a_host_location_.data(),
-                                a_device_location_.data(),
-                                a_device_location_.size() * sizeof(int32_t),
-                                cudaMemcpyDeviceToHost, stream);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
+                HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
+                    a_host_location_.data(), a_device_location_.data(),
+                    a_device_location_.size() * sizeof(int32_t),
+                    cudaMemcpyDeviceToHost, stream));
 
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
                 a_device_location_.resize(0, stream);
                 a_device_location_.shrink_to_fit(stream);
 
                 b_host_location_ =
                     HostVector<int32_t>(b_device_location_.size());
-                cudaMemcpyAsync(b_host_location_.data(),
-                                b_device_location_.data(),
-                                b_device_location_.size() * sizeof(int32_t),
-                                cudaMemcpyDeviceToHost, stream);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
+                HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
+                    b_host_location_.data(), b_device_location_.data(),
+                    b_device_location_.size() * sizeof(int32_t),
+                    cudaMemcpyDeviceToHost, stream));
 
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
                 b_device_location_.resize(0, stream);
                 b_device_location_.shrink_to_fit(stream);
             }
@@ -105,9 +108,11 @@ namespace heongpu
             {
                 a_device_location_ =
                     DeviceVector<int32_t>(a_host_location_, stream);
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
 
                 b_device_location_ =
                     DeviceVector<int32_t>(b_host_location_, stream);
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
             }
             else
             {

@@ -1,4 +1,4 @@
-﻿// Copyright 2024-2026 Alişah Özcan
+// Copyright 2024-2026 Alişah Özcan
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 // Developer: Alişah Özcan
@@ -16,9 +16,6 @@
 namespace heongpu
 {
     // Secret Key Generation
-    __global__ void secretkey_gen_kernel(int* secret_key, int hamming_weight,
-                                         int n_power, int seed);
-
     __global__ void secretkey_gen_kernel(int* secret_key,
                                          int* nonzero_positions,
                                          int* nonzero_values,
@@ -139,23 +136,9 @@ namespace heongpu
                                      Modulus64* modulus, Data64* factor,
                                      int n_power, int rns_mod_count);
 
-    __global__ void tfhe_secretkey_gen_kernel(int32_t* secret_key, int size,
-                                              int seed);
-
-    __global__ void tfhe_generate_noise_kernel(double* output, int seed, int n,
-                                               double stddev);
-
-    __global__ void tfhe_generate_uniform_random_number_kernel(int32_t* output,
-                                                               int seed, int n);
-
     __global__ void tfhe_generate_switchkey_kernel(
         const int32_t* sk_rlwe, const int32_t* sk_lwe, const double* noise,
         int32_t* input_a, int32_t* output_b, int n, int base_bit, int length);
-
-    __global__ void
-    tfhe_generate_bootkey_random_numbers_kernel(int32_t* boot_key, int N, int k,
-                                                int bk_length, int seed,
-                                                double stddev);
 
     __global__ void tfhe_convert_rlwekey_ntt_domain_kernel(
         Data64* key_out, int32_t* key_in,

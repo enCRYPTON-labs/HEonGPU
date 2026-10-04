@@ -1,4 +1,4 @@
-﻿// Copyright 2024-2026 Alişah Özcan
+// Copyright 2024-2026 Alişah Özcan
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 // Developer: Alişah Özcan
@@ -266,27 +266,13 @@ namespace heongpu
         ciphertext[idx + (block_y << n_power)] = ct_0;
     }
 
-    __global__ void initialize_random_states_kernel(curandState* states,
-                                                    Data64 seed,
-                                                    int total_threads)
-    {
-        int idx = blockIdx.x * blockDim.x + threadIdx.x;
-        if (idx >= total_threads)
-            return;
-
-        curand_init(seed, (Data64) idx, 0, &states[idx]);
-    }
-
-    __global__ void encrypt_lwe_kernel(curandState_t* states, int32_t* sk,
-                                       int32_t* output_a, int32_t* output_b,
-                                       int n, int k, int total_state_count)
+    __global__ void encrypt_lwe_kernel(const int32_t* sk,
+                                       const int32_t* output_a,
+                                       int32_t* output_b, int n, int k)
     {
         extern __shared__ uint32_t sdata[];
         int idx = threadIdx.x;
         int block_x = blockIdx.x;
-        int g_idx = block_x * blockDim.x + idx;
-
-        curandState_t local_state = states[g_idx];
 
         int lane = idx & (warpSize - 1);
         int wid = idx >> 5;
@@ -299,8 +285,7 @@ namespace heongpu
             for (int i = idx; i < n; i += blockDim.x)
             {
                 uint32_t secret_key = sk[i];
-                uint32_t r = curand(&local_state);
-                output_a[base + i] = r;
+                uint32_t r = output_a[base + i];
                 local_sum += (uint32_t) (r * secret_key);
             }
 
@@ -322,8 +307,6 @@ namespace heongpu
             }
             __syncthreads();
         }
-
-        states[g_idx] = local_state;
     }
 
 } // namespace heongpu

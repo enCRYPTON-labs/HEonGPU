@@ -161,7 +161,7 @@ target_include_directories(heongpu_host_bfv
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_ROOT}/util>
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_ROOT}/kernel>
 )
-target_link_libraries(heongpu_host_bfv PUBLIC heongpu_host_core heongpu_kernel heongpu_util)
+target_link_libraries(heongpu_host_bfv PUBLIC heongpu_host_core heongpu_kernel heongpu_util PRIVATE OpenSSL::Crypto)
 set_target_properties(heongpu_host_bfv PROPERTIES
     POSITION_INDEPENDENT_CODE ON
     CUDA_SEPARABLE_COMPILATION ON
@@ -200,7 +200,8 @@ target_include_directories(heongpu_host_ckks
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_ROOT}/util>
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_ROOT}/kernel>
 )
-target_link_libraries(heongpu_host_ckks PUBLIC heongpu_host_core heongpu_kernel heongpu_util)
+target_link_libraries(heongpu_host_ckks PUBLIC heongpu_host_core heongpu_kernel heongpu_util
+    PRIVATE OpenSSL::Crypto)
 set_target_properties(heongpu_host_ckks PROPERTIES
     POSITION_INDEPENDENT_CODE ON
     CUDA_SEPARABLE_COMPILATION ON
@@ -232,7 +233,7 @@ target_include_directories(heongpu_host_tfhe
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_ROOT}/util>
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_ROOT}/kernel>
 )
-target_link_libraries(heongpu_host_tfhe PUBLIC heongpu_host_core heongpu_kernel heongpu_util)
+target_link_libraries(heongpu_host_tfhe PUBLIC heongpu_host_core heongpu_kernel heongpu_util PRIVATE OpenSSL::Crypto)
 set_target_properties(heongpu_host_tfhe PROPERTIES
     POSITION_INDEPENDENT_CODE ON
     CUDA_SEPARABLE_COMPILATION ON
@@ -280,6 +281,7 @@ target_link_libraries(heongpu PUBLIC
     ntl
     rmm
     CUDA::curand
+    OpenSSL::Crypto
     ZLIB::ZLIB
 )
 target_compile_options(heongpu PRIVATE

@@ -60,6 +60,7 @@ namespace heongpu
             MultipartyPublickey<Scheme::BFV>& pk, Secretkey<Scheme::BFV>& sk,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            sk.validate_context(context_);
             if (!sk.secret_key_generated_)
             {
                 throw std::logic_error("Secretkey is not generated!");

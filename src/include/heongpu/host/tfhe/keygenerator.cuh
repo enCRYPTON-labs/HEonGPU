@@ -28,7 +28,9 @@ namespace heongpu
         __host__ HEKeyGenerator(HEContext<Scheme::TFHE> context);
 
         /**
-         * @brief Generates a TFHE secret key.
+         * @brief Generates independent binary LWE and TLWE keys using private
+         * CSPRNG output.
+         * @throws std::runtime_error if private random generation fails.
          *
          * Writes the result to the provided `sk` object.
          *
@@ -55,8 +57,6 @@ namespace heongpu
 
       private:
         HEContext<Scheme::TFHE> context_;
-        int rng_seed_;
-        int rng_offset_;
     };
 
 } // namespace heongpu

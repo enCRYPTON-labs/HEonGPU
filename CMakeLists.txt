@@ -35,7 +35,7 @@ find_package(CUDAToolkit REQUIRED)
 find_package(Thrust REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(ZLIB REQUIRED)
-find_package(OpenSSL REQUIRED COMPONENTS Crypto SSL)
+find_package(OpenSSL 1.1.1 REQUIRED COMPONENTS Crypto SSL)
 
 message(STATUS "CUDA Version: ${CUDAToolkit_VERSION}")
 if(OpenMP_CXX_VERSION)

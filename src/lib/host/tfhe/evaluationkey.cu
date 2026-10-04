@@ -40,16 +40,19 @@ namespace heongpu
             {
                 boot_key_device_location_ =
                     DeviceVector<Data64>(boot_key_host_location_, stream);
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
                 boot_key_host_location_.resize(0);
                 boot_key_host_location_.shrink_to_fit();
 
                 switch_key_device_location_a_ =
                     DeviceVector<int32_t>(switch_key_host_location_a_, stream);
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
                 switch_key_host_location_a_.resize(0);
                 switch_key_host_location_a_.shrink_to_fit();
 
                 switch_key_device_location_b_ =
                     DeviceVector<int32_t>(switch_key_host_location_b_, stream);
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
                 switch_key_host_location_b_.resize(0);
                 switch_key_host_location_b_.shrink_to_fit();
             }
@@ -68,39 +71,40 @@ namespace heongpu
         {
             if (boot_key_generated_)
             {
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(this->stream()));
                 boot_key_host_location_ =
                     HostVector<Data64>(boot_key_device_location_.size());
-                cudaMemcpyAsync(boot_key_host_location_.data(),
-                                boot_key_device_location_.data(),
-                                boot_key_device_location_.size() *
-                                    sizeof(int32_t),
-                                cudaMemcpyDeviceToHost, stream);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
+                HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
+                    boot_key_host_location_.data(),
+                    boot_key_device_location_.data(),
+                    boot_key_device_location_.size() * sizeof(Data64),
+                    cudaMemcpyDeviceToHost, stream));
 
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
                 boot_key_device_location_.resize(0, stream);
                 boot_key_device_location_.shrink_to_fit(stream);
 
                 switch_key_host_location_a_ =
                     HostVector<int32_t>(switch_key_device_location_a_.size());
-                cudaMemcpyAsync(switch_key_host_location_a_.data(),
-                                switch_key_device_location_a_.data(),
-                                switch_key_device_location_a_.size() *
-                                    sizeof(int32_t),
-                                cudaMemcpyDeviceToHost, stream);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
+                HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
+                    switch_key_host_location_a_.data(),
+                    switch_key_device_location_a_.data(),
+                    switch_key_device_location_a_.size() * sizeof(int32_t),
+                    cudaMemcpyDeviceToHost, stream));
 
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
                 switch_key_device_location_a_.resize(0, stream);
                 switch_key_device_location_a_.shrink_to_fit(stream);
 
                 switch_key_host_location_b_ =
                     HostVector<int32_t>(switch_key_device_location_b_.size());
-                cudaMemcpyAsync(switch_key_device_location_b_.data(),
-                                switch_key_device_location_b_.data(),
-                                switch_key_device_location_b_.size() *
-                                    sizeof(int32_t),
-                                cudaMemcpyDeviceToHost, stream);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
+                HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
+                    switch_key_host_location_b_.data(),
+                    switch_key_device_location_b_.data(),
+                    switch_key_device_location_b_.size() * sizeof(int32_t),
+                    cudaMemcpyDeviceToHost, stream));
 
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
                 switch_key_device_location_b_.resize(0, stream);
                 switch_key_device_location_b_.shrink_to_fit(stream);
             }
@@ -129,12 +133,15 @@ namespace heongpu
             {
                 boot_key_device_location_ =
                     DeviceVector<Data64>(boot_key_host_location_, stream);
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
 
                 switch_key_device_location_a_ =
                     DeviceVector<int32_t>(switch_key_host_location_a_, stream);
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
 
                 switch_key_device_location_b_ =
                     DeviceVector<int32_t>(switch_key_host_location_b_, stream);
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
             }
             else
             {

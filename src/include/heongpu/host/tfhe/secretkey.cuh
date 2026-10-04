@@ -91,11 +91,29 @@ namespace heongpu
             return secret_key_generated_;
         }
 
+        // Binary coefficients in the current storage location (see
+        // is_on_device()).
+        int32_t* lwe_data() noexcept
+        {
+            return is_on_device() ? lwe_key_device_location_.data()
+                                  : lwe_key_host_location_.data();
+        }
+        int32_t* tlwe_data() noexcept
+        {
+            return is_on_device() ? tlwe_key_device_location_.data()
+                                  : tlwe_key_host_location_.data();
+        }
+        int lwe_size() const noexcept { return n_; }
+        int tlwe_size() const noexcept { return k_ * N_; }
+
         Secretkey() = default;
 
         void set_context(HEContext<Scheme::TFHE> context)
         {
-            context_ = std::move(context);
+            if (secret_key_generated_)
+                validate_context(context);
+            else
+                *this = Secretkey(std::move(context));
         }
 
         /**
@@ -121,6 +139,7 @@ namespace heongpu
               secret_key_generated_(copy.secret_key_generated_),
               storage_type_(copy.storage_type_)
         {
+            HEONGPU_CUDA_CHECK(cudaStreamSynchronize(copy.stream()));
             if (copy.secret_key_generated_)
             {
                 if (copy.storage_type_ == storage_type::DEVICE)
@@ -128,24 +147,24 @@ namespace heongpu
                     lwe_key_device_location_.resize(
                         copy.lwe_key_device_location_.size(),
                         copy.lwe_key_device_location_.stream());
-                    cudaMemcpyAsync(
+                    HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
                         lwe_key_device_location_.data(),
                         copy.lwe_key_device_location_.data(),
                         copy.lwe_key_device_location_.size() * sizeof(int32_t),
                         cudaMemcpyDeviceToDevice,
-                        copy.lwe_key_device_location_
-                            .stream()); // TODO: use cudaStreamPerThread
+                        copy.lwe_key_device_location_.stream()));
+                    HEONGPU_CUDA_CHECK(cudaStreamSynchronize(copy.stream()));
 
                     tlwe_key_device_location_.resize(
                         copy.tlwe_key_device_location_.size(),
                         copy.tlwe_key_device_location_.stream());
-                    cudaMemcpyAsync(
+                    HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
                         tlwe_key_device_location_.data(),
                         copy.tlwe_key_device_location_.data(),
                         copy.tlwe_key_device_location_.size() * sizeof(int32_t),
                         cudaMemcpyDeviceToDevice,
-                        copy.tlwe_key_device_location_
-                            .stream()); // TODO: use cudaStreamPerThread
+                        copy.tlwe_key_device_location_.stream()));
+                    HEONGPU_CUDA_CHECK(cudaStreamSynchronize(copy.stream()));
                 }
                 else
                 {
@@ -198,6 +217,7 @@ namespace heongpu
                   std::move(assign.tlwe_key_device_location_)),
               tlwe_key_host_location_(std::move(assign.tlwe_key_host_location_))
         {
+            assign.secret_key_generated_ = false;
         }
 
         /**
@@ -215,70 +235,8 @@ namespace heongpu
         {
             if (this != &copy)
             {
-                context_ = copy.context_;
-                n_ = copy.n_;
-                lwe_alpha_min = copy.lwe_alpha_min;
-                lwe_alpha_max = copy.lwe_alpha_max;
-                N_ = copy.N_;
-                k_ = copy.k_;
-                tlwe_alpha_min = copy.tlwe_alpha_min;
-                tlwe_alpha_max = copy.tlwe_alpha_max;
-                bk_l_ = copy.bk_l_;
-                bk_bg_bit_ = copy.bk_bg_bit_;
-                bg_ = copy.bg_;
-                half_bg_ = copy.half_bg_;
-                mask_mod_ = copy.mask_mod_;
-                kpl_ = copy.kpl_;
-                h_ = copy.h_;
-                offset_ = copy.offset_;
-                secret_key_generated_ = copy.secret_key_generated_;
-                storage_type_ = copy.storage_type_;
-
-                if (copy.secret_key_generated_)
-                {
-                    if (copy.storage_type_ == storage_type::DEVICE)
-                    {
-                        lwe_key_device_location_.resize(
-                            copy.lwe_key_device_location_.size(),
-                            copy.lwe_key_device_location_.stream());
-                        cudaMemcpyAsync(
-                            lwe_key_device_location_.data(),
-                            copy.lwe_key_device_location_.data(),
-                            copy.lwe_key_device_location_.size() *
-                                sizeof(int32_t),
-                            cudaMemcpyDeviceToDevice,
-                            copy.lwe_key_device_location_
-                                .stream()); // TODO: use cudaStreamPerThread
-
-                        tlwe_key_device_location_.resize(
-                            copy.tlwe_key_device_location_.size(),
-                            copy.tlwe_key_device_location_.stream());
-                        cudaMemcpyAsync(
-                            tlwe_key_device_location_.data(),
-                            copy.tlwe_key_device_location_.data(),
-                            copy.tlwe_key_device_location_.size() *
-                                sizeof(int32_t),
-                            cudaMemcpyDeviceToDevice,
-                            copy.tlwe_key_device_location_
-                                .stream()); // TODO: use cudaStreamPerThread
-                    }
-                    else
-                    {
-                        lwe_key_host_location_.resize(
-                            copy.lwe_key_host_location_.size());
-                        std::memcpy(lwe_key_host_location_.data(),
-                                    copy.lwe_key_host_location_.data(),
-                                    copy.lwe_key_host_location_.size() *
-                                        sizeof(int32_t));
-
-                        tlwe_key_host_location_.resize(
-                            copy.tlwe_key_host_location_.size());
-                        std::memcpy(tlwe_key_host_location_.data(),
-                                    copy.tlwe_key_host_location_.data(),
-                                    copy.tlwe_key_host_location_.size() *
-                                        sizeof(int32_t));
-                    }
-                }
+                Secretkey temporary(copy);
+                *this = std::move(temporary);
             }
             return *this;
         }
@@ -324,6 +282,7 @@ namespace heongpu
                     std::move(assign.tlwe_key_device_location_);
                 tlwe_key_host_location_ =
                     std::move(assign.tlwe_key_host_location_);
+                assign.secret_key_generated_ = false;
             }
             return *this;
         }
@@ -333,37 +292,38 @@ namespace heongpu
         const scheme_type scheme_ = scheme_type::tfhe;
 
         // LWE Context
-        int n_;
-        int lwe_alpha_min;
-        int lwe_alpha_max;
+        int n_ = 0;
+        double lwe_alpha_min = 0.0;
+        double lwe_alpha_max = 0.0;
 
         DeviceVector<int32_t> lwe_key_device_location_;
         HostVector<int32_t> lwe_key_host_location_;
 
         // TLWE Context
-        int N_;
-        int k_;
-        int tlwe_alpha_min;
-        int tlwe_alpha_max;
+        int N_ = 0;
+        int k_ = 0;
+        double tlwe_alpha_min = 0.0;
+        double tlwe_alpha_max = 0.0;
         // extracted_lwe_params
 
         DeviceVector<int32_t> tlwe_key_device_location_;
         HostVector<int32_t> tlwe_key_host_location_;
 
         // TGSW Context
-        int bk_l_;
-        int bk_bg_bit_;
-        int bg_;
-        int half_bg_;
-        int mask_mod_;
+        int bk_l_ = 0;
+        int bk_bg_bit_ = 0;
+        int bg_ = 0;
+        int half_bg_ = 0;
+        int mask_mod_ = 0;
         // tlwe_params = TLWE Context
-        int kpl_;
+        int kpl_ = 0;
         std::vector<int> h_;
-        int offset_;
+        int offset_ = 0;
 
         bool secret_key_generated_ = false;
-        storage_type storage_type_;
+        storage_type storage_type_ = storage_type::DEVICE;
 
+        void validate_context(const HEContext<Scheme::TFHE>& context) const;
         void copy_to_device(cudaStream_t stream);
         void remove_from_device(cudaStream_t stream);
         void remove_from_host();

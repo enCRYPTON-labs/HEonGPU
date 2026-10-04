@@ -20,7 +20,7 @@ unset(_HEONGPU_CUDA_PREFIX_CANDIDATES)
 find_dependency(GPUNTT REQUIRED)
 find_dependency(GPUFFT REQUIRED)
 find_dependency(rmm REQUIRED)
-find_dependency(OpenSSL REQUIRED)
+find_dependency(OpenSSL 1.1.1 REQUIRED COMPONENTS Crypto SSL)
 find_dependency(RNGonGPU REQUIRED)
 find_dependency(ZLIB REQUIRED)
 

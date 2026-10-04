@@ -103,6 +103,19 @@ namespace heongpu
          */
         inline int size() const noexcept { return shape_; }
 
+        // LWE mask and body in the current storage location (see
+        // is_on_device()).
+        int32_t* a_data() noexcept
+        {
+            return is_on_device() ? a_device_location_.data()
+                                  : a_host_location_.data();
+        }
+        int32_t* b_data() noexcept
+        {
+            return is_on_device() ? b_device_location_.data()
+                                  : b_host_location_.data();
+        }
+
         Ciphertext() = default;
 
         Ciphertext(const Ciphertext& copy)
@@ -245,8 +258,8 @@ namespace heongpu
         const scheme_type scheme_ = scheme_type::tfhe;
 
         int n_;
-        int alpha_min_;
-        int alpha_max_;
+        double alpha_min_;
+        double alpha_max_;
 
         int shape_;
 

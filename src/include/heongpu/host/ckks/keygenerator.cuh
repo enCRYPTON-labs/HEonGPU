@@ -47,7 +47,9 @@ namespace heongpu
         __host__ HEKeyGenerator(HEContext<Scheme::CKKS> context);
 
         /**
-         * @brief Generates a secret key.
+         * @brief Generates a secret key using cryptographic private randomness.
+         * The legacy seed value does not control secret key sampling.
+         * Throws if the cryptographic random generator fails.
          *
          * @param sk Reference to the Secretkey object where the generated
          * secret key will be stored.
@@ -151,14 +153,16 @@ namespace heongpu
         }
 
         /**
-         * @brief Returns the seed of the key generator.
+         * @brief Returns the legacy seed value retained for API compatibility.
+         * This value is independent of secret key randomness.
          *
          * @return int Seed of the key generator.
          */
         inline int get_seed() const noexcept { return seed_; }
 
         /**
-         * @brief Sets the seed of the key generator with new seed.
+         * @brief Sets the legacy seed value retained for API compatibility.
+         * This does not make secret key generation deterministic.
          */
         inline void set_seed(int new_seed) { seed_ = new_seed; }
 

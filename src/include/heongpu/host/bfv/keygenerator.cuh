@@ -47,7 +47,11 @@ namespace heongpu
         __host__ HEKeyGenerator(HEContext<Scheme::BFV> context);
 
         /**
-         * @brief Generates a secret key.
+         * @brief Generates an exact-weight ternary secret key using private
+         * CSPRNG output.
+         *
+         * Legacy seed setters do not control secret-key sampling.
+         * @throws std::runtime_error if private random generation fails.
          *
          * @param sk Reference to the Secretkey object where the generated
          * secret key will be stored.

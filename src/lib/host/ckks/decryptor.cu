@@ -1,4 +1,4 @@
-﻿// Copyright 2024-2026 Alişah Özcan
+// Copyright 2024-2026 Alişah Özcan
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 // Developer: Alişah Özcan
@@ -18,6 +18,9 @@ namespace heongpu
         }
 
         context_ = std::move(context);
+        secret_key.validate_context(context_);
+        if (!secret_key.secret_key_generated_)
+            throw std::logic_error("Secretkey is not generated!");
 
         std::random_device rd;
         std::mt19937 gen(rd());
@@ -27,11 +30,13 @@ namespace heongpu
         if (secret_key.storage_type_ == storage_type::DEVICE)
         {
             secret_key_ = secret_key.device_locations_;
+            HEONGPU_CUDA_CHECK(cudaStreamSynchronize(secret_key_.stream()));
         }
         else
         {
             secret_key.store_in_device();
             secret_key_ = secret_key.device_locations_;
+            HEONGPU_CUDA_CHECK(cudaStreamSynchronize(secret_key_.stream()));
         }
     }
 

@@ -1,9 +1,10 @@
-﻿// Copyright 2024-2026 Alişah Özcan
+// Copyright 2024-2026 Alişah Özcan
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 // Developer: Alişah Özcan
 
 #include <heongpu/host/ckks/keygenerator.cuh>
+#include "../secure_random.h"
 
 namespace heongpu
 {
@@ -28,57 +29,40 @@ namespace heongpu
     __host__ void HEKeyGenerator<Scheme::CKKS>::generate_secret_key(
         Secretkey<Scheme::CKKS>& sk, const ExecutionOptions& options)
     {
+        if (options.storage_ != storage_type::DEVICE &&
+            options.storage_ != storage_type::HOST)
+            throw std::invalid_argument("Invalid storage type!");
+        sk.validate_context(context_);
         if (sk.secret_key_generated_)
         {
             throw std::logic_error("Secretkey is already generated!");
         }
 
-        input_storage_manager(
+        output_storage_manager(
             sk,
             [&](Secretkey<Scheme::CKKS>& sk_)
             {
                 DeviceVector<int> secret_key_without_rns((context_->n),
                                                          options.stream_);
-                cudaMemsetAsync(secret_key_without_rns.data(), 0,
-                                context_->n * sizeof(int), options.stream_);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
+                HEONGPU_CUDA_CHECK(cudaMemsetAsync(
+                    secret_key_without_rns.data(), 0, context_->n * sizeof(int),
+                    options.stream_));
 
-                std::vector<int> nonzero_positions_host;
-                std::vector<int> nonzero_values_host;
-
-                std::vector<int> index(context_->n);
-                for (int i = 0; i < context_->n; i++)
-                {
-                    index[i] = i;
-                }
-
-                std::mt19937 rng(seed_);
-                for (int i = 0; i < sk_.hamming_weight_; i++)
-                {
-                    std::uniform_int_distribution<int> dist(i, context_->n - 1);
-                    int j = dist(rng);
-
-                    std::swap(index[i], index[j]);
-                    nonzero_positions_host.push_back(index[i]);
-
-                    std::uniform_int_distribution<int> value_dist(0, 1);
-                    int value = (value_dist(rng) == 0) ? -1 : 1;
-                    nonzero_values_host.push_back(value);
-                }
-                // Next secret key from this generator must be independent.
-                seed_ = static_cast<int>(rng());
-
-                DeviceVector<int> nonzero_positions_device =
-                    DeviceVector<int>(nonzero_positions_host, options.stream_);
-                DeviceVector<int> nonzero_values_device =
-                    DeviceVector<int>(nonzero_values_host, options.stream_);
-
+                detail::PrivateRandomBuffer<int> positions(sk_.hamming_weight_);
+                detail::PrivateRandomBuffer<int> values(sk_.hamming_weight_);
+                detail::sample_ternary_positions(
+                    context_->n, sk_.hamming_weight_, positions.values,
+                    values.values);
+                DeviceVector<int> positions_device(positions.values,
+                                                   options.stream_);
+                DeviceVector<int> values_device(values.values, options.stream_);
                 secretkey_gen_kernel<<<dim3((context_->n >> 8), 1, 1), 256, 0,
                                        options.stream_>>>(
-                    secret_key_without_rns.data(),
-                    nonzero_positions_device.data(),
-                    nonzero_values_device.data(), sk_.hamming_weight_);
+                    secret_key_without_rns.data(), positions_device.data(),
+                    values_device.data(), sk_.hamming_weight_);
                 HEONGPU_CUDA_CHECK(cudaGetLastError());
+                // Keep private host samples alive until their uploads complete.
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(options.stream_));
 
                 DeviceVector<Data64> secret_key_rns(
                     (sk_.coeff_modulus_count() * context_->n), options.stream_);
@@ -109,13 +93,14 @@ namespace heongpu
 
                 sk_.memory_set(std::move(secret_key_rns));
             },
-            options, true);
+            options);
     }
 
     __host__ void HEKeyGenerator<Scheme::CKKS>::generate_public_key(
         Publickey<Scheme::CKKS>& pk, Secretkey<Scheme::CKKS>& sk,
         const ExecutionOptions& options)
     {
+        sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
             throw std::logic_error("Secretkey is not generated!");
@@ -194,6 +179,7 @@ namespace heongpu
         Relinkey<Scheme::CKKS>& rk, Secretkey<Scheme::CKKS>& sk,
         const ExecutionOptions& options)
     {
+        sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
             throw std::logic_error("Secretkey is not generated!");
@@ -276,6 +262,7 @@ namespace heongpu
         Relinkey<Scheme::CKKS>& rk, Secretkey<Scheme::CKKS>& sk,
         const ExecutionOptions& options)
     {
+        sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
             throw std::logic_error("Secretkey is not generated!");
@@ -365,6 +352,7 @@ namespace heongpu
         Galoiskey<Scheme::CKKS>& gk, Secretkey<Scheme::CKKS>& sk,
         const ExecutionOptions& options)
     {
+        sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
             throw std::logic_error("Secretkey is not generated!");
@@ -444,12 +432,11 @@ namespace heongpu
                         {
                             gk.host_location_[galois.second] =
                                 HostVector<Data64>(gk.galoiskey_size_);
-                            cudaMemcpyAsync(
+                            HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
                                 gk.host_location_[galois.second].data(),
                                 output_memory.data(),
                                 gk.galoiskey_size_ * sizeof(Data64),
-                                cudaMemcpyDeviceToHost, options.stream_);
-                            HEONGPU_CUDA_CHECK(cudaGetLastError());
+                                cudaMemcpyDeviceToHost, options.stream_));
                         }
                     }
 
@@ -502,11 +489,10 @@ namespace heongpu
                     {
                         gk.zero_host_location_ =
                             HostVector<Data64>(gk.galoiskey_size_);
-                        cudaMemcpyAsync(
+                        HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
                             gk.zero_host_location_.data(), output_memory.data(),
                             gk.galoiskey_size_ * sizeof(Data64),
-                            cudaMemcpyDeviceToHost, options.stream_);
-                        HEONGPU_CUDA_CHECK(cudaGetLastError());
+                            cudaMemcpyDeviceToHost, options.stream_));
                     }
                 }
                 else
@@ -565,12 +551,11 @@ namespace heongpu
                         {
                             gk.host_location_[galois_] =
                                 HostVector<Data64>(gk.galoiskey_size_);
-                            cudaMemcpyAsync(gk.host_location_[galois_].data(),
-                                            output_memory.data(),
-                                            gk.galoiskey_size_ * sizeof(Data64),
-                                            cudaMemcpyDeviceToHost,
-                                            options.stream_);
-                            HEONGPU_CUDA_CHECK(cudaGetLastError());
+                            HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
+                                gk.host_location_[galois_].data(),
+                                output_memory.data(),
+                                gk.galoiskey_size_ * sizeof(Data64),
+                                cudaMemcpyDeviceToHost, options.stream_));
                         }
                     }
 
@@ -623,11 +608,10 @@ namespace heongpu
                     {
                         gk.zero_host_location_ =
                             HostVector<Data64>(gk.galoiskey_size_);
-                        cudaMemcpyAsync(
+                        HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
                             gk.zero_host_location_.data(), output_memory.data(),
                             gk.galoiskey_size_ * sizeof(Data64),
-                            cudaMemcpyDeviceToHost, options.stream_);
-                        HEONGPU_CUDA_CHECK(cudaGetLastError());
+                            cudaMemcpyDeviceToHost, options.stream_));
                     }
                 }
 
@@ -642,6 +626,7 @@ namespace heongpu
         Galoiskey<Scheme::CKKS>& gk, Secretkey<Scheme::CKKS>& sk,
         const ExecutionOptions& options)
     {
+        sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
             throw std::logic_error("Secretkey is not generated!");
@@ -730,12 +715,11 @@ namespace heongpu
                         {
                             gk.host_location_[galois.second] =
                                 HostVector<Data64>(gk.galoiskey_size_);
-                            cudaMemcpyAsync(
+                            HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
                                 gk.host_location_[galois.second].data(),
                                 output_memory.data(),
                                 gk.galoiskey_size_ * sizeof(Data64),
-                                cudaMemcpyDeviceToHost, options.stream_);
-                            HEONGPU_CUDA_CHECK(cudaGetLastError());
+                                cudaMemcpyDeviceToHost, options.stream_));
                         }
                     }
 
@@ -794,11 +778,10 @@ namespace heongpu
                     {
                         gk.zero_host_location_ =
                             HostVector<Data64>(gk.galoiskey_size_);
-                        cudaMemcpyAsync(
+                        HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
                             gk.zero_host_location_.data(), output_memory.data(),
                             gk.galoiskey_size_ * sizeof(Data64),
-                            cudaMemcpyDeviceToHost, options.stream_);
-                        HEONGPU_CUDA_CHECK(cudaGetLastError());
+                            cudaMemcpyDeviceToHost, options.stream_));
                     }
                 }
                 else
@@ -863,12 +846,11 @@ namespace heongpu
                         {
                             gk.host_location_[galois_] =
                                 HostVector<Data64>(gk.galoiskey_size_);
-                            cudaMemcpyAsync(gk.host_location_[galois_].data(),
-                                            output_memory.data(),
-                                            gk.galoiskey_size_ * sizeof(Data64),
-                                            cudaMemcpyDeviceToHost,
-                                            options.stream_);
-                            HEONGPU_CUDA_CHECK(cudaGetLastError());
+                            HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
+                                gk.host_location_[galois_].data(),
+                                output_memory.data(),
+                                gk.galoiskey_size_ * sizeof(Data64),
+                                cudaMemcpyDeviceToHost, options.stream_));
                         }
                     }
 
@@ -927,11 +909,10 @@ namespace heongpu
                     {
                         gk.zero_host_location_ =
                             HostVector<Data64>(gk.galoiskey_size_);
-                        cudaMemcpyAsync(
+                        HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
                             gk.zero_host_location_.data(), output_memory.data(),
                             gk.galoiskey_size_ * sizeof(Data64),
-                            cudaMemcpyDeviceToHost, options.stream_);
-                        HEONGPU_CUDA_CHECK(cudaGetLastError());
+                            cudaMemcpyDeviceToHost, options.stream_));
                     }
                 }
 
@@ -945,11 +926,13 @@ namespace heongpu
         Switchkey<Scheme::CKKS>& swk, Secretkey<Scheme::CKKS>& new_sk,
         Secretkey<Scheme::CKKS>& old_sk, const ExecutionOptions& options)
     {
+        old_sk.validate_context(context_);
         if (!old_sk.secret_key_generated_)
         {
             throw std::logic_error("Secretkey is not generated!");
         }
 
+        new_sk.validate_context(context_);
         if (!new_sk.secret_key_generated_)
         {
             throw std::logic_error("Ner Secretkey is not generated!");
@@ -1043,11 +1026,13 @@ namespace heongpu
         Switchkey<Scheme::CKKS>& swk, Secretkey<Scheme::CKKS>& new_sk,
         Secretkey<Scheme::CKKS>& old_sk, const ExecutionOptions& options)
     {
+        old_sk.validate_context(context_);
         if (!old_sk.secret_key_generated_)
         {
             throw std::logic_error("Secretkey is not generated!");
         }
 
+        new_sk.validate_context(context_);
         if (!new_sk.secret_key_generated_)
         {
             throw std::logic_error("Ner Secretkey is not generated!");

@@ -41,6 +41,29 @@ namespace heongpu
             store_in_gpu ? storage_type::DEVICE : storage_type::HOST;
     }
 
+    void Secretkey<Scheme::TFHE>::validate_context(
+        const HEContext<Scheme::TFHE>& context) const
+    {
+        if (!context || !context_ || n_ != context->n_ || N_ != context->N_ ||
+            k_ != context->k_ || bk_l_ != context->bk_l_ ||
+            bk_bg_bit_ != context->bk_bg_bit_ ||
+            lwe_alpha_min != context->ks_stdev_ ||
+            tlwe_alpha_min != context->bk_stdev_)
+            throw std::invalid_argument("Secretkey context mismatch!");
+        if (secret_key_generated_)
+        {
+            const size_t lwe_size = storage_type_ == storage_type::DEVICE
+                                        ? lwe_key_device_location_.size()
+                                        : lwe_key_host_location_.size();
+            const size_t tlwe_size = storage_type_ == storage_type::DEVICE
+                                         ? tlwe_key_device_location_.size()
+                                         : tlwe_key_host_location_.size();
+            if (lwe_size != n_ || tlwe_size != k_ * N_)
+                throw std::invalid_argument("Invalid Secretkey storage!");
+            HEONGPU_CUDA_CHECK(cudaStreamSynchronize(this->stream()));
+        }
+    }
+
     void Secretkey<Scheme::TFHE>::store_in_device(cudaStream_t stream)
     {
         if (storage_type_ == storage_type::DEVICE)
@@ -53,11 +76,14 @@ namespace heongpu
             {
                 lwe_key_device_location_ =
                     DeviceVector<int32_t>(lwe_key_host_location_, stream);
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
                 lwe_key_host_location_.resize(0);
                 lwe_key_host_location_.shrink_to_fit();
 
                 tlwe_key_device_location_ =
                     DeviceVector<int32_t>(tlwe_key_host_location_, stream);
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
                 tlwe_key_host_location_.resize(0);
                 tlwe_key_host_location_.shrink_to_fit();
             }
@@ -76,27 +102,28 @@ namespace heongpu
         {
             if (secret_key_generated_)
             {
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(this->stream()));
                 lwe_key_host_location_ =
                     HostVector<int32_t>(lwe_key_device_location_.size());
-                cudaMemcpyAsync(lwe_key_host_location_.data(),
-                                lwe_key_device_location_.data(),
-                                lwe_key_device_location_.size() *
-                                    sizeof(int32_t),
-                                cudaMemcpyDeviceToHost, stream);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
+                HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
+                    lwe_key_host_location_.data(),
+                    lwe_key_device_location_.data(),
+                    lwe_key_device_location_.size() * sizeof(int32_t),
+                    cudaMemcpyDeviceToHost, stream));
 
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
                 lwe_key_device_location_.resize(0, stream);
                 lwe_key_device_location_.shrink_to_fit(stream);
 
                 tlwe_key_host_location_ =
                     HostVector<int32_t>(tlwe_key_device_location_.size());
-                cudaMemcpyAsync(tlwe_key_host_location_.data(),
-                                tlwe_key_device_location_.data(),
-                                tlwe_key_device_location_.size() *
-                                    sizeof(int32_t),
-                                cudaMemcpyDeviceToHost, stream);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
+                HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
+                    tlwe_key_host_location_.data(),
+                    tlwe_key_device_location_.data(),
+                    tlwe_key_device_location_.size() * sizeof(int32_t),
+                    cudaMemcpyDeviceToHost, stream));
 
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
                 tlwe_key_device_location_.resize(0, stream);
                 tlwe_key_device_location_.shrink_to_fit(stream);
             }
@@ -128,6 +155,7 @@ namespace heongpu
 
                 tlwe_key_device_location_ =
                     DeviceVector<int32_t>(tlwe_key_host_location_, stream);
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
             }
             else
             {

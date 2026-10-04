@@ -1,4 +1,4 @@
-﻿// Copyright 2024-2026 Alişah Özcan
+// Copyright 2024-2026 Alişah Özcan
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 // Developer: Alişah Özcan
@@ -41,13 +41,9 @@ namespace heongpu
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    __global__ void initialize_random_states_kernel(curandState_t* states,
-                                                    Data64 seed,
-                                                    int total_threads);
-
-    __global__ void encrypt_lwe_kernel(curandState_t* states, int32_t* sk,
-                                       int32_t* output_a, int32_t* output_b,
-                                       int n, int k, int total_state_count);
+    __global__ void encrypt_lwe_kernel(const int32_t* sk,
+                                       const int32_t* output_a,
+                                       int32_t* output_b, int n, int k);
 
 } // namespace heongpu
 

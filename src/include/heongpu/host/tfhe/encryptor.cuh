@@ -1,10 +1,12 @@
-﻿// Copyright 2024-2026 Alişah Özcan
+// Copyright 2024-2026 Alişah Özcan
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 // Developer: Alişah Özcan
 
 #ifndef HEONGPU_TFHE_ENCRYPTOR_H
 #define HEONGPU_TFHE_ENCRYPTOR_H
+
+#include <limits>
 
 #include "gpuntt/ntt_merge/ntt.cuh"
 #include <heongpu/kernel/encryption.cuh>
@@ -53,31 +55,37 @@ namespace heongpu
         {
             int32_t one_over_8 = encode_to_torus32(1, 8);
 
-            ciphertext.shape_ = messages.size();
+            if (messages.size() >
+                static_cast<size_t>(std::numeric_limits<int>::max() /
+                                    context_->n_))
+                throw std::invalid_argument("Too many TFHE messages!");
+            Ciphertext<Scheme::TFHE> candidate(context_);
+            candidate.shape_ = static_cast<int>(messages.size());
 
             std::vector<int32_t> encoded_messages;
-            encoded_messages.reserve(ciphertext.shape_);
+            encoded_messages.reserve(candidate.shape_);
             for (bool bit : messages)
             {
                 encoded_messages.push_back(bit ? one_over_8 : -one_over_8);
             }
 
             output_storage_manager(
-                ciphertext,
+                candidate,
                 [&](Ciphertext<Scheme::TFHE>& ciphertext_)
                 {
-                    encrypt_lwe_symmetric(ciphertext, encoded_messages,
+                    encrypt_lwe_symmetric(candidate, encoded_messages,
                                           options.stream_);
 
-                    ciphertext.n_ = context_->n_;
-                    ciphertext.alpha_min_ = alpha_min_;
-                    ciphertext.alpha_max_ = alpha_max_;
-                    ciphertext.ciphertext_generated_ = true;
+                    candidate.n_ = context_->n_;
+                    candidate.alpha_min_ = alpha_min_;
+                    candidate.alpha_max_ = alpha_max_;
+                    candidate.ciphertext_generated_ = true;
                 },
                 options);
+            ciphertext = std::move(candidate);
         }
 
-        __host__ ~HEEncryptor();
+        __host__ ~HEEncryptor() = default;
 
       private:
         __host__ void
@@ -87,19 +95,8 @@ namespace heongpu
 
         __host__ int32_t encode_to_torus32(uint32_t mu, uint32_t m_size);
 
-        __host__ inline int32_t double_to_torus32(double input);
-
-        __host__ std::vector<int32_t>
-        double_to_torus32(const std::vector<double>& input);
-
       private:
         HEContext<Scheme::TFHE> context_;
-
-        std::mt19937 rng;
-
-        Data64 cuda_seed;
-        int total_state;
-        curandState* cuda_rng;
 
         double alpha_min_;
         double alpha_max_;
