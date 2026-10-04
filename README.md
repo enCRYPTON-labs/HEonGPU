@@ -106,14 +106,7 @@ The Logic Operations supported:
     <th>Amortized Time</th>
   </tr>
   <tr>
-    <td rowspan="2"><b>Regular Bootstrapping</b></td>
-    <td>2<sup>15</sup></td>
-    <td>2<sup>14</sup></td>
-    <td>9 Level</td>
-    <td>51.02 ms</td>
-    <td>3.11 µs</td>
-  </tr>
-  <tr>
+    <td rowspan="1"><b>Regular Bootstrapping</b></td>
     <td>2<sup>16</sup></td>
     <td>2<sup>15</sup></td>
     <td>9 Level</td>
@@ -121,21 +114,7 @@ The Logic Operations supported:
     <td>3.33 µs</td>
   </tr>
   <tr>
-    <td rowspan="4"><b>Slim Bootstrapping</b></td>
-    <td>2<sup>15</sup></td>
-    <td>2<sup>14</sup></td>
-    <td>0 Level</td>
-    <td>17.56 ms</td>
-    <td>1.07 µs</td>
-  </tr>
-  <tr>
-    <td>2<sup>15</sup></td>
-    <td>2<sup>14</sup></td>
-    <td>9 Level</td>
-    <td>30.87 ms</td>
-    <td>1.88 µs</td>
-  </tr>
-  <tr>
+    <td rowspan="2"><b>Slim Bootstrapping</b></td>
     <td>2<sup>16</sup></td>
     <td>2<sup>15</sup></td>
     <td>0 Level</td>
@@ -150,21 +129,7 @@ The Logic Operations supported:
     <td>2.15 µs</td>
   </tr>
   <tr>
-    <td rowspan="4"><b>Bit Bootstrapping</b></td>
-    <td>2<sup>15</sup></td>
-    <td>2<sup>14</sup></td>
-    <td>0 Level</td>
-    <td>22.53 ms</td>
-    <td>1.38 µs</td>
-  </tr>
-  <tr>
-    <td>2<sup>15</sup></td>
-    <td>2<sup>14</sup></td>
-    <td>8 Level</td>
-    <td>37.51 ms</td>
-    <td>2.29 µs</td>
-  </tr>
-  <tr>
+    <td rowspan="2"><b>Bit Bootstrapping</b></td>
     <td>2<sup>16</sup></td>
     <td>2<sup>15</sup></td>
     <td>0 Level</td>
@@ -179,33 +144,19 @@ The Logic Operations supported:
     <td>2.52 µs</td>
   </tr>
   <tr>
-    <td rowspan="4"><b>Gate Bootstrapping*</b></td>
-    <td>2<sup>15</sup></td>
-    <td>2<sup>14</sup></td>
-    <td>0 Level</td>
-    <td>29.96–31.85 ms</td>
-    <td>1.83–1.94 µs</td>
-  </tr>
-  <tr>
-    <td>2<sup>15</sup></td>
-    <td>2<sup>14</sup></td>
-    <td>7 Level</td>
-    <td>45.36–47.50 ms</td>
-    <td>2.77–2.90 µs</td>
-  </tr>
-  <tr>
+    <td rowspan="2"><b>Gate Bootstrapping*</b></td>
     <td>2<sup>16</sup></td>
     <td>2<sup>15</sup></td>
     <td>0 Level</td>
-    <td>62.90–66.55 ms</td>
-    <td>1.92–2.03 µs</td>
+    <td>62.90 ms</td>
+    <td>1.92 µs</td>
   </tr>
   <tr>
     <td>2<sup>16</sup></td>
     <td>2<sup>15</sup></td>
     <td>7 Level</td>
-    <td>99.45–102.17 ms</td>
-    <td>3.04–3.12 µs</td>
+    <td>99.45 ms</td>
+    <td>3.04 µs</td>
   </tr>
 </table>
 </div>
