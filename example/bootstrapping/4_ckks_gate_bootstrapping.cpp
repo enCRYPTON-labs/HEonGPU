@@ -10,7 +10,7 @@ int main(int argc, char* argv[])
 {
     heongpu::HEContext<heongpu::Scheme::CKKS> context =
         heongpu::GenHEContext<heongpu::Scheme::CKKS>(
-            heongpu::sec_level_type::none);
+            heongpu::sec_level_type::sec128);
     size_t poly_modulus_degree = 1 << 16;
     context->set_poly_modulus_degree(poly_modulus_degree);
 
@@ -99,13 +99,27 @@ int main(int argc, char* argv[])
 
     std::cout << "Level before bootstrapping: " << C1.level() << std::endl;
 
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+
     // Also available: OR, XOR, NAND, NOR and XNOR bootstrapping.
+    cudaEventRecord(start);
     heongpu::Ciphertext<heongpu::Scheme::CKKS> cipher_boot =
         operators.AND_bootstrapping(C1, C2, galois_key, relin_key,
                                     &swk_dense_to_sparse, &swk_sparse_to_dense);
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
 
     std::cout << "Level after bootstrapping: " << cipher_boot.level()
               << std::endl;
+    std::cout << "Bootstrapping time: " << milliseconds << " ms ("
+              << milliseconds / 1000.0 << " seconds)" << std::endl;
 
     heongpu::Plaintext<heongpu::Scheme::CKKS> P_res1(context);
     decryptor.decrypt(P_res1, cipher_boot);

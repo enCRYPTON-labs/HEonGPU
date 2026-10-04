@@ -104,6 +104,7 @@ The Logic Operations supported:
     <th>Remaining Level</th>
     <th>Total Time</th>
     <th>Amortized Time</th>
+    <th>Precision (bits)</th>
   </tr>
   <tr>
     <td rowspan="1"><b>Regular Bootstrapping</b></td>
@@ -112,14 +113,16 @@ The Logic Operations supported:
     <td>9 Level</td>
     <td>109.28 ms</td>
     <td>3.33 µs</td>
+    <td>17.95</td>
   </tr>
   <tr>
-    <td rowspan="2"><b>Slim Bootstrapping</b></td>
+    <td rowspan="3"><b>Slim Bootstrapping</b></td>
     <td>2<sup>16</sup></td>
     <td>2<sup>15</sup></td>
     <td>0 Level</td>
     <td>38.55 ms</td>
     <td>1.18 µs</td>
+    <td>20.47</td>
   </tr>
   <tr>
     <td>2<sup>16</sup></td>
@@ -127,6 +130,15 @@ The Logic Operations supported:
     <td>9 Level</td>
     <td>70.59 ms</td>
     <td>2.15 µs</td>
+    <td>20.47</td>
+  </tr>
+  <tr>
+    <td>2<sup>16</sup></td>
+    <td>2<sup>15</sup></td>
+    <td>15 Level</td>
+    <td>94.58 ms</td>
+    <td>2.89 µs</td>
+    <td>20.47</td>
   </tr>
   <tr>
     <td rowspan="2"><b>Bit Bootstrapping</b></td>
@@ -135,6 +147,7 @@ The Logic Operations supported:
     <td>0 Level</td>
     <td>50.72 ms</td>
     <td>1.55 µs</td>
+    <td>27.40</td>
   </tr>
   <tr>
     <td>2<sup>16</sup></td>
@@ -142,6 +155,7 @@ The Logic Operations supported:
     <td>8 Level</td>
     <td>82.43 ms</td>
     <td>2.52 µs</td>
+    <td>27.40</td>
   </tr>
   <tr>
     <td rowspan="2"><b>Gate Bootstrapping*</b></td>
@@ -150,6 +164,7 @@ The Logic Operations supported:
     <td>0 Level</td>
     <td>62.90 ms</td>
     <td>1.92 µs</td>
+    <td>27.66</td>
   </tr>
   <tr>
     <td>2<sup>16</sup></td>
@@ -157,14 +172,100 @@ The Logic Operations supported:
     <td>7 Level</td>
     <td>99.45 ms</td>
     <td>3.04 µs</td>
+    <td>27.67</td>
   </tr>
 </table>
 </div>
+
+
+<div align="center">
+
+### Execution times of the HEonGPU Bootstrapping Operations (on RTX 5090)
+
+<table>
+  <tr>
+    <th>Bootstrapping Type</th>
+    <th>N</th>
+    <th>Slot Count</th>
+    <th>Remaining Level</th>
+    <th>Total Time</th>
+    <th>Amortized Time</th>
+    <th>Precision (bits)</th>
+  </tr>
+  <tr>
+    <td rowspan="1"><b>Regular Bootstrapping</b></td>
+    <td>2<sup>16</sup></td>
+    <td>2<sup>15</sup></td>
+    <td>9 Level</td>
+    <td>63.51 ms</td>
+    <td>1.94 µs</td>
+    <td>17.94</td>
+  </tr>
+  <tr>
+    <td rowspan="3"><b>Slim Bootstrapping</b></td>
+    <td>2<sup>16</sup></td>
+    <td>2<sup>15</sup></td>
+    <td>0 Level</td>
+    <td>23.92 ms</td>
+    <td>0.73 µs</td>
+    <td>20.47</td>
+  </tr>
+  <tr>
+    <td>2<sup>16</sup></td>
+    <td>2<sup>15</sup></td>
+    <td>9 Level</td>
+    <td>40.03 ms</td>
+    <td>1.22 µs</td>
+    <td>20.48</td>
+  </tr>
+  <tr>
+    <td>2<sup>16</sup></td>
+    <td>2<sup>15</sup></td>
+    <td>15 Level</td>
+    <td>56.45 ms</td>
+    <td>1.72 µs</td>
+    <td>20.58</td>
+  </tr>
+  <tr>
+    <td rowspan="2"><b>Bit Bootstrapping</b></td>
+    <td>2<sup>16</sup></td>
+    <td>2<sup>15</sup></td>
+    <td>0 Level</td>
+    <td>35.70 ms</td>
+    <td>1.09 µs</td>
+    <td>27.40</td>
+  </tr>
+  <tr>
+    <td>2<sup>16</sup></td>
+    <td>2<sup>15</sup></td>
+    <td>8 Level</td>
+    <td>52.13 ms</td>
+    <td>1.59 µs</td>
+    <td>27.40</td>
+  </tr>
+  <tr>
+    <td rowspan="2"><b>Gate Bootstrapping*</b></td>
+    <td>2<sup>16</sup></td>
+    <td>2<sup>15</sup></td>
+    <td>0 Level</td>
+    <td>40.35 ms</td>
+    <td>1.23 µs</td>
+    <td>27.67</td>
+  </tr>
+  <tr>
+    <td>2<sup>16</sup></td>
+    <td>2<sup>15</sup></td>
+    <td>7 Level</td>
+    <td>59.50 ms</td>
+    <td>1.82 µs</td>
+    <td>27.67</td>
+  </tr>
+</table>
+</div>
+
 Dense secret key (h=192) with a temporary sparse secret key (h=32), median of 5 runs. Remaining Level is the number of levels left before the next bootstrapping.
 
-*: For all gates
-
-
+*: Timing is for all gates; precision is measured using the AND example.
 
 ### 🚨 **New Feature: [CKKS Regular Bootstrapping](example/bootstrapping/README.md)**
 

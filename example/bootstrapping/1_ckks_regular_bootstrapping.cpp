@@ -10,7 +10,7 @@ int main(int argc, char* argv[])
 {
     heongpu::HEContext<heongpu::Scheme::CKKS> context =
         heongpu::GenHEContext<heongpu::Scheme::CKKS>(
-            heongpu::sec_level_type::none);
+            heongpu::sec_level_type::sec128);
     size_t poly_modulus_degree = 1 << 16;
     context->set_poly_modulus_degree(poly_modulus_degree);
 
@@ -146,6 +146,8 @@ int main(int argc, char* argv[])
 
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
 
     std::cout << "Level after bootstrapping: " << cipher_boot.level()
               << std::endl;
