@@ -4,6 +4,9 @@
 // Developer: Alişah Özcan
 
 #include <heongpu/host/ckks/ciphertext.cuh>
+#include <array>
+#include <cmath>
+#include <limits>
 
 namespace heongpu
 {
@@ -65,6 +68,7 @@ namespace heongpu
             {
                 device_locations_ =
                     DeviceVector<Data64>(host_locations_, stream);
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
                 host_locations_.resize(0);
                 host_locations_.shrink_to_fit();
             }
@@ -83,15 +87,17 @@ namespace heongpu
             }
             else
             {
+                HEONGPU_CUDA_CHECK(
+                    cudaStreamSynchronize(device_locations_.stream()));
                 int cipher_memory_size =
                     cipher_size_ * (coeff_modulus_count_ - depth_) * ring_size_;
                 host_locations_ = HostVector<Data64>(cipher_memory_size);
-                cudaMemcpyAsync(host_locations_.data(),
-                                device_locations_.data(),
-                                cipher_memory_size * sizeof(Data64),
-                                cudaMemcpyDeviceToHost, stream);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
+                HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
+                    host_locations_.data(), device_locations_.data(),
+                    cipher_memory_size * sizeof(Data64), cudaMemcpyDeviceToHost,
+                    stream));
 
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
                 device_locations_.resize(0, stream);
                 device_locations_.shrink_to_fit(stream);
             }
@@ -129,10 +135,10 @@ namespace heongpu
 
         if (storage_type_ == storage_type::DEVICE)
         {
-            cudaMemcpyAsync(cipher.data(), device_locations_.data(),
-                            cipher_memory_size * sizeof(Data64),
-                            cudaMemcpyDeviceToHost, stream);
-            HEONGPU_CUDA_CHECK(cudaGetLastError());
+            HEONGPU_CUDA_CHECK(
+                cudaMemcpyAsync(cipher.data(), device_locations_.data(),
+                                cipher_memory_size * sizeof(Data64),
+                                cudaMemcpyDeviceToHost, stream));
         }
         else
         {
@@ -155,10 +161,10 @@ namespace heongpu
 
         if (storage_type_ == storage_type::DEVICE)
         {
-            cudaMemcpyAsync(cipher.data(), device_locations_.data(),
-                            cipher_memory_size * sizeof(Data64),
-                            cudaMemcpyDeviceToHost, stream);
-            HEONGPU_CUDA_CHECK(cudaGetLastError());
+            HEONGPU_CUDA_CHECK(
+                cudaMemcpyAsync(cipher.data(), device_locations_.data(),
+                                cipher_memory_size * sizeof(Data64),
+                                cudaMemcpyDeviceToHost, stream));
         }
         else
         {
@@ -172,6 +178,15 @@ namespace heongpu
     {
         if (ciphertext_generated_)
         {
+            const size_t expected_size = checked_memory_size();
+            if ((storage_type_ == storage_type::DEVICE
+                     ? device_locations_.size()
+                     : host_locations_.size()) < expected_size)
+            {
+                throw std::runtime_error("Invalid ciphertext storage size!");
+            }
+            HEONGPU_CUDA_CHECK(
+                cudaStreamSynchronize(device_locations_.stream()));
             os.write((char*) &scheme_, sizeof(scheme_));
 
             os.write((char*) &ring_size_, sizeof(ring_size_));
@@ -204,11 +219,10 @@ namespace heongpu
                 uint32_t ciphertext_memory_size =
                     cipher_size_ * (coeff_modulus_count_ - depth_) * ring_size_;
                 HostVector<Data64> host_locations_temp(ciphertext_memory_size);
-                cudaMemcpy(host_locations_temp.data(), device_locations_.data(),
-                           ciphertext_memory_size * sizeof(Data64),
-                           cudaMemcpyDeviceToHost);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
-                cudaDeviceSynchronize();
+                HEONGPU_CUDA_CHECK(cudaMemcpy(
+                    host_locations_temp.data(), device_locations_.data(),
+                    ciphertext_memory_size * sizeof(Data64),
+                    cudaMemcpyDeviceToHost));
 
                 os.write((char*) &ciphertext_memory_size,
                          sizeof(ciphertext_memory_size));
@@ -217,11 +231,16 @@ namespace heongpu
             }
             else
             {
-                uint32_t ciphertext_memory_size = host_locations_.size();
+                uint32_t ciphertext_memory_size =
+                    static_cast<uint32_t>(expected_size);
                 os.write((char*) &ciphertext_memory_size,
                          sizeof(ciphertext_memory_size));
                 os.write((char*) host_locations_.data(),
                          sizeof(Data64) * ciphertext_memory_size);
+            }
+            if (!os)
+            {
+                throw std::runtime_error("Failed to write ciphertext!");
             }
         }
         else
@@ -231,70 +250,131 @@ namespace heongpu
         }
     }
 
+    size_t Ciphertext<Scheme::CKKS>::checked_memory_size() const
+    {
+        if (scheme_ != scheme_type::ckks || ring_size_ < MIN_POLY_DEGREE ||
+            ring_size_ > MAX_POLY_DEGREE ||
+            (ring_size_ & (ring_size_ - 1)) != 0 || coeff_modulus_count_ <= 0 ||
+            depth_ < 0 || depth_ >= coeff_modulus_count_ ||
+            (cipher_size_ != 2 && cipher_size_ != 3) ||
+            relinearization_required_ != (cipher_size_ == 3) ||
+            !std::isfinite(scale_) || scale_ <= 0 ||
+            (encoding_ != encoding::SLOT &&
+             encoding_ != encoding::COEFFICIENT) ||
+            (storage_type_ != storage_type::DEVICE &&
+             storage_type_ != storage_type::HOST))
+        {
+            throw std::runtime_error("Invalid ciphertext parameters!");
+        }
+        const uint64_t size = uint64_t(cipher_size_) * uint64_t(ring_size_) *
+                              uint64_t(coeff_modulus_count_ - depth_);
+        // The library's kernel offsets and memory_size() use signed int.
+        if (size > uint64_t(std::numeric_limits<int>::max()))
+        {
+            throw std::runtime_error("Ciphertext size is too large!");
+        }
+        return static_cast<size_t>(size);
+    }
+
+    void Ciphertext<Scheme::CKKS>::validate_context(
+        const HEContext<Scheme::CKKS>& context) const
+    {
+        if (!ciphertext_generated_)
+        {
+            throw std::logic_error("Ciphertext is not generated!");
+        }
+        const size_t expected_size = checked_memory_size();
+        if (!context || !context->context_generated_ ||
+            ring_size_ != context->n || coeff_modulus_count_ != context->Q_size)
+        {
+            throw std::invalid_argument("Ciphertext context mismatch!");
+        }
+        const size_t actual_size = storage_type_ == storage_type::DEVICE
+                                       ? device_locations_.size()
+                                       : host_locations_.size();
+        if (actual_size < expected_size)
+        {
+            throw std::invalid_argument("Invalid ciphertext storage size!");
+        }
+    }
+
     void Ciphertext<Scheme::CKKS>::load(std::istream& is)
     {
-        if ((!ciphertext_generated_))
+        if (ciphertext_generated_)
         {
-            is.read((char*) &scheme_, sizeof(scheme_));
-
-            if (scheme_ != scheme_type::ckks)
-            {
-                throw std::runtime_error("Invalid scheme binary!");
-            }
-
-            is.read((char*) &ring_size_, sizeof(ring_size_));
-
-            is.read((char*) &coeff_modulus_count_,
-                    sizeof(coeff_modulus_count_));
-
-            is.read((char*) &cipher_size_, sizeof(cipher_size_));
-
-            is.read((char*) &depth_, sizeof(depth_));
-
-            is.read((char*) &in_ntt_domain_, sizeof(in_ntt_domain_));
-
-            is.read((char*) &storage_type_, sizeof(storage_type_));
-
-            is.read((char*) &scale_, sizeof(scale_));
-
-            is.read((char*) &encoding_, sizeof(encoding_));
-
-            is.read((char*) &rescale_required_, sizeof(rescale_required_));
-
-            is.read((char*) &relinearization_required_,
-                    sizeof(relinearization_required_));
-
-            is.read((char*) &ciphertext_generated_,
-                    sizeof(ciphertext_generated_));
-
-            storage_type_ = storage_type::DEVICE;
-            ciphertext_generated_ = true;
-
-            uint32_t ciphertext_memory_size;
-            is.read((char*) &ciphertext_memory_size,
-                    sizeof(ciphertext_memory_size));
-
-            if (ciphertext_memory_size !=
-                (cipher_size_ * ring_size_ * (coeff_modulus_count_ - depth_)))
-            {
-                throw std::runtime_error("Invalid ciphertext size!");
-            }
-
-            HostVector<Data64> host_locations_temp(ciphertext_memory_size);
-            is.read((char*) host_locations_temp.data(),
-                    sizeof(Data64) * ciphertext_memory_size);
-
-            device_locations_.resize(ciphertext_memory_size);
-            cudaMemcpy(device_locations_.data(), host_locations_temp.data(),
-                       ciphertext_memory_size * sizeof(Data64),
-                       cudaMemcpyHostToDevice);
-            HEONGPU_CUDA_CHECK(cudaGetLastError());
-            cudaDeviceSynchronize();
+            throw std::runtime_error("Ciphertext already exists!");
         }
-        else
+        Ciphertext temporary;
+        auto read = [&](auto& value)
         {
-            throw std::runtime_error("Ciphertext has been already exist!");
+            is.read(reinterpret_cast<char*>(&value), sizeof(value));
+            if (!is)
+            {
+                throw std::runtime_error("Truncated ciphertext binary!");
+            }
+        };
+        auto read_bool = [&](bool& value)
+        {
+            static_assert(sizeof(bool) == sizeof(uint8_t));
+            uint8_t byte;
+            read(byte);
+            if (byte > 1)
+            {
+                throw std::runtime_error("Invalid ciphertext boolean!");
+            }
+            value = byte != 0;
+        };
+        read(temporary.scheme_);
+        read(temporary.ring_size_);
+        read(temporary.coeff_modulus_count_);
+        read(temporary.cipher_size_);
+        read(temporary.depth_);
+        read_bool(temporary.in_ntt_domain_);
+        read(temporary.storage_type_);
+        read(temporary.scale_);
+        read(temporary.encoding_);
+        read_bool(temporary.rescale_required_);
+        read_bool(temporary.relinearization_required_);
+        read_bool(temporary.ciphertext_generated_);
+        uint32_t serialized_size;
+        read(serialized_size);
+        const size_t expected_size = temporary.checked_memory_size();
+        if (!temporary.ciphertext_generated_ ||
+            serialized_size != expected_size)
+        {
+            throw std::runtime_error(
+                "Invalid ciphertext size or generation flag!");
         }
+        if ((ring_size_ != 0 && ring_size_ != temporary.ring_size_) ||
+            (coeff_modulus_count_ != 0 &&
+             coeff_modulus_count_ != temporary.coeff_modulus_count_))
+        {
+            throw std::invalid_argument("Ciphertext context mismatch!");
+        }
+
+        // Do not allocate the claimed payload size before verifying the input.
+        std::vector<Data64> payload;
+        std::array<Data64, 512> chunk;
+        for (size_t remaining = expected_size; remaining != 0;)
+        {
+            const size_t count = std::min(remaining, chunk.size());
+            is.read(reinterpret_cast<char*>(chunk.data()),
+                    count * sizeof(Data64));
+            if (!is)
+            {
+                throw std::runtime_error("Truncated ciphertext payload!");
+            }
+            payload.insert(payload.end(), chunk.begin(), chunk.begin() + count);
+            remaining -= count;
+        }
+        const auto stream = device_locations_.stream();
+        DeviceVector<Data64> device(payload.size(), stream);
+        HEONGPU_CUDA_CHECK(cudaMemcpyAsync(device.data(), payload.data(),
+                                           payload.size() * sizeof(Data64),
+                                           cudaMemcpyHostToDevice, stream));
+        HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
+        temporary.memory_set(std::move(device));
+        *this = std::move(temporary);
     }
 
     int Ciphertext<Scheme::CKKS>::memory_size()

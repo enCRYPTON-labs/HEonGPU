@@ -32,6 +32,7 @@ set(EXECUTABLES
     ckks_encoding_testcases test_ckks_encoding.cpp
     ckks_encryption_testcases test_ckks_encryption.cpp
     ckks_secretkey_randomness_testcases test_ckks_secretkey_randomness.cpp
+    ckks_ciphertext_serialization_testcases test_ckks_ciphertext_serialization.cpp
     ckks_multiplication_testcases test_ckks_multiplication.cpp
     ckks_relinearization_testcases test_ckks_relinearization.cpp
     ckks_rotation_method_1_testcases test_ckks_rotation_method_1.cpp

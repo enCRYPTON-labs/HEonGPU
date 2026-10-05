@@ -334,6 +334,7 @@ namespace heongpu
                         Ciphertext<Scheme::CKKS>& partial_ciphertext,
                         const ExecutionOptions& options = ExecutionOptions())
         {
+            ciphertext.validate_context(context_);
             partial_decrypt_stage_1(ciphertext, sk, partial_ciphertext,
                                     options.stream_);
 
@@ -369,6 +370,10 @@ namespace heongpu
                 Plaintext<Scheme::CKKS>& plaintext,
                 const ExecutionOptions& options = ExecutionOptions())
         {
+            for (const auto& ciphertext : ciphertexts)
+            {
+                ciphertext.validate_context(context_);
+            }
             int cipher_count = ciphertexts.size();
 
             if (cipher_count == 0)
@@ -457,6 +462,7 @@ namespace heongpu
             Secretkey<Scheme::CKKS>& secret_key, const RNGSeed& seed,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            common.validate_context(context_);
             input_storage_manager(
                 common,
                 [&](Ciphertext<Scheme::CKKS>& common_)
@@ -519,6 +525,24 @@ namespace heongpu
             const RNGSeed& seed,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            common.validate_context(context_);
+            if (ciphertexts.empty())
+            {
+                throw std::invalid_argument("No ciphertext to bootstrap!");
+            }
+            const size_t share_size = size_t(context_->n) *
+                                      (2 * size_t(context_->Q_size) -
+                                       common.depth_);
+            for (auto& ciphertext : ciphertexts)
+            {
+                ciphertext.validate_context(context_);
+                if (ciphertext.depth_ != common.depth_ ||
+                    size_t(ciphertext.memory_size()) < share_size)
+                {
+                    throw std::invalid_argument(
+                        "Invalid bootstrapping share size!");
+                }
+            }
             input_vector_storage_manager(
                 ciphertexts,
                 [&](std::vector<Ciphertext<Scheme::CKKS>>& ciphertexts_)

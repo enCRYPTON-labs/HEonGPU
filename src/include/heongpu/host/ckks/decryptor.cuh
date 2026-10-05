@@ -61,6 +61,12 @@ namespace heongpu
                 Ciphertext<Scheme::CKKS>& ciphertext,
                 const ExecutionOptions& options = ExecutionOptions())
         {
+            ciphertext.validate_context(context_);
+            if (ciphertext.cipher_size_ != 2 || !ciphertext.in_ntt_domain_)
+            {
+                throw std::invalid_argument(
+                    "CKKS decryption requires a size-2 NTT ciphertext!");
+            }
             input_storage_manager(
                 ciphertext,
                 [&](Ciphertext<Scheme::CKKS>& ciphertext_)

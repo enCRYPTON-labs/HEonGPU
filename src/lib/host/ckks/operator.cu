@@ -67,6 +67,9 @@ namespace heongpu
         Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& input2,
         Ciphertext<Scheme::CKKS>& output, const ExecutionOptions& options)
     {
+        input1.validate_context(context_);
+        input2.validate_context(context_);
+
         if (input1.depth_ != input2.depth_)
         {
             throw std::logic_error("Ciphertexts leveled are not equal");
@@ -158,6 +161,9 @@ namespace heongpu
         Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& input2,
         Ciphertext<Scheme::CKKS>& output, const ExecutionOptions& options)
     {
+        input1.validate_context(context_);
+        input2.validate_context(context_);
+
         if (input1.depth_ != input2.depth_)
         {
             throw std::logic_error("Ciphertexts leveled are not equal");
@@ -250,6 +256,8 @@ namespace heongpu
                                      Ciphertext<Scheme::CKKS>& output,
                                      const ExecutionOptions& options)
     {
+        input1.validate_context(context_);
+
         int cipher_size = input1.relinearization_required_ ? 3 : 2;
 
         int current_decomp_count = context_->Q_size - input1.depth_;
@@ -3254,6 +3262,8 @@ namespace heongpu
         CKKSEncodingTransformContext& transform_context,
         const ExecutionOptions& options)
     {
+        cipher.validate_context(context_);
+
         if (!transform_context.generated_)
         {
             throw std::invalid_argument(
@@ -3312,6 +3322,8 @@ namespace heongpu
                                             Galoiskey<Scheme::CKKS>& galois_key,
                                             const ExecutionOptions& options)
     {
+        cipher.validate_context(context_);
+
         if (cipher.encoding_ != encoding::COEFFICIENT)
         {
             throw std::invalid_argument(
@@ -3385,6 +3397,9 @@ namespace heongpu
         CKKSEncodingTransformContext& transform_context,
         const ExecutionOptions& options)
     {
+        cipher0.validate_context(context_);
+        cipher1.validate_context(context_);
+
         if (!transform_context.generated_)
         {
             throw std::invalid_argument(
@@ -3440,6 +3455,9 @@ namespace heongpu
         Ciphertext<Scheme::CKKS>& cipher0, Ciphertext<Scheme::CKKS>& cipher1,
         Galoiskey<Scheme::CKKS>& galois_key, const ExecutionOptions& options)
     {
+        cipher0.validate_context(context_);
+        cipher1.validate_context(context_);
+
         if ((cipher0.encoding_ != encoding::SLOT) ||
             (cipher1.encoding_ != encoding::SLOT))
         {
@@ -5027,6 +5045,8 @@ namespace heongpu
         Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
         const ExecutionOptions& options)
     {
+        input1.validate_context(context_);
+
         if (!boot_context_generated_)
         {
             throw std::invalid_argument(
@@ -5106,6 +5126,8 @@ namespace heongpu
         Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
         const ExecutionOptions& options)
     {
+        input1.validate_context(context_);
+
         if (!boot_context_generated_)
         {
             throw std::invalid_argument(
@@ -5326,6 +5348,8 @@ namespace heongpu
         Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
         const ExecutionOptions& options)
     {
+        input1.validate_context(context_);
+
         if (logic_polys_.size() != 1)
         {
             throw std::invalid_argument(

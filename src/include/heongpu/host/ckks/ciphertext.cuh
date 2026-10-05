@@ -257,6 +257,7 @@ namespace heongpu
               device_locations_(std::move(assign.device_locations_)),
               host_locations_(std::move(assign.host_locations_))
         {
+            assign.ciphertext_generated_ = false;
         }
 
         Ciphertext& operator=(const Ciphertext& copy)
@@ -320,34 +321,43 @@ namespace heongpu
 
                 device_locations_ = std::move(assign.device_locations_);
                 host_locations_ = std::move(assign.host_locations_);
+                assign.ciphertext_generated_ = false;
             }
             return *this;
         }
 
         void save(std::ostream& os) const;
 
+        /**
+         * @brief Loads a ciphertext after validating its binary representation.
+         * Existing ring/modulus dimensions must match; failed loads leave the
+         * object unchanged. Default-constructed objects are checked against the
+         * execution context before GPU operations.
+         */
         void load(std::istream& is);
 
       private:
-        scheme_type scheme_;
-        int ring_size_;
-        int coeff_modulus_count_;
-        int cipher_size_;
-        int depth_;
+        scheme_type scheme_ = scheme_type::ckks;
+        int ring_size_ = 0;
+        int coeff_modulus_count_ = 0;
+        int cipher_size_ = 0;
+        int depth_ = 0;
 
-        bool in_ntt_domain_;
-        storage_type storage_type_;
+        bool in_ntt_domain_ = true;
+        storage_type storage_type_ = storage_type::DEVICE;
 
-        double scale_;
+        double scale_ = 0;
         encoding encoding_ = encoding::SLOT;
-        bool rescale_required_;
-        bool relinearization_required_;
+        bool rescale_required_ = false;
+        bool relinearization_required_ = false;
 
         bool ciphertext_generated_ = false;
 
         DeviceVector<Data64> device_locations_;
         HostVector<Data64> host_locations_;
 
+        size_t checked_memory_size() const;
+        void validate_context(const HEContext<Scheme::CKKS>& context) const;
         int memory_size();
         void memory_clear(cudaStream_t stream);
         void memory_set(DeviceVector<Data64>&& new_device_vector);

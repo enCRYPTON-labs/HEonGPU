@@ -122,6 +122,9 @@ namespace heongpu
                     Ciphertext<Scheme::CKKS>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             add(input1, input2, input1, options);
         }
 
@@ -151,6 +154,9 @@ namespace heongpu
                     Ciphertext<Scheme::CKKS>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             sub(input1, input2, input1, options);
         }
 
@@ -174,6 +180,8 @@ namespace heongpu
         negate_inplace(Ciphertext<Scheme::CKKS>& input1,
                        const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             negate(input1, input1, options);
         }
 
@@ -191,6 +199,8 @@ namespace heongpu
                   Ciphertext<Scheme::CKKS>& output,
                   const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (input1.depth_ != input2.depth_)
             {
                 throw std::logic_error("Ciphertexts leveled are not equal");
@@ -258,6 +268,8 @@ namespace heongpu
                           Plaintext<Scheme::CKKS>& input2,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (input1.depth_ != input2.depth_)
             {
                 throw std::logic_error("Ciphertexts leveled are not equal");
@@ -306,6 +318,8 @@ namespace heongpu
                   Ciphertext<Scheme::CKKS>& output,
                   const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (input1.relinearization_required_)
             {
                 throw std::invalid_argument(
@@ -355,6 +369,8 @@ namespace heongpu
         add_plain_inplace(Ciphertext<Scheme::CKKS>& input1, double input2,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (input1.relinearization_required_)
             {
                 throw std::invalid_argument(
@@ -387,6 +403,8 @@ namespace heongpu
                   Ciphertext<Scheme::CKKS>& output,
                   const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (input1.depth_ != input2.depth_)
             {
                 throw std::logic_error("Ciphertexts leveled are not equal");
@@ -454,6 +472,8 @@ namespace heongpu
                           Plaintext<Scheme::CKKS>& input2,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (input1.depth_ != input2.depth_)
             {
                 throw std::logic_error("Ciphertexts leveled are not equal");
@@ -501,6 +521,8 @@ namespace heongpu
                   Ciphertext<Scheme::CKKS>& output,
                   const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (input1.relinearization_required_)
             {
                 throw std::invalid_argument(
@@ -550,6 +572,8 @@ namespace heongpu
         sub_plain_inplace(Ciphertext<Scheme::CKKS>& input1, double input2,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (input1.relinearization_required_)
             {
                 throw std::invalid_argument(
@@ -580,6 +604,8 @@ namespace heongpu
                           Ciphertext<Scheme::CKKS>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             input_storage_manager(
                 input1,
                 [&](Ciphertext<Scheme::CKKS>& input1_)
@@ -626,6 +652,9 @@ namespace heongpu
                  Ciphertext<Scheme::CKKS>& output,
                  const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             if (input1.relinearization_required_ ||
                 input2.relinearization_required_)
             {
@@ -695,6 +724,9 @@ namespace heongpu
                          Ciphertext<Scheme::CKKS>& input2,
                          const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             multiply(input1, input2, input1, options);
         }
 
@@ -713,6 +745,8 @@ namespace heongpu
                        Ciphertext<Scheme::CKKS>& output,
                        const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (input1.relinearization_required_)
             {
                 throw std::invalid_argument(
@@ -789,6 +823,8 @@ namespace heongpu
             Ciphertext<Scheme::CKKS>& input1, Plaintext<Scheme::CKKS>& input2,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             multiply_plain(input1, input2, input1, options);
         }
 
@@ -806,6 +842,8 @@ namespace heongpu
                        Ciphertext<Scheme::CKKS>& output, double scale,
                        const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (input1.relinearization_required_)
             {
                 throw std::invalid_argument(
@@ -861,6 +899,8 @@ namespace heongpu
             Ciphertext<Scheme::CKKS>& input1, double input2, double scale,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             multiply_plain(input1, input2, input1, scale, options);
         }
 
@@ -878,6 +918,8 @@ namespace heongpu
             Ciphertext<Scheme::CKKS>& output,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             input_storage_manager(
                 input1,
                 [&](Ciphertext<Scheme::CKKS>& input1_)
@@ -921,6 +963,8 @@ namespace heongpu
                  Ciphertext<Scheme::CKKS>& output,
                  const ExecutionOptions& options = ExecutionOptions())
         {
+            input.validate_context(context_);
+
             input_storage_manager(
                 input,
                 [&](Ciphertext<Scheme::CKKS>& input_)
@@ -963,6 +1007,8 @@ namespace heongpu
                Ciphertext<Scheme::CKKS>& output,
                const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             input_storage_manager(
                 input1,
                 [&](Ciphertext<Scheme::CKKS>& input1_)
@@ -1005,6 +1051,8 @@ namespace heongpu
               Ciphertext<Scheme::CKKS>& output,
               const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             input_storage_manager(
                 input1,
                 [&](Ciphertext<Scheme::CKKS>& input1_)
@@ -1046,6 +1094,8 @@ namespace heongpu
             Ciphertext<Scheme::CKKS>& input1, Relinkey<Scheme::CKKS>& relin_key,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if ((!input1.relinearization_required_))
             {
                 throw std::invalid_argument(
@@ -1080,6 +1130,7 @@ namespace heongpu
                             break;
                     }
 
+                    input1_.cipher_size_ = 2;
                     input1_.relinearization_required_ = false;
                 },
                 options, true);
@@ -1100,6 +1151,8 @@ namespace heongpu
                     Galoiskey<Scheme::CKKS>& galois_key, int shift,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (input1.rescale_required_ || input1.relinearization_required_)
             {
                 throw std::invalid_argument("Ciphertext can not be rotated!");
@@ -1162,6 +1215,8 @@ namespace heongpu
             Galoiskey<Scheme::CKKS>& galois_key, int shift,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (shift == 0)
             {
                 return;
@@ -1187,6 +1242,8 @@ namespace heongpu
                      Galoiskey<Scheme::CKKS>& galois_key, int galois_elt,
                      const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (input1.rescale_required_ || input1.relinearization_required_)
             {
                 throw std::invalid_argument("Ciphertext can not be rotated!");
@@ -1258,6 +1315,8 @@ namespace heongpu
             Galoiskey<Scheme::CKKS>& galois_key, int galois_elt,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             apply_galois(input1, input1, galois_key, galois_elt, options);
         }
 
@@ -1276,6 +1335,8 @@ namespace heongpu
                   Switchkey<Scheme::CKKS>& switch_key,
                   const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (input1.rescale_required_ || input1.relinearization_required_)
             {
                 throw std::invalid_argument("Ciphertext can not be rotated!");
@@ -1348,6 +1409,8 @@ namespace heongpu
                   Galoiskey<Scheme::CKKS>& conjugate_key,
                   const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (input1.rescale_required_ || input1.relinearization_required_)
             {
                 throw std::invalid_argument("Ciphertext can not be rotated!");
@@ -1415,12 +1478,20 @@ namespace heongpu
         rescale_inplace(Ciphertext<Scheme::CKKS>& input1,
                         const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if ((!input1.rescale_required_) || input1.relinearization_required_)
             {
                 throw std::invalid_argument("Ciphertexts can not be rescaled!");
             }
 
             int current_decomp_count = context_->Q_size - input1.depth_;
+
+            if (current_decomp_count <= 1)
+            {
+                throw std::logic_error(
+                    "Ciphertext modulus can not be rescaled!");
+            }
 
             if (input1.memory_size() < (2 * context_->n * current_decomp_count))
             {
@@ -1450,6 +1521,8 @@ namespace heongpu
                  Ciphertext<Scheme::CKKS>& output,
                  const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (input1.rescale_required_ || input1.relinearization_required_)
             {
                 throw std::invalid_argument(
@@ -1571,6 +1644,8 @@ namespace heongpu
         mod_drop_inplace(Ciphertext<Scheme::CKKS>& input1,
                          const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             int current_decomp_count = context_->Q_size - input1.depth_;
 
             if (input1.memory_size() < (2 * context_->n * current_decomp_count))
@@ -2192,6 +2267,8 @@ namespace heongpu
                           Ciphertext<Scheme::CKKS>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
@@ -2221,6 +2298,8 @@ namespace heongpu
         NOT_inplace(Ciphertext<Scheme::CKKS>& input1,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
@@ -2249,6 +2328,9 @@ namespace heongpu
                           Relinkey<Scheme::CKKS>& relin_key,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             // TODO: Make it efficient
             ExecutionOptions options_inner =
                 ExecutionOptions()
@@ -2295,6 +2377,9 @@ namespace heongpu
                     Relinkey<Scheme::CKKS>& relin_key,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             AND(input1, input2, input1, relin_key, options);
         }
 
@@ -2311,6 +2396,8 @@ namespace heongpu
                           Ciphertext<Scheme::CKKS>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
@@ -2352,6 +2439,8 @@ namespace heongpu
                     Plaintext<Scheme::CKKS>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             AND(input1, input2, input1, options);
         }
 
@@ -2370,6 +2459,9 @@ namespace heongpu
                          Relinkey<Scheme::CKKS>& relin_key,
                          const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             // TODO: Make it efficient
             ExecutionOptions options_inner =
                 ExecutionOptions()
@@ -2428,6 +2520,9 @@ namespace heongpu
                    Relinkey<Scheme::CKKS>& relin_key,
                    const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             OR(input1, input2, input1, relin_key, options);
         }
 
@@ -2444,6 +2539,8 @@ namespace heongpu
                          Ciphertext<Scheme::CKKS>& output,
                          const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
@@ -2497,6 +2594,8 @@ namespace heongpu
                    Plaintext<Scheme::CKKS>& input2,
                    const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             OR(input1, input2, input1, options);
         }
 
@@ -2515,6 +2614,9 @@ namespace heongpu
                           Relinkey<Scheme::CKKS>& relin_key,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             // TODO: Make it efficient
             ExecutionOptions options_inner =
                 ExecutionOptions()
@@ -2575,6 +2677,9 @@ namespace heongpu
                     Relinkey<Scheme::CKKS>& relin_key,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             XOR(input1, input2, input1, relin_key, options);
         }
 
@@ -2591,6 +2696,8 @@ namespace heongpu
                           Ciphertext<Scheme::CKKS>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
@@ -2646,6 +2753,8 @@ namespace heongpu
                     Plaintext<Scheme::CKKS>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             XOR(input1, input2, input1, options);
         }
 
@@ -2664,6 +2773,9 @@ namespace heongpu
                            Relinkey<Scheme::CKKS>& relin_key,
                            const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             // TODO: Make it efficient
             ExecutionOptions options_inner =
                 ExecutionOptions()
@@ -2712,6 +2824,9 @@ namespace heongpu
                      Relinkey<Scheme::CKKS>& relin_key,
                      const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             NAND(input1, input2, input1, relin_key, options);
         }
 
@@ -2728,6 +2843,8 @@ namespace heongpu
                            Ciphertext<Scheme::CKKS>& output,
                            const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
@@ -2772,6 +2889,8 @@ namespace heongpu
                      Plaintext<Scheme::CKKS>& input2,
                      const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             NAND(input1, input2, input1, options);
         }
 
@@ -2790,6 +2909,9 @@ namespace heongpu
                           Relinkey<Scheme::CKKS>& relin_key,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             // TODO: Make it efficient
             ExecutionOptions options_inner =
                 ExecutionOptions()
@@ -2851,6 +2973,9 @@ namespace heongpu
                     Relinkey<Scheme::CKKS>& relin_key,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             NOR(input1, input2, input1, relin_key, options);
         }
 
@@ -2867,6 +2992,8 @@ namespace heongpu
                           Ciphertext<Scheme::CKKS>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
@@ -2923,6 +3050,8 @@ namespace heongpu
                     Plaintext<Scheme::CKKS>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             NOR(input1, input2, input1, options);
         }
 
@@ -2941,6 +3070,9 @@ namespace heongpu
                            Relinkey<Scheme::CKKS>& relin_key,
                            const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             // TODO: Make it efficient
             ExecutionOptions options_inner =
                 ExecutionOptions()
@@ -3004,6 +3136,9 @@ namespace heongpu
                      Relinkey<Scheme::CKKS>& relin_key,
                      const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             XNOR(input1, input2, input1, relin_key, options);
         }
 
@@ -3020,6 +3155,8 @@ namespace heongpu
                            Ciphertext<Scheme::CKKS>& output,
                            const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             // TODO: Make it efficient
             ExecutionOptions options_inner =
                 ExecutionOptions()
@@ -3082,6 +3219,8 @@ namespace heongpu
                      Plaintext<Scheme::CKKS>& input2,
                      const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             XNOR(input1, input2, input1, options);
         }
 
@@ -3154,6 +3293,9 @@ namespace heongpu
             Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             return gate_bootstrapping(
                 logic_gate::AND, input1, input2, galois_key, relin_key,
                 swk_dense_to_sparse, swk_sparse_to_dense, options);
@@ -3181,6 +3323,9 @@ namespace heongpu
                          Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
                          const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             return gate_bootstrapping(
                 logic_gate::OR, input1, input2, galois_key, relin_key,
                 swk_dense_to_sparse, swk_sparse_to_dense, options);
@@ -3207,6 +3352,9 @@ namespace heongpu
             Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             return gate_bootstrapping(
                 logic_gate::XOR, input1, input2, galois_key, relin_key,
                 swk_dense_to_sparse, swk_sparse_to_dense, options);
@@ -3233,6 +3381,9 @@ namespace heongpu
             Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             return gate_bootstrapping(
                 logic_gate::NAND, input1, input2, galois_key, relin_key,
                 swk_dense_to_sparse, swk_sparse_to_dense, options);
@@ -3259,6 +3410,9 @@ namespace heongpu
             Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             return gate_bootstrapping(
                 logic_gate::NOR, input1, input2, galois_key, relin_key,
                 swk_dense_to_sparse, swk_sparse_to_dense, options);
@@ -3285,6 +3439,9 @@ namespace heongpu
             Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             return gate_bootstrapping(
                 logic_gate::XNOR, input1, input2, galois_key, relin_key,
                 swk_dense_to_sparse, swk_sparse_to_dense, options);
