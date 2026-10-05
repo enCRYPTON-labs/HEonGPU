@@ -567,3 +567,9 @@ This project is licensed under the [Apache License](LICENSE). For more details, 
 If you have any questions or feedback, feel free to contact me: 
 - Email: alisah@sabanciuniv.edu
 - LinkedIn: [Profile](https://www.linkedin.com/in/ali%C5%9Fah-%C3%B6zcan-472382305/)
+
+<div align="center">
+
+![enCRYPTON-Labs logo](./figures/encrypton_labs_amblem.png)
+
+</div>

@@ -8,7 +8,7 @@ HEonGPU now supports Multiparty Computation (MPC) protocols through its implemen
 - Compatible with `KEYSWITCHING_METHOD_I` and `KEYSWITCHING_METHOD_II` key switching methods.
 
 <div align="center">
-  <img src="../../multiparty_computation.svg" alt="MPC Flow Diagram" width="100%">
+  <img src="../../figures/multiparty_computation.svg" alt="MPC Flow Diagram" width="100%">
 </div>
 
 ### How It Works
