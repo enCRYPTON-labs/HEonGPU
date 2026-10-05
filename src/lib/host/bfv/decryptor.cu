@@ -4,6 +4,7 @@
 // Developer: Alişah Özcan
 
 #include <heongpu/host/bfv/decryptor.cuh>
+#include <algorithm>
 
 namespace heongpu
 {
@@ -180,7 +181,7 @@ namespace heongpu
         const int n_power = ctx->n_power;
         const int Q_size = ctx->Q_size;
 
-        HostVector<Data64> max_norm_memory(n * Q_size);
+        HostVector<Data64> max_norm_memory(Q_size);
 
         input_storage_manager(
             ciphertext,
@@ -244,16 +245,28 @@ namespace heongpu
                     n_power); // TODO: merge with above kernel if possible
                 HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                cudaMemcpyAsync(max_norm_memory.data(), temp_memory.data(),
-                                Q_size * sizeof(Data64), cudaMemcpyDeviceToHost,
-                                options.stream_);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
+                HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
+                    max_norm_memory.data(), temp_memory.data(),
+                    Q_size * sizeof(Data64), cudaMemcpyDeviceToHost,
+                    options.stream_));
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(options.stream_));
             },
             options, false);
 
-        return ctx->total_bit_count_ -
-               calculate_big_integer_bit_count(max_norm_memory.data(), Q_size) -
-               1;
+        bool zero_norm = true;
+        for (int i = 0; i < Q_size; i++)
+        {
+            zero_norm = zero_norm && (max_norm_memory[i] == 0);
+        }
+        if (zero_norm)
+        {
+            return ctx->total_bit_count_ - 1;
+        }
+
+        return std::max(0, ctx->total_bit_count_ -
+                               calculate_big_integer_bit_count(
+                                   max_norm_memory.data(), Q_size) -
+                               1);
     }
 
 } // namespace heongpu

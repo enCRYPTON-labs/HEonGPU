@@ -294,48 +294,39 @@ namespace heongpu
             __syncthreads();
         }
 
-        extern __shared__ Data64 shared_memory[]; // 1024 64-bit
+        extern __shared__ Data64 shared_memory[];
 
         __syncthreads();
 
-        int offset_in = blockDim.x;
-        for (int outer = 0; outer < 5; outer++)
-        { // since blocksize is 512?
-
-            if (idx < offset_in)
+        for (int offset_in = blockDim.x >> 1; offset_in > 0; offset_in >>= 1)
+        {
+            for (int i = 0; i < coeff_modulus_count; i++)
             {
-                offset_in = offset_in >> 1;
-                for (int i = 0; i < coeff_modulus_count; i++)
+                if (idx >= offset_in && idx < (offset_in << 1))
                 {
-                    if (idx >= offset_in)
-                    {
-                        shared_memory[idx % offset_in] = big_integer_temp[i];
-                    }
-
-                    __syncthreads();
-
-                    if (idx < offset_in)
-                    {
-                        big_integer_input[i] = shared_memory[idx];
-                    }
-
-                    __syncthreads();
+                    shared_memory[idx - offset_in] = big_integer_temp[i];
                 }
 
-                bool check = biginteger::is_greater(
-                    big_integer_input, big_integer_temp, coeff_modulus_count);
+                __syncthreads();
 
-                if (check)
+                if (idx < offset_in)
                 {
-                    biginteger::set(big_integer_input, coeff_modulus_count,
-                                    big_integer_temp);
+                    big_integer_input[i] = shared_memory[idx];
                 }
 
                 __syncthreads();
             }
-        }
 
-        __syncthreads();
+            if (idx < offset_in &&
+                biginteger::is_greater(big_integer_input, big_integer_temp,
+                                      coeff_modulus_count))
+            {
+                biginteger::set(big_integer_input, coeff_modulus_count,
+                                big_integer_temp);
+            }
+
+            __syncthreads();
+        }
 
         if (idx == 0)
         {

@@ -23,6 +23,7 @@ set(EXECUTABLES
     bfv_addition_testcases test_bfv_addition.cpp
     bfv_encoding_testcases test_bfv_encoding.cpp
     bfv_encryption_testcases test_bfv_encryption.cpp
+    bfv_noise_budget_testcases test_bfv_noise_budget.cu
     bfv_multiplication_testcases test_bfv_multiplication.cpp
     bfv_relinearization_testcases test_bfv_relinearization.cpp
     bfv_rotation_method_1_testcases test_bfv_rotation_method_1.cpp
