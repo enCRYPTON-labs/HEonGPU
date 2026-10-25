@@ -213,9 +213,32 @@ namespace heongpu
                         "size");
                 }
 
-                device_pool_ = std::make_shared<DevicePoolResource>(
-                    *device_base_, initial_device_pool_size,
-                    max_device_pool_size);
+                // An initial size derived from the free memory can become too
+                // large if another process allocates in the meantime. Retry
+                // with smaller sizes; the pool grows on demand up to its max.
+                constexpr size_t min_initial_device_pool_size = 64ULL << 20;
+                const bool shrinkable =
+                    !config.initial_device_bytes.has_value();
+                while (true)
+                {
+                    try
+                    {
+                        device_pool_ = std::make_shared<DevicePoolResource>(
+                            *device_base_, initial_device_pool_size,
+                            max_device_pool_size);
+                        break;
+                    }
+                    catch (const rmm::out_of_memory&)
+                    {
+                        if (!shrinkable || initial_device_pool_size <=
+                                               min_initial_device_pool_size)
+                        {
+                            throw;
+                        }
+                        initial_device_pool_size =
+                            roundup_256(initial_device_pool_size / 2);
+                    }
+                }
                 device_stats_adaptor_ =
                     std::make_shared<DeviceStatsAdaptor>(*device_pool_);
             }

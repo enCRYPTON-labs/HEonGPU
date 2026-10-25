@@ -24,6 +24,7 @@
 #include <rmm/device_uvector.hpp>
 
 #include <rmm/aligned.hpp>
+#include <rmm/error.hpp>
 #include <rmm/resource_ref.hpp>
 #include <rmm/mr/pinned_host_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>

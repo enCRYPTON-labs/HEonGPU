@@ -141,3 +141,70 @@ TEST(HEonGPU, MemoryPool_Can_Be_Enabled_After_Unpooled_Context)
     }
     cudaDeviceSynchronize();
 }
+
+TEST(HEonGPU, MemoryPool_Context_Generation_With_Little_Free_Device_Memory)
+{
+    // Simulates another process holding most of the GPU before the first
+    // context of this process is generated with the default pool settings.
+    auto& pool = heongpu::MemoryPool::instance();
+    if (pool.get_free_device_pool_memory() != 0)
+    {
+        GTEST_SKIP() << "The memory pool was already created in this process.";
+    }
+    size_t free_memory = 0;
+    size_t total_memory = 0;
+    ASSERT_EQ(cudaMemGetInfo(&free_memory, &total_memory), cudaSuccess);
+    const size_t leave_free = 1536ULL * 1024 * 1024;
+    if (free_memory < 2 * leave_free)
+    {
+        GTEST_SKIP() << "Not enough free device memory for this test.";
+    }
+    void* blocker = nullptr;
+    ASSERT_EQ(cudaMalloc(&blocker, free_memory - leave_free), cudaSuccess);
+
+    {
+        heongpu::HEContext<heongpu::Scheme::CKKS> context =
+            heongpu::GenHEContext<heongpu::Scheme::CKKS>(
+                heongpu::sec_level_type::none);
+        context->set_poly_modulus_degree(4096);
+        context->set_coeff_modulus_bit_sizes({40, 30}, {40});
+        ASSERT_NO_THROW(context->generate());
+        EXPECT_NE(pool.get_free_device_pool_memory(), 0u);
+
+        heongpu::DeviceVector<double> device_vector(count);
+        EXPECT_EQ(cudaDeviceSynchronize(), cudaSuccess);
+    }
+
+    EXPECT_EQ(cudaFree(blocker), cudaSuccess);
+}
+
+TEST(HEonGPU, MemoryPool_Shrinks_Initial_Size_That_Does_Not_Fit)
+{
+    auto& pool = heongpu::MemoryPool::instance();
+    if (pool.get_free_device_pool_memory() != 0)
+    {
+        GTEST_SKIP() << "The memory pool was already created in this process.";
+    }
+    heongpu::HEContext<heongpu::Scheme::CKKS> context =
+        heongpu::GenHEContext<heongpu::Scheme::CKKS>(
+            heongpu::sec_level_type::none);
+    context->set_poly_modulus_degree(4096);
+    context->set_coeff_modulus_bit_sizes({40, 30}, {40});
+
+    // All of the free memory cannot be reserved for the pool at once.
+    heongpu::MemoryPoolConfig pool_config;
+    pool_config.initial_device_fraction = 1.0f;
+    pool_config.max_device_fraction = 1.0f;
+    pool_config.initial_host_bytes = 64ULL * 1024 * 1024;
+    pool_config.max_host_bytes = 256ULL * 1024 * 1024;
+    ASSERT_NO_THROW(context->generate(pool_config));
+
+    size_t free_memory = 0;
+    size_t total_memory = 0;
+    ASSERT_EQ(cudaMemGetInfo(&free_memory, &total_memory), cudaSuccess);
+    EXPECT_NE(pool.get_free_device_pool_memory(), 0u);
+    EXPECT_LT(pool.get_free_device_pool_memory(), total_memory);
+
+    heongpu::DeviceVector<double> device_vector(count);
+    EXPECT_EQ(cudaDeviceSynchronize(), cudaSuccess);
+}

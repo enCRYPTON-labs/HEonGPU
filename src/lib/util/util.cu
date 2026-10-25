@@ -791,6 +791,16 @@ namespace heongpu
         return result_upper_half_threshold;
     }
 
+    void ensure_kernel_stack_size(size_t bytes)
+    {
+        size_t current = 0;
+        HEONGPU_CUDA_CHECK(cudaDeviceGetLimit(&current, cudaLimitStackSize));
+        if (current < bytes)
+        {
+            HEONGPU_CUDA_CHECK(cudaDeviceSetLimit(cudaLimitStackSize, bytes));
+        }
+    }
+
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////

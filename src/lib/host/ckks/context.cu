@@ -276,6 +276,10 @@ namespace heongpu
         if ((!context_generated_) && (poly_modulus_degree_specified_) &&
             (coeff_modulus_specified_))
         {
+            // For kernel stack size. Reserved before the memory pool so
+            // that the pool does not take the memory the stack needs.
+            ensure_kernel_stack_size(2048);
+
             // Memory pool initialization
             MemoryPool::instance().initialize(pool_config);
             MemoryPool::instance().use_memory_pool(pool_config.use_memory_pool);
@@ -295,9 +299,6 @@ namespace heongpu
                 generated_entropy, generated_nonce, personalization_string,
                 rngongpu::SecurityLevel::AES128, false);
             cudaDeviceSynchronize();
-
-            // For kernel stack size
-            cudaDeviceSetLimit(cudaLimitStackSize, 2048);
 
             modulus_ = std::make_shared<DeviceVector<Modulus64>>(prime_vector_);
 
