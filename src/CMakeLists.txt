@@ -49,7 +49,7 @@ set(HEONGPU_UTIL_SOURCES
 )
 
 add_library(heongpu_util OBJECT ${HEONGPU_UTIL_SOURCES})
-target_compile_features(heongpu_util PUBLIC cxx_std_17)
+target_compile_features(heongpu_util PUBLIC cxx_std_20)
 target_include_directories(heongpu_util
     PUBLIC
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_PARENT}>
@@ -91,7 +91,7 @@ set(HEONGPU_KERNEL_SOURCES
 )
 
 add_library(heongpu_kernel OBJECT ${HEONGPU_KERNEL_SOURCES})
-target_compile_features(heongpu_kernel PUBLIC cxx_std_17)
+target_compile_features(heongpu_kernel PUBLIC cxx_std_20)
 target_include_directories(heongpu_kernel
     PUBLIC
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_PARENT}>
@@ -115,7 +115,7 @@ set(HEONGPU_HOST_CORE_SOURCES
 )
 
 add_library(heongpu_host_core OBJECT ${HEONGPU_HOST_CORE_SOURCES})
-target_compile_features(heongpu_host_core PUBLIC cxx_std_17)
+target_compile_features(heongpu_host_core PUBLIC cxx_std_20)
 target_include_directories(heongpu_host_core
     PUBLIC
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_PARENT}>
@@ -151,7 +151,7 @@ set(HEONGPU_HOST_BFV_SOURCES
 )
 
 add_library(heongpu_host_bfv OBJECT ${HEONGPU_HOST_BFV_SOURCES})
-target_compile_features(heongpu_host_bfv PUBLIC cxx_std_17)
+target_compile_features(heongpu_host_bfv PUBLIC cxx_std_20)
 target_include_directories(heongpu_host_bfv
     PUBLIC
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_PARENT}>
@@ -190,7 +190,7 @@ set(HEONGPU_HOST_CKKS_SOURCES
 )
 
 add_library(heongpu_host_ckks OBJECT ${HEONGPU_HOST_CKKS_SOURCES})
-target_compile_features(heongpu_host_ckks PUBLIC cxx_std_17)
+target_compile_features(heongpu_host_ckks PUBLIC cxx_std_20)
 target_include_directories(heongpu_host_ckks
     PUBLIC
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_PARENT}>
@@ -223,7 +223,7 @@ set(HEONGPU_HOST_TFHE_SOURCES
 )
 
 add_library(heongpu_host_tfhe OBJECT ${HEONGPU_HOST_TFHE_SOURCES})
-target_compile_features(heongpu_host_tfhe PUBLIC cxx_std_17)
+target_compile_features(heongpu_host_tfhe PUBLIC cxx_std_20)
 target_include_directories(heongpu_host_tfhe
     PUBLIC
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_PARENT}>
@@ -251,7 +251,7 @@ add_library(heongpu STATIC
     $<TARGET_OBJECTS:heongpu_host_ckks>
     $<TARGET_OBJECTS:heongpu_host_tfhe>
 )
-target_compile_features(heongpu PUBLIC cxx_std_17)
+target_compile_features(heongpu PUBLIC cxx_std_20)
 
 set_target_properties(heongpu PROPERTIES
     VERSION ${PROJECT_VERSION}

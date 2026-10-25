@@ -46,7 +46,7 @@ Memory Management with RAPIDS Memory Manager (RMM)
 To handle the frequent allocation and deallocation of large memory blocks for ciphertexts and keys, HEonGPU integrates the **RAPIDS Memory Manager (RMM)**.
 
 * **Memory Pooling**: Instead of making expensive `cudaMalloc` and `cudaFree` calls for every object, RMM is used to create a large memory pool on the GPU at initialization (`rmm::pool_memory_resource`). Subsequent allocations are then serviced rapidly from this pool, reducing overhead and memory fragmentation.
-* **Pinned Host Memory**: For the CPU-side memory pool, `rmm::pinned_memory_resource` is used. Pinned memory is non-pageable and allows for much faster, asynchronous data transfers between the host and device.
+* **Pinned Host Memory**: For the CPU-side memory pool, `rmm::mr::pinned_host_memory_resource` is used. Pinned memory is non-pageable and allows for much faster, asynchronous data transfers between the host and device.
 * **Custom Vector Types**: The library uses custom vector classes, `heongpu::DeviceVector` and `heongpu::HostVector`, which are integrated with the RMM memory pools to provide a standard C++ vector-like interface while benefiting from the optimized memory management backend.
 
 Decomposition of Homomorphic Operations

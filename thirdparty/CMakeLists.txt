@@ -23,17 +23,16 @@ include(FetchContent)
 FetchContent_Declare(
     rmm
     GIT_REPOSITORY https://github.com/rapidsai/rmm
-    GIT_TAG        branch-25.08
+    GIT_TAG        v26.08.00
     SOURCE_SUBDIR  cpp
 )
 
 set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
-# RMM 25.08 is written against the CCCL version it pins (3.0.x) and uses
-# cuda::mr::async_resource_ref, which newer CCCL releases removed. CUDA 13.x
-# ships such a newer CCCL (e.g. 3.4 in CUDA 13.4), and rapids-cmake would pick
-# it up since it satisfies the minimum version. Always fetch the pinned CCCL.
-# (CUDA 12.x ships CCCL 2.x, which is too old anyway, so it was already fetched.)
+# RMM is written against the CCCL version it pins (3.4.x for RMM 26.08).
+# The CCCL shipped with the CUDA Toolkit can be older (CUDA 12.x ships CCCL 2.x)
+# or newer than that, and rapids-cmake would pick it up whenever it satisfies
+# the minimum version. Always fetch the pinned CCCL.
 set(CPM_DOWNLOAD_CCCL ON CACHE BOOL "Fetch the CCCL version pinned by RMM instead of using the CUDA Toolkit one")
 if(CPM_DOWNLOAD_CCCL)
     # Drop package locations cached by an earlier configure (e.g. pointing at the

@@ -188,10 +188,9 @@ namespace heongpu
                 }
 
                 host_pool_ = std::make_shared<HostPoolResource>(
-                    host_base_.get(), initial_host_pool_size,
-                    max_host_pool_size);
+                    *host_base_, initial_host_pool_size, max_host_pool_size);
                 host_stats_adaptor_ =
-                    std::make_shared<HostStatsAdaptor>(host_pool_.get());
+                    std::make_shared<HostStatsAdaptor>(*host_pool_);
 
                 size_t initial_device_pool_size = resolve_pool_size(
                     config.initial_device_bytes, config.initial_device_fraction,
@@ -210,10 +209,10 @@ namespace heongpu
                 }
 
                 device_pool_ = std::make_shared<DevicePoolResource>(
-                    device_base_.get(), initial_device_pool_size,
+                    *device_base_, initial_device_pool_size,
                     max_device_pool_size);
                 device_stats_adaptor_ =
-                    std::make_shared<DeviceStatsAdaptor>(device_pool_.get());
+                    std::make_shared<DeviceStatsAdaptor>(*device_pool_);
             }
 
             initialized_ = true;
@@ -228,42 +227,46 @@ namespace heongpu
             if (device_stats_adaptor_)
             {
                 rmm::mr::set_current_device_resource(
-                    device_stats_adaptor_.get());
+                    rmm::device_async_resource_ref{*device_stats_adaptor_});
             }
             else
             {
                 ensure_base_resources();
-                rmm::mr::set_current_device_resource(device_base_.get());
+                rmm::mr::set_current_device_resource(
+                    rmm::device_async_resource_ref{*device_base_});
             }
         }
         else
         {
             ensure_base_resources();
-            rmm::mr::set_current_device_resource(device_base_.get());
+            rmm::mr::set_current_device_resource(
+                rmm::device_async_resource_ref{*device_base_});
         }
     }
 
     void* MemoryPool::allocate(size_t size, cudaStream_t stream)
     {
         std::lock_guard<std::mutex> guard(mutex_);
-        return rmm::mr::get_current_device_resource()->allocate(size, stream);
+        return rmm::mr::get_current_device_resource_ref().allocate(
+            stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
     }
 
     void MemoryPool::deallocate(void* ptr, size_t size, cudaStream_t stream)
     {
         std::lock_guard<std::mutex> guard(mutex_);
-        rmm::mr::get_current_device_resource()->deallocate(ptr, size, stream);
+        rmm::mr::get_current_device_resource_ref().deallocate(
+            stream, ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
     }
 
-    rmm::mr::device_memory_resource* MemoryPool::get_device_resource() const
+    rmm::device_async_resource_ref MemoryPool::get_device_resource() const
     {
         std::lock_guard<std::mutex> guard(mutex_);
         if (device_stats_adaptor_)
         {
-            return device_stats_adaptor_.get();
+            return rmm::device_async_resource_ref{*device_stats_adaptor_};
         }
         const_cast<MemoryPool*>(this)->ensure_base_resources();
-        return device_base_.get();
+        return rmm::device_async_resource_ref{*device_base_};
     }
 
     MemoryPool::HostStatsAdaptor* MemoryPool::get_host_resource() const
@@ -277,10 +280,12 @@ namespace heongpu
         std::lock_guard<std::mutex> guard(mutex_);
         if (host_pool_)
         {
-            return host_pool_->allocate(size);
+            return host_pool_->allocate(cuda::stream_ref{cudaStream_t{nullptr}},
+                                        size, rmm::CUDA_ALLOCATION_ALIGNMENT);
         }
         ensure_base_resources();
-        return host_base_->allocate(size);
+        return host_base_->allocate(cuda::stream_ref{cudaStream_t{nullptr}},
+                                    size, rmm::CUDA_ALLOCATION_ALIGNMENT);
     }
 
     void MemoryPool::host_deallocate(void* ptr, size_t size)
@@ -288,11 +293,13 @@ namespace heongpu
         std::lock_guard<std::mutex> guard(mutex_);
         if (host_pool_)
         {
-            host_pool_->deallocate(ptr, size);
+            host_pool_->deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr,
+                                   size, rmm::CUDA_ALLOCATION_ALIGNMENT);
             return;
         }
         ensure_base_resources();
-        host_base_->deallocate(ptr, size);
+        host_base_->deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr,
+                               size, rmm::CUDA_ALLOCATION_ALIGNMENT);
     }
 
     void MemoryPool::print_memory_pool_status() const
@@ -392,7 +399,7 @@ namespace heongpu
         if (initialized_ || host_base_ || device_base_ || host_pool_ ||
             device_pool_)
         {
-            rmm::mr::set_current_device_resource(nullptr);
+            rmm::mr::reset_current_device_resource();
             host_stats_adaptor_.reset();
             host_pool_.reset();
             host_base_.reset();
