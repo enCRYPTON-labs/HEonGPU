@@ -11,6 +11,7 @@
 #include <memory>
 #include <vector>
 #include <optional>
+#include <unordered_set>
 #include <sys/sysinfo.h>
 
 #include "gpuntt/common/common.cuh"
@@ -111,6 +112,12 @@ namespace heongpu
         static std::shared_ptr<DevicePoolResource> device_pool_;
         static std::shared_ptr<DeviceStatsAdaptor> device_stats_adaptor_;
         static bool initialized_;
+        // Set by use_memory_pool(); selects the resource for new allocations.
+        static bool use_pool_;
+        // Raw and host allocations served by the pools, so that they are
+        // returned to them even after use_memory_pool(false).
+        static std::unordered_set<void*> pooled_device_allocations_;
+        static std::unordered_set<void*> pooled_host_allocations_;
         static std::mutex mutex_;
     };
 

@@ -21,6 +21,9 @@ namespace heongpu
     std::shared_ptr<MemoryPool::DeviceStatsAdaptor>
         MemoryPool::device_stats_adaptor_ = nullptr;
     bool MemoryPool::initialized_ = false;
+    bool MemoryPool::use_pool_ = true;
+    std::unordered_set<void*> MemoryPool::pooled_device_allocations_;
+    std::unordered_set<void*> MemoryPool::pooled_host_allocations_;
     std::mutex MemoryPool::mutex_;
 
     MemoryPoolConfig MemoryPoolConfig::Defaults()
@@ -85,7 +88,9 @@ namespace heongpu
     void MemoryPool::initialize(const MemoryPoolConfig& config)
     {
         std::lock_guard<std::mutex> guard(mutex_);
-        if (!initialized_)
+        // The pools are created by the first initialization that requests
+        // them, even if an earlier one ran without a pool.
+        if (!initialized_ || (config.use_memory_pool && !device_pool_))
         {
             ensure_base_resources();
             size_t total_host_memory = get_host_avaliable_memory();
@@ -222,6 +227,7 @@ namespace heongpu
     void MemoryPool::use_memory_pool(bool use)
     {
         std::lock_guard<std::mutex> guard(mutex_);
+        use_pool_ = use;
         if (use)
         {
             if (device_stats_adaptor_)
@@ -247,21 +253,36 @@ namespace heongpu
     void* MemoryPool::allocate(size_t size, cudaStream_t stream)
     {
         std::lock_guard<std::mutex> guard(mutex_);
-        return rmm::mr::get_current_device_resource_ref().allocate(
-            stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+        if (use_pool_ && device_stats_adaptor_)
+        {
+            void* ptr = device_stats_adaptor_->allocate(
+                stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+            pooled_device_allocations_.insert(ptr);
+            return ptr;
+        }
+        ensure_base_resources();
+        return device_base_->allocate(stream, size,
+                                      rmm::CUDA_ALLOCATION_ALIGNMENT);
     }
 
     void MemoryPool::deallocate(void* ptr, size_t size, cudaStream_t stream)
     {
         std::lock_guard<std::mutex> guard(mutex_);
-        rmm::mr::get_current_device_resource_ref().deallocate(
-            stream, ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+        if (pooled_device_allocations_.erase(ptr) != 0)
+        {
+            device_stats_adaptor_->deallocate(stream, ptr, size,
+                                              rmm::CUDA_ALLOCATION_ALIGNMENT);
+            return;
+        }
+        ensure_base_resources();
+        device_base_->deallocate(stream, ptr, size,
+                                 rmm::CUDA_ALLOCATION_ALIGNMENT);
     }
 
     rmm::device_async_resource_ref MemoryPool::get_device_resource() const
     {
         std::lock_guard<std::mutex> guard(mutex_);
-        if (device_stats_adaptor_)
+        if (use_pool_ && device_stats_adaptor_)
         {
             return rmm::device_async_resource_ref{*device_stats_adaptor_};
         }
@@ -278,11 +299,13 @@ namespace heongpu
     void* MemoryPool::host_allocate(size_t size)
     {
         std::lock_guard<std::mutex> guard(mutex_);
-        if (host_stats_adaptor_)
+        if (use_pool_ && host_stats_adaptor_)
         {
-            return host_stats_adaptor_->allocate(
+            void* ptr = host_stats_adaptor_->allocate(
                 cuda::stream_ref{cudaStream_t{nullptr}}, size,
                 rmm::CUDA_ALLOCATION_ALIGNMENT);
+            pooled_host_allocations_.insert(ptr);
+            return ptr;
         }
         ensure_base_resources();
         return host_base_->allocate(cuda::stream_ref{cudaStream_t{nullptr}},
@@ -292,7 +315,7 @@ namespace heongpu
     void MemoryPool::host_deallocate(void* ptr, size_t size)
     {
         std::lock_guard<std::mutex> guard(mutex_);
-        if (host_stats_adaptor_)
+        if (pooled_host_allocations_.erase(ptr) != 0)
         {
             host_stats_adaptor_->deallocate(
                 cuda::stream_ref{cudaStream_t{nullptr}}, ptr, size,
@@ -408,6 +431,9 @@ namespace heongpu
             device_stats_adaptor_.reset();
             device_pool_.reset();
             device_base_.reset();
+            pooled_device_allocations_.clear();
+            pooled_host_allocations_.clear();
+            use_pool_ = true;
             initialized_ = false;
         }
     }

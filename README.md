@@ -466,7 +466,10 @@ context->generate(pool_config);
 ```
 
 > Note: The memory pool is a process-wide singleton. The **first**
-> initialization sets the pool sizes; subsequent contexts reuse the same pool.
+> initialization that enables the pool sets the pool sizes; subsequent contexts
+> reuse the same pool. `use_memory_pool` is also process-wide: the most recently
+> generated context decides whether new allocations use the pool, and buffers
+> are always returned to the resource they were allocated from.
 
 
 ## Storage Management
