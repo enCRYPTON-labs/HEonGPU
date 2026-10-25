@@ -221,6 +221,23 @@ namespace heongpu
                     !config.initial_device_bytes.has_value();
                 while (true)
                 {
+                    if (shrinkable)
+                    {
+                        // Skip sizes that no longer fit instead of attempting
+                        // them, which avoids failed allocations and RMM
+                        // error logs.
+                        constexpr size_t headroom = 64ULL << 20;
+                        const size_t free_memory =
+                            get_decive_avaliable_memory();
+                        while (initial_device_pool_size >
+                                   min_initial_device_pool_size &&
+                               initial_device_pool_size + headroom >
+                                   free_memory)
+                        {
+                            initial_device_pool_size =
+                                roundup_256(initial_device_pool_size / 2);
+                        }
+                    }
                     try
                     {
                         device_pool_ = std::make_shared<DevicePoolResource>(

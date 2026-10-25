@@ -7,6 +7,7 @@
 #include <heongpu/heongpu.hpp>
 #include <gtest/gtest.h>
 #include <memory>
+#include <string>
 
 namespace
 {
@@ -197,7 +198,12 @@ TEST(HEonGPU, MemoryPool_Shrinks_Initial_Size_That_Does_Not_Fit)
     pool_config.max_device_fraction = 1.0f;
     pool_config.initial_host_bytes = 64ULL * 1024 * 1024;
     pool_config.max_host_bytes = 256ULL * 1024 * 1024;
-    ASSERT_NO_THROW(context->generate(pool_config));
+    // Sizes that do not fit are skipped instead of being attempted, so RMM
+    // does not log allocation failures.
+    testing::internal::CaptureStderr();
+    EXPECT_NO_THROW(context->generate(pool_config));
+    const std::string log = testing::internal::GetCapturedStderr();
+    EXPECT_EQ(log.find("maximum pool size exceeded"), std::string::npos) << log;
 
     size_t free_memory = 0;
     size_t total_memory = 0;
