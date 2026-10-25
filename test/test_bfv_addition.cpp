@@ -45,6 +45,9 @@ TEST(HEonGPU, BFV_Ciphertext_Ciphertext_Addition_Subtraction)
             message1[i] = dis(gen);
             message2[i] = dis(gen);
         }
+        // Exercise the m1 + m2 == t boundary on every run.
+        message1[0] = plain_modulus - 1;
+        message2[0] = 1;
 
         std::vector<uint64_t> message_addition_result(poly_modulus_degree,
                                                       0ULL);
@@ -53,7 +56,7 @@ TEST(HEonGPU, BFV_Ciphertext_Ciphertext_Addition_Subtraction)
         for (int i = 0; i < poly_modulus_degree; i++)
         {
             uint64_t addition_result = message1[i] + message2[i];
-            message_addition_result[i] = (addition_result > plain_modulus)
+            message_addition_result[i] = (addition_result >= plain_modulus)
                                              ? (addition_result - plain_modulus)
                                              : addition_result;
 
@@ -144,6 +147,9 @@ TEST(HEonGPU, BFV_Ciphertext_Ciphertext_Addition_Subtraction)
             message1[i] = dis(gen);
             message2[i] = dis(gen);
         }
+        // Exercise the m1 + m2 == t boundary on every run.
+        message1[0] = plain_modulus - 1;
+        message2[0] = 1;
 
         std::vector<uint64_t> message_addition_result(poly_modulus_degree,
                                                       0ULL);
@@ -152,7 +158,7 @@ TEST(HEonGPU, BFV_Ciphertext_Ciphertext_Addition_Subtraction)
         for (int i = 0; i < poly_modulus_degree; i++)
         {
             uint64_t addition_result = message1[i] + message2[i];
-            message_addition_result[i] = (addition_result > plain_modulus)
+            message_addition_result[i] = (addition_result >= plain_modulus)
                                              ? (addition_result - plain_modulus)
                                              : addition_result;
 
@@ -244,6 +250,9 @@ TEST(HEonGPU, BFV_Ciphertext_Ciphertext_Addition_Subtraction)
             message1[i] = dis(gen);
             message2[i] = dis(gen);
         }
+        // Exercise the m1 + m2 == t boundary on every run.
+        message1[0] = plain_modulus - 1;
+        message2[0] = 1;
 
         std::vector<uint64_t> message_addition_result(poly_modulus_degree,
                                                       0ULL);
@@ -252,7 +261,7 @@ TEST(HEonGPU, BFV_Ciphertext_Ciphertext_Addition_Subtraction)
         for (int i = 0; i < poly_modulus_degree; i++)
         {
             uint64_t addition_result = message1[i] + message2[i];
-            message_addition_result[i] = (addition_result > plain_modulus)
+            message_addition_result[i] = (addition_result >= plain_modulus)
                                              ? (addition_result - plain_modulus)
                                              : addition_result;
 
@@ -344,6 +353,9 @@ TEST(HEonGPU, BFV_Ciphertext_Ciphertext_Addition_Subtraction)
             message1[i] = dis(gen);
             message2[i] = dis(gen);
         }
+        // Exercise the m1 + m2 == t boundary on every run.
+        message1[0] = plain_modulus - 1;
+        message2[0] = 1;
 
         std::vector<uint64_t> message_addition_result(poly_modulus_degree,
                                                       0ULL);
@@ -352,7 +364,7 @@ TEST(HEonGPU, BFV_Ciphertext_Ciphertext_Addition_Subtraction)
         for (int i = 0; i < poly_modulus_degree; i++)
         {
             uint64_t addition_result = message1[i] + message2[i];
-            message_addition_result[i] = (addition_result > plain_modulus)
+            message_addition_result[i] = (addition_result >= plain_modulus)
                                              ? (addition_result - plain_modulus)
                                              : addition_result;
 
@@ -446,6 +458,9 @@ TEST(HEonGPU, BFV_Ciphertext_Ciphertext_Addition_Subtraction)
             message1[i] = dis(gen);
             message2[i] = dis(gen);
         }
+        // Exercise the m1 + m2 == t boundary on every run.
+        message1[0] = plain_modulus - 1;
+        message2[0] = 1;
 
         std::vector<uint64_t> message_addition_result(poly_modulus_degree,
                                                       0ULL);
@@ -454,7 +469,7 @@ TEST(HEonGPU, BFV_Ciphertext_Ciphertext_Addition_Subtraction)
         for (int i = 0; i < poly_modulus_degree; i++)
         {
             uint64_t addition_result = message1[i] + message2[i];
-            message_addition_result[i] = (addition_result > plain_modulus)
+            message_addition_result[i] = (addition_result >= plain_modulus)
                                              ? (addition_result - plain_modulus)
                                              : addition_result;
 
