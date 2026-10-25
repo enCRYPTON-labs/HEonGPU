@@ -22,13 +22,13 @@
 #include <rmm/device_buffer.hpp>
 #include <rmm/device_uvector.hpp>
 
-#include <rmm/mr/host/pinned_memory_resource.hpp>
-#include <rmm/mr/host/host_memory_resource.hpp>
-#include <rmm/mr/device/cuda_memory_resource.hpp>
-#include <rmm/mr/device/pool_memory_resource.hpp>
-#include <rmm/mr/device/statistics_resource_adaptor.hpp>
-#include <rmm/mr/device/detail/stream_ordered_memory_resource.hpp>
-#include <rmm/mr/device/logging_resource_adaptor.hpp>
+#include <rmm/aligned.hpp>
+#include <rmm/resource_ref.hpp>
+#include <rmm/mr/pinned_host_memory_resource.hpp>
+#include <rmm/mr/cuda_memory_resource.hpp>
+#include <rmm/mr/pool_memory_resource.hpp>
+#include <rmm/mr/statistics_resource_adaptor.hpp>
+#include <rmm/mr/per_device_resource.hpp>
 
 // --------------------- //
 // Author: Alisah Ozcan
@@ -57,15 +57,12 @@ namespace heongpu
     class MemoryPool
     {
         using DeviceResource = rmm::mr::cuda_memory_resource;
-        using DevicePoolResource =
-            rmm::mr::pool_memory_resource<DeviceResource>;
-        using DeviceStatsAdaptor = rmm::mr::statistics_resource_adaptor<
-            rmm::mr::device_memory_resource>;
+        using DevicePoolResource = rmm::mr::pool_memory_resource;
+        using DeviceStatsAdaptor = rmm::mr::statistics_resource_adaptor;
 
-        using HostResource = rmm::mr::pinned_memory_resource;
-        using HostPoolResource = rmm::mr::pool_memory_resource<HostResource>;
-        using HostStatsAdaptor =
-            rmm::mr::statistics_resource_adaptor<HostPoolResource>;
+        using HostResource = rmm::mr::pinned_host_memory_resource;
+        using HostPoolResource = rmm::mr::pool_memory_resource;
+        using HostStatsAdaptor = rmm::mr::statistics_resource_adaptor;
 
       public:
         static MemoryPool& instance();
@@ -80,7 +77,7 @@ namespace heongpu
         void deallocate(void* ptr, size_t size,
                         cudaStream_t stream = cudaStreamDefault);
 
-        rmm::mr::device_memory_resource* get_device_resource() const;
+        rmm::device_async_resource_ref get_device_resource() const;
         HostStatsAdaptor* get_host_resource() const;
 
         void* host_allocate(size_t size);
@@ -120,8 +117,8 @@ namespace heongpu
     template <typename T> struct rmm_pinned_allocator
     {
         using value_type = T;
-        using HostResource = rmm::mr::pinned_memory_resource;
-        using HostPoolResource = rmm::mr::pool_memory_resource<HostResource>;
+        using HostResource = rmm::mr::pinned_host_memory_resource;
+        using HostPoolResource = rmm::mr::pool_memory_resource;
 
         rmm_pinned_allocator() = default;
 

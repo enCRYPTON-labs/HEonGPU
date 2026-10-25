@@ -18,7 +18,7 @@ namespace heongpu
     template <typename T> class DeviceVector : public rmm::device_uvector<T>
     {
         using Dvec = rmm::device_uvector<T>;
-        using Source = rmm::mr::device_memory_resource*;
+        using Source = rmm::device_async_resource_ref;
 
       public:
         explicit DeviceVector(size_t size = 0,

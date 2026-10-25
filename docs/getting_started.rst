@@ -12,7 +12,7 @@ Before building the library, ensure your development environment meets the follo
 
 **System Dependencies:**
 
-* **CMake**: Version 3.26.4 or higher
+* **CMake**: Version 3.30.4 or higher
 * **GCC**: A modern C++ compiler with C++17 support
 * **GMP**: The GNU Multiple Precision Arithmetic Library
 * **CUDA Toolkit**: Version 12.0 or higher

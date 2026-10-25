@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Developer: Alişah Özcan
 
-cmake_minimum_required(VERSION 3.26.4 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.30.4 FATAL_ERROR)
 project(HEonGPU VERSION 1.1.4 LANGUAGES C CXX CUDA ASM)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
