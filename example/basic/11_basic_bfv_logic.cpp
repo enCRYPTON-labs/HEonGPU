@@ -29,8 +29,9 @@ int main(int argc, char* argv[])
     // Alternative -> select sec_level_type as sec128(default), sec192,
     // sec256, none
     // heongpu::HEContext<Scheme> context = heongpu::GenHEContext<Scheme>(
-    //    heongpu::keyswitching_type::KEYSWITCHING_METHOD_I,
     //    heongpu::sec_level_type::sec128);
+    // The key switching method is selected from the P modulus size: one P
+    // prime selects KEYSWITCHING_METHOD_I, more select KEYSWITCHING_METHOD_II.
 
     // Set the coefficient modulus, which determines the size of the noise
     // budget. This parameter is crucial for controlling the number of

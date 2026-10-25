@@ -551,7 +551,7 @@ namespace heongpu
             std::cout << "Encryption parameters:" << std::endl;
             std::cout << "-->   scheme: " << scheme_string << std::endl;
             std::cout << "-->   poly_modulus_degree: " << n << std::endl;
-            std::cout << "-->   Q_tilta size: Q( ";
+            std::cout << "-->   Q_tilda size: Q( ";
 
             for (std::size_t i = 0; i < Q_mod_bit_sizes_.size() - 1; i++)
             {

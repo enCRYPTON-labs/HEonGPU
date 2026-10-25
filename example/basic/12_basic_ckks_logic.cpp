@@ -28,10 +28,11 @@ int main(int argc, char* argv[])
 
     // Alternative -> select sec_level_type as sec128(default), sec192,
     // sec256, none
-    // heongpu::HEContext<heongpu::Scheme::BFV> context =
-    // heongpu::GenHEContext<heongpu::Scheme::BFV>(
-    //    heongpu::keyswitching_type::KEYSWITCHING_METHOD_I,
+    // heongpu::HEContext<heongpu::Scheme::CKKS> context =
+    // heongpu::GenHEContext<heongpu::Scheme::CKKS>(
     //    heongpu::sec_level_type::sec128);
+    // The key switching method is selected from the P modulus size: one P
+    // prime selects KEYSWITCHING_METHOD_I, more select KEYSWITCHING_METHOD_II.
 
     // A recommended approach is to align the initial scale and the primes in
     // the coeff_modulus closely. After multiplication and rescaling, this

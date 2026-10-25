@@ -32,21 +32,21 @@ These examples cover the fundamental workflows for the BFV, CKKS, and TFHE schem
     * **Workflow**: It sets host and device pool sizes using either percentage-based limits or explicit byte values, then generates the context with the custom configuration.
     * **Key Concept**: Memory pooling is initialized once and reused across contexts, so the first configuration controls pool sizing for the process.
 
-4. BFV Logic Operations (``9_basic_bfv_logic.cpp``)
+4. BFV Logic Operations (``11_basic_bfv_logic.cpp``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     This example shows how to perform bitwise logic operations on encrypted binary data (0s and 1s) using the BFV scheme.
 
     * **Workflow**: It encrypts vectors of binary values and then uses the ``HELogicOperator`` class to perform homomorphic ``AND`` and ``XNOR`` operations.
     * **Key Concept**: The ``HELogicOperator`` provides a dedicated interface for boolean computations, which are fundamental in many privacy-preserving applications.
 
-5. CKKS Logic Operations (``10_basic_ckks_logic.cpp``)
+5. CKKS Logic Operations (``12_basic_ckks_logic.cpp``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     Similar to the BFV logic example, this demonstrates performing logic gates on binary data that has been encoded within the CKKS scheme.
 
     * **Workflow**: It encrypts vectors of 0.0s and 1.0s and uses the ``HELogicOperator`` to perform ``AND`` and ``XNOR`` operations.
     * **Key Concept**: This showcases the versatility of the CKKS scheme, which can handle both approximate arithmetic and boolean logic.
 
-6. Basic TFHE Operations (``13_basic_tfhe.cpp``)
+6. Basic TFHE Operations (``15_basic_tfhe.cpp``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    This example provides a complete demonstration of the TFHE scheme for boolean circuit evaluation.
 
@@ -77,9 +77,9 @@ These examples demonstrate more advanced capabilities of the library, such as di
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     This set of examples demonstrates how to leverage CUDA streams to execute multiple independent homomorphic operations concurrently, maximizing GPU utilization.
 
-    * ``6_default_stream_usage.cpp``: Serves as a baseline, performing a sequence of 64 operations serially in the default CUDA stream.
-    * ``7_multi_stream_usage_way1.cpp``: Uses **OpenMP** to parallelize a loop across multiple CPU threads. Each thread is assigned its own CUDA stream, and operations within that thread are submitted to its dedicated stream.
-    * ``8_multi_stream_usage_way2.cpp``: Shows an alternative approach where a single CPU thread manages multiple CUDA streams, assigning tasks to them in a round-robin fashion.
+    * ``8_default_stream_usage.cpp``: Serves as a baseline, performing a sequence of 64 operations serially in the default CUDA stream.
+    * ``9_multi_stream_usage_way1.cpp``: Uses **OpenMP** to parallelize a loop across multiple CPU threads. Each thread is assigned its own CUDA stream, and operations within that thread are submitted to its dedicated stream.
+    * ``10_multi_stream_usage_way2.cpp``: Shows an alternative approach where a single CPU thread manages multiple CUDA streams, assigning tasks to them in a round-robin fashion.
     * **Key Concept**: By passing a ``cudaStream_t`` object via ``ExecutionOptions``, users can direct HEonGPU to execute an operation on a specific stream, enabling powerful parallel execution patterns.
 
 Serialization
@@ -89,7 +89,7 @@ Serialization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     These examples demonstrate how to serialize and deserialize all major HEonGPU objects, which is essential for saving state, persistence, and client-server communication.
 
-    * ``11_bfv_serialization.cpp`` and ``12_ckks_serialization.cpp`` showcase the same workflow for their respective schemes.
+    * ``13_bfv_serialization.cpp`` and ``14_ckks_serialization.cpp`` showcase the same workflow for their respective schemes.
     * **Workflow**: They demonstrate serializing and deserializing every object type: ``HEContext``, ``Secretkey``, ``Publickey``, ``Relinkey``, ``Galoiskey``, ``Plaintext``, and ``Ciphertext``.
     * **Key Concept**: The library provides two main ways to serialize:
         * Directly calling ``object.save(stream)`` and ``object.load(stream)`` for raw, uncompressed binary data.

@@ -106,7 +106,7 @@ int main(int argc, char* argv[])
     operators.multiply_inplace(C1, C1);
     std::cout << "Remove non-linear part of ciphertext." << std::endl;
     operators.relinearize_inplace(C1, relin_key);
-    std::cout << "Divede ciphertext to last modulus and reduce noise."
+    std::cout << "Divide ciphertext to last modulus and reduce noise."
               << std::endl;
     operators.rescale_inplace(C1);
 

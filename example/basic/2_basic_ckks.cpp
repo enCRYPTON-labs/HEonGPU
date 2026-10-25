@@ -29,8 +29,9 @@ int main(int argc, char* argv[])
     // Alternative -> select sec_level_type as sec128(default), sec192,
     // sec256, none
     // heongpu::HEContext<Scheme> context = heongpu::GenHEContext<Scheme>(
-    //    heongpu::keyswitching_type::KEYSWITCHING_METHOD_I,
     //    heongpu::sec_level_type::sec128);
+    // The key switching method is selected from the P modulus size: one P
+    // prime selects KEYSWITCHING_METHOD_I, more select KEYSWITCHING_METHOD_II.
 
     // A recommended approach is to align the initial scale and the primes in
     // the coeff_modulus closely. After multiplication and rescaling, this
@@ -122,7 +123,7 @@ int main(int argc, char* argv[])
     operators.multiply_inplace(C1, C1);
     std::cout << "Remove non-linear part of ciphertext." << std::endl;
     operators.relinearize_inplace(C1, relin_key);
-    std::cout << "Divede ciphertext to last modulus and reduce noise."
+    std::cout << "Divide ciphertext to last modulus and reduce noise."
               << std::endl;
     operators.rescale_inplace(C1);
 
@@ -156,7 +157,7 @@ int main(int argc, char* argv[])
         P3); // for now, do it manually for each levels you need to go.
 
     heongpu::Ciphertext<Scheme> C2(context);
-    std::cout << "Mutiply ciphertext with plaintext." << std::endl;
+    std::cout << "Multiply ciphertext with plaintext." << std::endl;
     operators.multiply_plain(C1, P3, C2);
     std::cout << "Add ciphertext to itself." << std::endl;
     operators.add_inplace(C2, C2);

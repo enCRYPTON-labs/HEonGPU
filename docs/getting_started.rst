@@ -54,7 +54,11 @@ The library uses a standard CMake build process. The most critical configuration
        * - Ampere
          - 80, 86
        * - Ada Lovelace
-         - 89, 90
+         - 89
+       * - Hopper
+         - 90
+       * - Blackwell
+         - 100, 120
 
 **Step 3: Compile the Library**
     Once configuration is complete, build the library using the following command. The ``-jN`` flag will use multiple cores to speed up compilation. Replace ``N`` by the number of your logical cores (i.e. the output of ``nproc``).
@@ -107,7 +111,7 @@ The following "toy example" from the repository demonstrates a complete FHE work
 .. code-block:: cpp
    :linenos:
 
-    #include "heongpu.cuh"
+    #include <heongpu/heongpu.hpp>
 
     int main() {     
         // 1. Set up the HEContext for the BFV scheme
@@ -116,11 +120,11 @@ The following "toy example" from the repository demonstrates a complete FHE work
 
         // 2. Define and set encryption parameters
         size_t poly_modulus_degree = 8192;
-        context.set_poly_modulus_degree(poly_modulus_degree);
-        context.set_coeff_modulus_default_values(1); // Use 1 default prime for the coeff modulus
+        context->set_poly_modulus_degree(poly_modulus_degree);
+        context->set_coeff_modulus_default_values(1); // Use 1 default prime for the coeff modulus
         int plain_modulus = 1032193;
-        context.set_plain_modulus(plain_modulus);
-        context.generate(); // Finalize context and pre-compute values on GPU
+        context->set_plain_modulus(plain_modulus);
+        context->generate(); // Finalize context and pre-compute values on GPU
 
         // 3. Generate keys
         heongpu::HEKeyGenerator<heongpu::Scheme::BFV> keygen(context);

@@ -38,7 +38,7 @@ For more information about HEonGPU:
 The HEonGPU library now delivers `Collective Bootstrapping` for both BFV and CKKS, drawing on the designs introduced by [Mouchet et al.](https://eprint.iacr.org/2020/304.pdf)  and [Balle et al.](https://arxiv.org/pdf/2009.00349) A streamlined CUDA path merges share creation and re-encryption into a single launch, allowing deep multi-party workloads to keep running entirely on the GPU without pausing to reset noise.
 
 
-### 🚨 **New Scheme: [TFHE (Torus Fully Homomorphic Encryption)](example/basic/13_basic_tfhe.cpp)**
+### 🚨 **New Scheme: [TFHE (Torus Fully Homomorphic Encryption)](example/basic/15_basic_tfhe.cpp)**
 
 The HEonGPU library now includes support for the `TFHE` (Torus Fully Homomorphic Encryption) scheme with GPU acceleration. This enables efficient evaluation of Boolean circuits using fast gate bootstrapping and low-latency parallel execution on modern CUDA-enabled GPUs.
 
@@ -308,7 +308,9 @@ To build and install HEonGPU, follow the steps below. This includes configuring 
 | Volta  | 70, 72 |
 | Turing | 75 |
 | Ampere | 80, 86 |
-| Ada	 | 89, 90 |
+| Ada Lovelace | 89 |
+| Hopper | 90 |
+| Blackwell | 100, 120 |
 
 </div>
 
@@ -382,11 +384,11 @@ int main() {
         heongpu::GenHEContext<heongpu::Scheme::BFV>();
 
     size_t poly_modulus_degree = 8192;
-    context.set_poly_modulus_degree(poly_modulus_degree);
-    context.set_coeff_modulus_default_values(1);
+    context->set_poly_modulus_degree(poly_modulus_degree);
+    context->set_coeff_modulus_default_values(1);
     int plain_modulus = 1032193;
-    context.set_plain_modulus(plain_modulus);
-    context.generate();
+    context->set_plain_modulus(plain_modulus);
+    context->generate();
 
     heongpu::HEKeyGenerator<heongpu::Scheme::BFV> keygen(context);
     heongpu::Secretkey<heongpu::Scheme::BFV> secret_key(context);
@@ -451,8 +453,8 @@ a context. Sizes can be given as **percentages** (0.0-1.0 or 0-100) or as
 heongpu::HEContext<heongpu::Scheme::CKKS> context =
     heongpu::GenHEContext<heongpu::Scheme::CKKS>();
 
-context.set_poly_modulus_degree(8192);
-context.set_coeff_modulus_bit_sizes({60, 30, 30, 30}, {60});
+context->set_poly_modulus_degree(8192);
+context->set_coeff_modulus_bit_sizes({60, 30, 30, 30}, {60});
 
 heongpu::MemoryPoolConfig pool_config;
 pool_config.initial_device_fraction = 80.0f; // %80 (0.8f is also valid)
@@ -460,7 +462,7 @@ pool_config.max_device_fraction = 90.0f;     // %90
 pool_config.initial_host_bytes = 256ULL * 1024 * 1024; // 256 MB
 pool_config.max_host_fraction = 50.0f;                 // %50
 
-context.generate(pool_config);
+context->generate(pool_config);
 ```
 
 > Note: The memory pool is a process-wide singleton. The **first**
