@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
         scale, boot_config,
         heongpu::arithmetic_bootstrapping_type::SLIM_BOOTSTRAPPING);
 
-    std::vector<int> key_index = operators.bootstrapping_key_indexs();
+    std::vector<int> key_index = operators.bootstrapping_key_indices();
     std::cout << "Total galois key needed for CKKS bootstrapping: "
               << key_index.size() << std::endl;
     heongpu::Galoiskey<heongpu::Scheme::CKKS> galois_key(context, key_index);

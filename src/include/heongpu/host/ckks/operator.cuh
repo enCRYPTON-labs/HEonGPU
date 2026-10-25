@@ -2173,16 +2173,22 @@ namespace heongpu
             const arithmetic_bootstrapping_type& boot_type =
                 arithmetic_bootstrapping_type::REGULAR_BOOTSTRAPPING);
 
-        __host__ std::vector<int> bootstrapping_key_indexs()
+        __host__ std::vector<int> bootstrapping_key_indices()
         {
             if (!boot_context_generated_)
             {
                 throw std::invalid_argument(
-                    "Bootstrapping key indexs can not be returned before "
+                    "Bootstrapping key indices can not be returned before "
                     "generating Bootstrapping parameters!");
             }
 
             return key_indexs_;
+        }
+
+        [[deprecated("Use bootstrapping_key_indices() instead.")]]
+        __host__ std::vector<int> bootstrapping_key_indexs()
+        {
+            return bootstrapping_key_indices();
         }
 
         /**
@@ -3241,16 +3247,22 @@ namespace heongpu
          *
          * @return std::vector<int> Bootstrapping key indexes.
          */
-        __host__ std::vector<int> bootstrapping_key_indexs()
+        __host__ std::vector<int> bootstrapping_key_indices()
         {
             if (!boot_context_generated_)
             {
                 throw std::invalid_argument(
-                    "Bootstrapping key indexs can not be returned before "
+                    "Bootstrapping key indices can not be returned before "
                     "generating Bootstrapping parameters!");
             }
 
             return key_indexs_;
+        }
+
+        [[deprecated("Use bootstrapping_key_indices() instead.")]]
+        __host__ std::vector<int> bootstrapping_key_indexs()
+        {
+            return bootstrapping_key_indices();
         }
 
         /**
