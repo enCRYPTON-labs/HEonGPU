@@ -278,10 +278,11 @@ namespace heongpu
     void* MemoryPool::host_allocate(size_t size)
     {
         std::lock_guard<std::mutex> guard(mutex_);
-        if (host_pool_)
+        if (host_stats_adaptor_)
         {
-            return host_pool_->allocate(cuda::stream_ref{cudaStream_t{nullptr}},
-                                        size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+            return host_stats_adaptor_->allocate(
+                cuda::stream_ref{cudaStream_t{nullptr}}, size,
+                rmm::CUDA_ALLOCATION_ALIGNMENT);
         }
         ensure_base_resources();
         return host_base_->allocate(cuda::stream_ref{cudaStream_t{nullptr}},
@@ -291,10 +292,11 @@ namespace heongpu
     void MemoryPool::host_deallocate(void* ptr, size_t size)
     {
         std::lock_guard<std::mutex> guard(mutex_);
-        if (host_pool_)
+        if (host_stats_adaptor_)
         {
-            host_pool_->deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr,
-                                   size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+            host_stats_adaptor_->deallocate(
+                cuda::stream_ref{cudaStream_t{nullptr}}, ptr, size,
+                rmm::CUDA_ALLOCATION_ALIGNMENT);
             return;
         }
         ensure_base_resources();

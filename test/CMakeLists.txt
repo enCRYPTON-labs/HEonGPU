@@ -42,6 +42,8 @@ set(EXECUTABLES
 
     secretkey_security_testcases test_secretkey_security.cpp
     tfhe_gate_boot_testcases test_tfhe_gate_boot.cpp
+
+    memory_pool_testcases test_memory_pool.cpp
 )
 
 function(add_test exe source)
