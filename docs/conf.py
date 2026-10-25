@@ -8,7 +8,7 @@
 project = "HEonGPU"
 copyright = "2025, Ali Şah Özcan"
 author = "Ali Şah Özcan"
-release = "1.1.4"
+release = "1.2.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
