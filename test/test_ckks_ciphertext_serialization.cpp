@@ -7,9 +7,11 @@
 #include <heongpu/heongpu.hpp>
 #include <gtest/gtest.h>
 #include <array>
+#include <chrono>
 #include <climits>
 #include <limits>
 #include <sstream>
+#include <thread>
 
 namespace
 {
@@ -451,6 +453,35 @@ TEST_F(CKKSCiphertextSerialization,
                      heongpu::ExecutionOptions().set_stream(stream));
     restored.store_in_host(stream);
     EXPECT_EQ(data(restored), data(*ciphertext));
+    HEONGPU_CUDA_CHECK(cudaStreamDestroy(stream));
+}
+
+TEST_F(CKKSCiphertextSerialization, DecodeDoesNotWaitOnPlaintextStream)
+{
+    cudaStream_t stream;
+    HEONGPU_CUDA_CHECK(
+        cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+    {
+        const auto options = heongpu::ExecutionOptions().set_stream(stream);
+        heongpu::Plaintext<scheme> plain(context, options);
+        decryptor->decrypt(plain, *ciphertext, options);
+        HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
+        // Work queued on the plaintext's stream after this point must not be
+        // needed by a decode running on another stream.
+        HEONGPU_CUDA_CHECK(cudaLaunchHostFunc(
+            stream,
+            [](void*)
+            { std::this_thread::sleep_for(std::chrono::milliseconds(200)); },
+            nullptr));
+        std::vector<double> decoded;
+        encoder->decode(decoded, plain);
+        ASSERT_EQ(decoded.size(), message.size());
+        for (auto value : decoded)
+        {
+            EXPECT_NEAR(value, 0.125, 2e-4);
+        }
+    }
+    HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
     HEONGPU_CUDA_CHECK(cudaStreamDestroy(stream));
 }
 

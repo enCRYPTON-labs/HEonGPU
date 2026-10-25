@@ -240,7 +240,7 @@ namespace heongpu
         {
             input_storage_manager(
                 plain,
-                [&](Plaintext<Scheme::BFV> plain_)
+                [&](Plaintext<Scheme::BFV>& plain_)
                 { decode_bfv(message, plain_, options.stream_); },
                 options, false);
         }

@@ -373,12 +373,12 @@ namespace heongpu
          * @param plain Plaintext object to be decoded.
          */
         __host__ void
-        decode(std::vector<double>& message, Plaintext<Scheme::CKKS> plain,
+        decode(std::vector<double>& message, Plaintext<Scheme::CKKS>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
             input_storage_manager(
                 plain,
-                [&](Plaintext<Scheme::CKKS> plain_)
+                [&](Plaintext<Scheme::CKKS>& plain_)
                 {
                     if (plain_.encoding_ == encoding::COEFFICIENT)
                     {
@@ -401,12 +401,12 @@ namespace heongpu
          * @param plain Plaintext object to be decoded.
          */
         __host__ void
-        decode(HostVector<double>& message, Plaintext<Scheme::CKKS> plain,
+        decode(HostVector<double>& message, Plaintext<Scheme::CKKS>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
             input_storage_manager(
                 plain,
-                [&](Plaintext<Scheme::CKKS> plain_)
+                [&](Plaintext<Scheme::CKKS>& plain_)
                 {
                     if (plain_.encoding_ == encoding::COEFFICIENT)
                     {
@@ -427,12 +427,12 @@ namespace heongpu
          * @param plain Plaintext object to be decoded.
          */
         __host__ void
-        decode(std::vector<Complex64>& message, Plaintext<Scheme::CKKS> plain,
+        decode(std::vector<Complex64>& message, Plaintext<Scheme::CKKS>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
             input_storage_manager(
                 plain,
-                [&](Plaintext<Scheme::CKKS> plain_)
+                [&](Plaintext<Scheme::CKKS>& plain_)
                 {
                     if (plain_.encoding_ == encoding::COEFFICIENT)
                     {
@@ -454,12 +454,12 @@ namespace heongpu
          * @param plain Plaintext object to be decoded.
          */
         __host__ void
-        decode(HostVector<Complex64>& message, Plaintext<Scheme::CKKS> plain,
+        decode(HostVector<Complex64>& message, Plaintext<Scheme::CKKS>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
             input_storage_manager(
                 plain,
-                [&](Plaintext<Scheme::CKKS> plain_)
+                [&](Plaintext<Scheme::CKKS>& plain_)
                 {
                     if (plain_.encoding_ == encoding::COEFFICIENT)
                     {
