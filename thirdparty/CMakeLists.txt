@@ -23,13 +23,13 @@ include(FetchContent)
 FetchContent_Declare(
     rmm
     GIT_REPOSITORY https://github.com/rapidsai/rmm
-    GIT_TAG        v26.06.00
+    GIT_TAG        v26.08.00
     SOURCE_SUBDIR  cpp
 )
 
 set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
-# RMM is written against the CCCL version it pins (3.4.x for RMM 26.06).
+# RMM is written against the CCCL version it pins (3.4.x for RMM 26.08).
 # The CCCL shipped with the CUDA Toolkit can be older (CUDA 12.x ships CCCL 2.x)
 # or newer than that, and rapids-cmake would pick it up whenever it satisfies
 # the minimum version. Always fetch the pinned CCCL.
