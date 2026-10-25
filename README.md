@@ -435,11 +435,16 @@ Features in [define.h](src/include/heongpu/kernel/defines.h):
 - **Galois Key Capability:** `MAX_SHIFT` (8) controls the maximum rotation capability for Galois keys. __Don't forget to change it if you need more rotation steps(for default galois key generation)__.
 
 - **Device**:
-  - Initial size (`0.9`): 90% of available GPU memory.
+  - Initial size (`0.5`): 50% of available GPU memory.
   - Max size (`0.95`): 95% of available GPU memory.
 - **Host**:
   - Initial size (default): 100 MB when no runtime config is provided.
   - Max size (`0.4`): 40% of available CPU memory.
+
+The device pool grows on demand from the initial size up to the max size, so the
+initial size only decides how much memory is reserved up front. The default leaves
+room for other processes on the same GPU; to reserve more (or less) memory up front,
+set `initial_device_fraction` or `initial_device_bytes` in `MemoryPoolConfig` (see below).
 
 If your system allows, you can redefine the memory pool sizes to better suit your use case.
 

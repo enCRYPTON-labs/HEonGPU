@@ -208,3 +208,34 @@ TEST(HEonGPU, MemoryPool_Shrinks_Initial_Size_That_Does_Not_Fit)
     heongpu::DeviceVector<double> device_vector(count);
     EXPECT_EQ(cudaDeviceSynchronize(), cudaSuccess);
 }
+
+TEST(HEonGPU, MemoryPool_Initial_Device_Fraction_Can_Be_Chosen_By_User)
+{
+    auto& pool = heongpu::MemoryPool::instance();
+    if (pool.get_free_device_pool_memory() != 0)
+    {
+        GTEST_SKIP() << "The memory pool was already created in this process.";
+    }
+    size_t free_before = 0;
+    size_t total_memory = 0;
+    ASSERT_EQ(cudaMemGetInfo(&free_before, &total_memory), cudaSuccess);
+
+    heongpu::HEContext<heongpu::Scheme::CKKS> context =
+        heongpu::GenHEContext<heongpu::Scheme::CKKS>(
+            heongpu::sec_level_type::none);
+    context->set_poly_modulus_degree(4096);
+    context->set_coeff_modulus_bit_sizes({40, 30}, {40});
+
+    // Reserve more than the default up front.
+    heongpu::MemoryPoolConfig pool_config;
+    pool_config.initial_device_fraction = 80.0f;
+    pool_config.initial_host_bytes = 64ULL * 1024 * 1024;
+    pool_config.max_host_bytes = 256ULL * 1024 * 1024;
+    context->generate(pool_config);
+
+    const double reserved =
+        static_cast<double>(pool.get_free_device_pool_memory() +
+                            pool.get_current_device_pool_memory_usage());
+    EXPECT_GT(reserved, 0.7 * static_cast<double>(free_before));
+    EXPECT_LT(reserved, 0.85 * static_cast<double>(free_before));
+}
