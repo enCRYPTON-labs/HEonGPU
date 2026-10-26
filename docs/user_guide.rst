@@ -193,6 +193,13 @@ The CKKS scheme is tailored for applications involving real or complex numbers, 
 3.  **Multiply**: Perform a homomorphic multiplication. The scale of the resulting ciphertext will be approximately the product of the input scales (e.g., :math:`(2^{40})^2 = 2^{80}`).
 4.  **Rescale**: To manage the precision and prevent the scale from growing uncontrollably, a `rescale` operation is performed. This operation divides the internal plaintext by one of the coefficient moduli, effectively reducing the scale (e.g., back down to ~:math:`2^{40}`) and consuming one level of the modulus chain. The library will not permit further multiplications until a rescale operation is performed.
 
+Operations on a ciphertext and a plaintext need both at the same depth. To use a plaintext with a ciphertext that has lost moduli, encode it at the depth of the ciphertext directly, instead of encoding it and calling ``mod_drop``:
+
+.. code-block:: cpp
+
+    encoder.encode(plaintext, message, scale, ciphertext.depth());
+    operators.add_plain_inplace(ciphertext, plaintext);
+
 Noise Management in BFV
 ^^^^^^^^^^^^^^^^^^^^^^^
 

@@ -293,6 +293,75 @@ namespace heongpu
         //
 
         /**
+         * @brief Encodes a message into a plaintext at the given depth, so that
+         * it can be used with ciphertexts of that depth without mod_drop.
+         * Gives the same plaintext as encoding and then calling mod_drop depth
+         * times.
+         *
+         * @param plain Plaintext object where the result of the encoding will
+         * be stored.
+         * @param message Values to encode.
+         * @param scale Scale of the encoding.
+         * @param depth Number of dropped moduli, as Ciphertext::depth() returns
+         * it; from 0 to the number of ciphertext moduli minus one.
+         */
+        __host__ void
+        encode(Plaintext<Scheme::CKKS>& plain,
+               const std::vector<double>& message, double scale, int depth,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            validate_depth(depth);
+            encode(plain, message, scale, options, type);
+            drop_to_depth(plain, depth, options);
+        }
+
+        /**
+         * @brief Encodes a message into a plaintext at the given depth; see
+         * the std::vector<double> version.
+         */
+        __host__ void
+        encode(Plaintext<Scheme::CKKS>& plain,
+               const HostVector<double>& message, double scale, int depth,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            validate_depth(depth);
+            encode(plain, message, scale, options, type);
+            drop_to_depth(plain, depth, options);
+        }
+
+        /**
+         * @brief Encodes a message into a plaintext at the given depth; see
+         * the std::vector<double> version.
+         */
+        __host__ void
+        encode(Plaintext<Scheme::CKKS>& plain,
+               const std::vector<Complex64>& message, double scale, int depth,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            validate_depth(depth);
+            encode(plain, message, scale, options, type);
+            drop_to_depth(plain, depth, options);
+        }
+
+        /**
+         * @brief Encodes a message into a plaintext at the given depth; see
+         * the std::vector<double> version.
+         */
+        __host__ void
+        encode(Plaintext<Scheme::CKKS>& plain,
+               const HostVector<Complex64>& message, double scale, int depth,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            validate_depth(depth);
+            encode(plain, message, scale, options, type);
+            drop_to_depth(plain, depth, options);
+        }
+
+        /**
          * @brief Encodes a message of single double numbers into a plaintext.
          *
          * @param plain Plaintext object where the result of the encoding will
@@ -518,6 +587,42 @@ namespace heongpu
         HEEncoder& operator=(HEEncoder&& assign) = default;
 
       private:
+        void validate_depth(int depth) const
+        {
+            if (depth < 0 || depth >= context_->Q_size)
+            {
+                throw ParameterError(error_message(
+                    "Invalid depth ", depth, "! It must be between 0 and ",
+                    context_->Q_size - 1, "."));
+            }
+        }
+
+        // Keeps the moduli of the given depth, as mod_drop does.
+        void drop_to_depth(Plaintext<Scheme::CKKS>& plain, int depth,
+                           const ExecutionOptions& options)
+        {
+            if (depth == 0)
+            {
+                return;
+            }
+            const int size = context_->n * (context_->Q_size - depth);
+            if (plain.storage_type_ == storage_type::DEVICE)
+            {
+                DeviceVector<Data64> kept(size, options.stream_);
+                HEONGPU_CUDA_CHECK(
+                    cudaMemcpyAsync(kept.data(), plain.device_locations_.data(),
+                                    size * sizeof(Data64),
+                                    cudaMemcpyDeviceToDevice, options.stream_));
+                plain.memory_set(std::move(kept));
+            }
+            else
+            {
+                plain.host_locations_.resize(size);
+            }
+            plain.plain_size_ = size;
+            plain.depth_ = depth;
+        }
+
         __host__ void encode_ckks(Plaintext<Scheme::CKKS>& plain,
                                   const std::vector<double>& message,
                                   const double scale,

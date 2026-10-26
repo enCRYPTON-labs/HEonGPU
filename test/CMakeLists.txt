@@ -59,6 +59,7 @@ set(EXECUTABLES
     rmm_default_testcases test_rmm_default.cpp
     kernel_stack_testcases test_kernel_stack.cpp
     lifecycle_testcases test_lifecycle.cpp
+    ckks_encode_depth_testcases test_ckks_encode_depth.cpp
 )
 
 function(add_test exe source)
