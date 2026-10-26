@@ -441,7 +441,7 @@ namespace heongpu
                                                     options.stream_);
 
                             plaintext_.plain_size_ =
-                                context_->n * context_->Q_size;
+                                context_->n * (context_->Q_size - depth_check);
                             plaintext_.scheme_ = context_->scheme_;
                             plaintext_.context_id_ = context_->context_id_;
                             plaintext_.depth_ = depth_check;

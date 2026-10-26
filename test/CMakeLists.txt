@@ -60,6 +60,7 @@ set(EXECUTABLES
     kernel_stack_testcases test_kernel_stack.cpp
     lifecycle_testcases test_lifecycle.cpp
     ckks_encode_depth_testcases test_ckks_encode_depth.cpp
+    ckks_decrypt_depth_testcases test_ckks_decrypt_depth.cpp
 )
 
 function(add_test exe source)

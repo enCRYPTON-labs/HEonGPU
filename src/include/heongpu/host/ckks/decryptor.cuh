@@ -79,7 +79,8 @@ namespace heongpu
                                          options.stream_);
 
                             plaintext.plain_size_ =
-                                context_->n * context_->Q_size;
+                                context_->n *
+                                (context_->Q_size - ciphertext.depth_);
                             plaintext.scheme_ = context_->scheme_;
                             plaintext.context_id_ = context_->context_id_;
                             plaintext.depth_ = ciphertext.depth_;
