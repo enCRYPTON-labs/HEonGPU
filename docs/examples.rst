@@ -71,7 +71,7 @@ These examples demonstrate more advanced capabilities of the library, such as di
     This example is the CKKS counterpart to the previous one, showcasing rotations and key-switching for approximate numbers.
 
     * **Workflow**: It demonstrates the use of ``rotate_rows_inplace`` with Galois keys and the ``keyswitch`` operation, highlighting that the core concepts are similar across both BFV and CKKS.
-    * **Key Concept**: **Key-Switching Variants**. The example is configured to use ``KEYSWITCHING_METHOD_II``, a more advanced hybrid method that can offer better performance than the default ``METHOD_I`` in certain scenarios.
+    * **Key Concept**: **Key-Switching Digits**. The example uses two P primes, so hybrid key switching groups the ciphertext primes into digits of two primes; with one P prime every digit is one prime (the classical method).
 
 9. Multi-Stream Parallel Execution (``6_``, ``7_``, ``8_`` examples)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

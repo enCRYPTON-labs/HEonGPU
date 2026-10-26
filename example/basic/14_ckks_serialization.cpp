@@ -60,7 +60,7 @@ constexpr auto Scheme = heongpu::Scheme::CKKS;
 
 int main(int argc, char* argv[])
 {
-    // 2. Set up HE context (BFV scheme with key-switching METHOD_I)
+    // 2. Set up HE context (CKKS scheme)
     heongpu::HEContext<Scheme> context = heongpu::GenHEContext<Scheme>();
     const size_t poly_modulus_degree = 8192;
     context->set_poly_modulus_degree(poly_modulus_degree);
