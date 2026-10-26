@@ -1,0 +1,105 @@
+name: CI
+
+# Builds HEonGPU, installs it and builds a project that uses the installed
+# package. The runners have no GPU, so the tests and examples are built but not
+# run; run them on a machine with a GPU.
+
+# Only changes that can affect the build run it; for example, a change to the
+# documentation alone does not.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "CMakeLists.txt"
+      - "cmake/**"
+      - "src/**"
+      - "test/**"
+      - "example/**"
+      - "benchmark/**"
+      - "thirdparty/**"
+      - ".gitmodules"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "CMakeLists.txt"
+      - "cmake/**"
+      - "src/**"
+      - "test/**"
+      - "example/**"
+      - "benchmark/**"
+      - "thirdparty/**"
+      - ".gitmodules"
+      - ".github/workflows/ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: CUDA ${{ matrix.cuda }}, ${{ matrix.library }} library
+    runs-on: ubuntu-24.04
+    container: nvidia/cuda:${{ matrix.cuda }}-devel-ubuntu22.04
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - cuda: 13.4.3
+            library: static
+          - cuda: 13.4.3
+            library: shared
+          # The oldest supported CUDA version.
+          - cuda: 12.8.2
+            library: static
+    env:
+      SHARED: ${{ matrix.library == 'shared' && 'ON' || 'OFF' }}
+      CUDA_PROJECT: ${{ matrix.library == 'static' && 'ON' || 'OFF' }}
+    steps:
+      - name: Install system packages
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            git python3-pip libgmp-dev libntl-dev libssl-dev zlib1g-dev
+          python3 -m pip install --no-cache-dir "cmake==4.0.3"
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Without a GPU, the architecture cannot be detected, and the test
+      # executables cannot be run to list their tests at build time.
+      - name: Configure
+        run: |
+          cmake -S . -B build \
+            -D CMAKE_BUILD_TYPE=Release \
+            -D CMAKE_CUDA_ARCHITECTURES=89 \
+            -D CMAKE_INSTALL_PREFIX="$PWD/install" \
+            -D HEonGPU_BUILD_SHARED=$SHARED \
+            -D HEonGPU_BUILD_TESTS=ON \
+            -D HEonGPU_BUILD_EXAMPLES=ON \
+            -D HEonGPU_BUILD_BENCHMARKS=ON \
+            -D CMAKE_GTEST_DISCOVER_TESTS_DISCOVERY_MODE=PRE_TEST
+
+      - name: Build
+        run: cmake --build build -j "$(nproc)"
+
+      - name: Install
+        run: cmake --install build
+
+      - name: Build a project that uses the installed HEonGPU
+        run: |
+          cmake -S test/package -B package-build \
+            -D CMAKE_PREFIX_PATH="$PWD/install" \
+            -D CMAKE_CUDA_ARCHITECTURES=89 \
+            -D HEONGPU_PACKAGE_TEST_CUDA=$CUDA_PROJECT
+          cmake --build package-build
+
+      - name: Uninstall
+        run: |
+          echo yes | cmake --build build --target uninstall
+          test -z "$(find install -type f)"
