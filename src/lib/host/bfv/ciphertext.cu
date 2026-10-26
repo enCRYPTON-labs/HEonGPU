@@ -398,4 +398,30 @@ namespace heongpu
         }
     }
 
+    std::string Ciphertext<Scheme::BFV>::to_string() const
+    {
+        if (!ciphertext_generated_)
+        {
+            return "Ciphertext<BFV>(not generated)";
+        }
+        std::ostringstream stream;
+        stream << "Ciphertext<BFV>(N=" << ring_size_
+               << ", size=" << cipher_size_
+               << ", moduli=" << coeff_modulus_count_ << ", "
+               << (in_ntt_domain_ ? "NTT" : "coefficient") << " domain, "
+               << detail::name(storage_type_);
+        if (relinearization_required_)
+        {
+            stream << ", relinearization required";
+        }
+        stream << ")";
+        return stream.str();
+    }
+
+    std::ostream& operator<<(std::ostream& os,
+                             const Ciphertext<Scheme::BFV>& object)
+    {
+        return os << object.to_string();
+    }
+
 } // namespace heongpu

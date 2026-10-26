@@ -167,6 +167,12 @@ namespace heongpu
             return relinearization_required_;
         }
 
+        /**
+         * @brief Returns a one line description, for example for logs and
+         * error reports. Also written by operator<<.
+         */
+        std::string to_string() const;
+
         Ciphertext() = default;
 
         Ciphertext(const Ciphertext& copy)
@@ -305,6 +311,9 @@ namespace heongpu
         void remove_from_device(cudaStream_t stream);
         void remove_from_host();
     };
+
+    std::ostream& operator<<(std::ostream& os,
+                             const Ciphertext<Scheme::BFV>& object);
 
 } // namespace heongpu
 #endif // HEONGPU_BFV_CIPHERTEXT_H

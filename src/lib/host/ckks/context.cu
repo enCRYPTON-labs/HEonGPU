@@ -551,38 +551,38 @@ namespace heongpu
         }
     }
 
-    void HEContextImpl<Scheme::CKKS>::print_parameters()
+    void HEContextImpl<Scheme::CKKS>::print_parameters(std::ostream& os) const
     {
         if (context_generated_)
         {
             std::string scheme_string = "CKKS";
 
-            std::cout << "==== HEonGPU a GPU Based Homomorphic Encryption "
-                         "Library ====\n"
-                      << std::endl;
-            std::cout << "Encryption parameters:" << std::endl;
-            std::cout << "-->   scheme: " << scheme_string << std::endl;
-            std::cout << "-->   poly_modulus_degree: " << n << std::endl;
-            std::cout << "-->   Q_tilda size: Q( ";
+            os << "==== HEonGPU a GPU Based Homomorphic Encryption "
+                  "Library ====\n"
+               << std::endl;
+            os << "Encryption parameters:" << std::endl;
+            os << "-->   scheme: " << scheme_string << std::endl;
+            os << "-->   poly_modulus_degree: " << n << std::endl;
+            os << "-->   Q_tilda size: Q( ";
 
             for (std::size_t i = 0; i < Q_mod_bit_sizes_.size() - 1; i++)
             {
-                std::cout << Q_mod_bit_sizes_[i] << " + ";
+                os << Q_mod_bit_sizes_[i] << " + ";
             }
-            std::cout << Q_mod_bit_sizes_.back();
-            std::cout << " ) + P( ";
+            os << Q_mod_bit_sizes_.back();
+            os << " ) + P( ";
             for (std::size_t i = 0; i < P_mod_bit_sizes_.size() - 1; i++)
             {
-                std::cout << P_mod_bit_sizes_[i] << " + ";
+                os << P_mod_bit_sizes_[i] << " + ";
             }
-            std::cout << P_mod_bit_sizes_.back();
-            std::cout << " ) bits" << std::endl;
+            os << P_mod_bit_sizes_.back();
+            os << " ) bits" << std::endl;
 
-            std::cout << std::endl;
+            os << std::endl;
         }
         else
         {
-            std::cout << "Parameters is not generated yet!" << std::endl;
+            os << "Parameters is not generated yet!" << std::endl;
         }
     }
 
@@ -731,6 +731,46 @@ namespace heongpu
         {
             throw std::runtime_error("Context has been already exist!");
         }
+    }
+
+    std::string HEContextImpl<Scheme::CKKS>::to_string() const
+    {
+        if (!context_generated_)
+        {
+            return "HEContext<CKKS>(not generated)";
+        }
+        std::ostringstream stream;
+        auto bits = [&](const std::vector<int>& sizes)
+        {
+            for (std::size_t i = 0; i < sizes.size(); i++)
+            {
+                stream << (i == 0 ? "" : "+") << sizes[i];
+            }
+        };
+        stream << "HEContext<CKKS>(N=" << n << ", Q=";
+        bits(Q_mod_bit_sizes_);
+        stream << " bits, P=";
+        bits(P_mod_bit_sizes_);
+        stream << " bits, " << detail::name(keyswitching_type_)
+               << ", security=" << detail::name(sec_level_) << ", id=0x"
+               << std::hex << context_id_ << ")";
+        return stream.str();
+    }
+
+    std::ostream& operator<<(std::ostream& os,
+                             const HEContextImpl<Scheme::CKKS>& object)
+    {
+        return os << object.to_string();
+    }
+
+    std::ostream& operator<<(std::ostream& os,
+                             const HEContext<Scheme::CKKS>& context)
+    {
+        if (!context)
+        {
+            return os << "HEContext<CKKS>(null)";
+        }
+        return os << *context;
     }
 
     template class HEContextImpl<Scheme::CKKS>;

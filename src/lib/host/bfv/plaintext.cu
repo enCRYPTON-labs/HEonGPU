@@ -297,4 +297,23 @@ namespace heongpu
         }
     }
 
+    std::string Plaintext<Scheme::BFV>::to_string() const
+    {
+        if (!plaintext_generated_)
+        {
+            return "Plaintext<BFV>(not generated)";
+        }
+        std::ostringstream stream;
+        stream << "Plaintext<BFV>(size=" << plain_size_ << ", "
+               << (in_ntt_domain_ ? "NTT" : "coefficient") << " domain, "
+               << detail::name(storage_type_) << ")";
+        return stream.str();
+    }
+
+    std::ostream& operator<<(std::ostream& os,
+                             const Plaintext<Scheme::BFV>& object)
+    {
+        return os << object.to_string();
+    }
+
 } // namespace heongpu

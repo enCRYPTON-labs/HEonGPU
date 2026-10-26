@@ -51,6 +51,7 @@ set(EXECUTABLES
     context_randomness_testcases test_context_randomness.cpp
     serialization_context_testcases test_serialization_context.cpp
     serialization_format_testcases test_serialization_format.cpp
+    to_string_testcases test_to_string.cpp
 )
 
 function(add_test exe source)

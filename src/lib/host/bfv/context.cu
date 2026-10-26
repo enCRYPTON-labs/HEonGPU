@@ -779,40 +779,39 @@ namespace heongpu
         }
     }
 
-    void HEContextImpl<Scheme::BFV>::print_parameters()
+    void HEContextImpl<Scheme::BFV>::print_parameters(std::ostream& os) const
     {
         if (context_generated_)
         {
             std::string scheme_string = "BFV";
-            std::cout << "==== HEonGPU a GPU Based Homomorphic Encryption "
-                         "Library ====\n"
-                      << std::endl;
-            std::cout << "Encryption parameters:" << std::endl;
-            std::cout << "-->   scheme: " << scheme_string << std::endl;
-            std::cout << "-->   poly_modulus_degree: " << n << std::endl;
-            std::cout << "-->   Q_tilda size: Q( ";
+            os << "==== HEonGPU a GPU Based Homomorphic Encryption "
+                  "Library ====\n"
+               << std::endl;
+            os << "Encryption parameters:" << std::endl;
+            os << "-->   scheme: " << scheme_string << std::endl;
+            os << "-->   poly_modulus_degree: " << n << std::endl;
+            os << "-->   Q_tilda size: Q( ";
 
             for (std::size_t i = 0; i < Q_mod_bit_sizes_.size() - 1; i++)
             {
-                std::cout << Q_mod_bit_sizes_[i] << " + ";
+                os << Q_mod_bit_sizes_[i] << " + ";
             }
-            std::cout << Q_mod_bit_sizes_.back();
-            std::cout << " ) + P( ";
+            os << Q_mod_bit_sizes_.back();
+            os << " ) + P( ";
             for (std::size_t i = 0; i < P_mod_bit_sizes_.size() - 1; i++)
             {
-                std::cout << P_mod_bit_sizes_[i] << " + ";
+                os << P_mod_bit_sizes_[i] << " + ";
             }
-            std::cout << P_mod_bit_sizes_.back();
-            std::cout << " ) bits" << std::endl;
+            os << P_mod_bit_sizes_.back();
+            os << " ) bits" << std::endl;
 
-            std::cout << "-->   plain_modulus: " << plain_modulus_.value
-                      << std::endl;
+            os << "-->   plain_modulus: " << plain_modulus_.value << std::endl;
 
-            std::cout << std::endl;
+            os << std::endl;
         }
         else
         {
-            std::cout << "Parameters is not generated yet!" << std::endl;
+            os << "Parameters is not generated yet!" << std::endl;
         }
     }
 
@@ -1374,6 +1373,47 @@ namespace heongpu
         Data64 inv_gamma = OPERATOR64::modinv(mod_, plain_mod);
 
         return inv_gamma;
+    }
+
+    std::string HEContextImpl<Scheme::BFV>::to_string() const
+    {
+        if (!context_generated_)
+        {
+            return "HEContext<BFV>(not generated)";
+        }
+        std::ostringstream stream;
+        auto bits = [&](const std::vector<int>& sizes)
+        {
+            for (std::size_t i = 0; i < sizes.size(); i++)
+            {
+                stream << (i == 0 ? "" : "+") << sizes[i];
+            }
+        };
+        stream << "HEContext<BFV>(N=" << n << ", Q=";
+        bits(Q_mod_bit_sizes_);
+        stream << " bits, P=";
+        bits(P_mod_bit_sizes_);
+        stream << " bits, t=" << plain_modulus_.value << ", "
+               << detail::name(keyswitching_type_)
+               << ", security=" << detail::name(sec_level_) << ", id=0x"
+               << std::hex << context_id_ << ")";
+        return stream.str();
+    }
+
+    std::ostream& operator<<(std::ostream& os,
+                             const HEContextImpl<Scheme::BFV>& object)
+    {
+        return os << object.to_string();
+    }
+
+    std::ostream& operator<<(std::ostream& os,
+                             const HEContext<Scheme::BFV>& context)
+    {
+        if (!context)
+        {
+            return os << "HEContext<BFV>(null)";
+        }
+        return os << *context;
     }
 
     template class HEContextImpl<Scheme::BFV>;

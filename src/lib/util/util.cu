@@ -8,6 +8,63 @@
 
 namespace heongpu
 {
+    namespace detail
+    {
+        const char* name(sec_level_type level)
+        {
+            switch (level)
+            {
+                case sec_level_type::none:
+                    return "none";
+                case sec_level_type::sec128:
+                    return "sec128";
+                case sec_level_type::sec192:
+                    return "sec192";
+                case sec_level_type::sec256:
+                    return "sec256";
+            }
+            return "unknown";
+        }
+
+        const char* name(keyswitching_type type)
+        {
+            switch (type)
+            {
+                case keyswitching_type::NONE:
+                    return "NONE";
+                case keyswitching_type::KEYSWITCHING_METHOD_I:
+                    return "KEYSWITCHING_METHOD_I";
+                case keyswitching_type::KEYSWITCHING_METHOD_II:
+                    return "KEYSWITCHING_METHOD_II";
+            }
+            return "unknown";
+        }
+
+        const char* name(storage_type type)
+        {
+            switch (type)
+            {
+                case storage_type::HOST:
+                    return "HOST";
+                case storage_type::DEVICE:
+                    return "DEVICE";
+            }
+            return "unknown";
+        }
+
+        const char* name(encoding type)
+        {
+            switch (type)
+            {
+                case encoding::SLOT:
+                    return "SLOT";
+                case encoding::COEFFICIENT:
+                    return "COEFFICIENT";
+            }
+            return "unknown";
+        }
+    } // namespace detail
+
     std::uint64_t context_identity(int scheme, int ring_size,
                                    const std::vector<Modulus64>& primes,
                                    Data64 plain_modulus)

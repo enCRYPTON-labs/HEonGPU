@@ -109,6 +109,12 @@ namespace heongpu
          * Initializes an empty Plaintext object. All members will have their
          * default values.
          */
+        /**
+         * @brief Returns a one line description, for example for logs and
+         * error reports. Also written by operator<<.
+         */
+        std::string to_string() const;
+
         Plaintext() = default;
 
         Plaintext(const Plaintext& copy)
@@ -226,6 +232,9 @@ namespace heongpu
         void remove_from_device(cudaStream_t stream);
         void remove_from_host();
     };
+
+    std::ostream& operator<<(std::ostream& os,
+                             const Plaintext<Scheme::BFV>& object);
 
 } // namespace heongpu
 #endif // HEONGPU_BFV_PLAINTEXT_H

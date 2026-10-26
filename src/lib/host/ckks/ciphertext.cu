@@ -503,4 +503,35 @@ namespace heongpu
         }
     }
 
+    std::string Ciphertext<Scheme::CKKS>::to_string() const
+    {
+        if (!ciphertext_generated_)
+        {
+            return "Ciphertext<CKKS>(not generated)";
+        }
+        std::ostringstream stream;
+        stream << "Ciphertext<CKKS>(N=" << ring_size_
+               << ", size=" << cipher_size_ << ", level=" << level()
+               << ", depth=" << depth_ << ", scale=2^" << std::log2(scale_)
+               << ", " << detail::name(encoding_) << ", "
+               << (in_ntt_domain_ ? "NTT" : "coefficient") << " domain, "
+               << detail::name(storage_type_);
+        if (rescale_required_)
+        {
+            stream << ", rescale required";
+        }
+        if (relinearization_required_)
+        {
+            stream << ", relinearization required";
+        }
+        stream << ")";
+        return stream.str();
+    }
+
+    std::ostream& operator<<(std::ostream& os,
+                             const Ciphertext<Scheme::CKKS>& object)
+    {
+        return os << object.to_string();
+    }
+
 } // namespace heongpu

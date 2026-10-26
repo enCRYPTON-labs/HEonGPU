@@ -62,7 +62,17 @@ namespace heongpu
         void generate();
         void generate(const MemoryPoolConfig& pool_config);
 
-        void print_parameters();
+        /**
+         * @brief Writes the encryption parameters to os, std::cout by
+         * default.
+         */
+        void print_parameters(std::ostream& os = std::cout) const;
+
+        /**
+         * @brief Returns a one line description, for example for logs and
+         * error reports. Also written by operator<<.
+         */
+        std::string to_string() const;
 
         inline int get_poly_modulus_degree() const noexcept { return n; }
 
@@ -306,6 +316,12 @@ namespace heongpu
         std::shared_ptr<DeviceVector<int>> I_location_;
         std::shared_ptr<DeviceVector<int>> Sk_pair_;
     };
+
+    std::ostream& operator<<(std::ostream& os,
+                             const HEContextImpl<Scheme::BFV>& object);
+
+    std::ostream& operator<<(std::ostream& os,
+                             const HEContext<Scheme::BFV>& context);
 
 } // namespace heongpu
 #endif // HEONGPU_BFV_CONTEXT_H

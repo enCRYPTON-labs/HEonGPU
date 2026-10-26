@@ -313,4 +313,25 @@ namespace heongpu
         }
     }
 
+    std::string Plaintext<Scheme::CKKS>::to_string() const
+    {
+        if (!plaintext_generated_)
+        {
+            return "Plaintext<CKKS>(not generated)";
+        }
+        std::ostringstream stream;
+        stream << "Plaintext<CKKS>(size=" << plain_size_ << ", depth=" << depth_
+               << ", scale=2^" << std::log2(scale_) << ", "
+               << detail::name(encoding_) << ", "
+               << (in_ntt_domain_ ? "NTT" : "coefficient") << " domain, "
+               << detail::name(storage_type_) << ")";
+        return stream.str();
+    }
+
+    std::ostream& operator<<(std::ostream& os,
+                             const Plaintext<Scheme::CKKS>& object)
+    {
+        return os << object.to_string();
+    }
+
 } // namespace heongpu

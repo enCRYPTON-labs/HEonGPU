@@ -63,6 +63,15 @@ namespace heongpu
     // larger limit set by the application.
     void ensure_kernel_stack_size(size_t bytes);
 
+    namespace detail
+    {
+        // Names used by the to_string() functions.
+        const char* name(sec_level_type level);
+        const char* name(keyswitching_type type);
+        const char* name(storage_type type);
+        const char* name(encoding type);
+    } // namespace detail
+
     // Identity of an HEContext, computed from the parameters its objects
     // depend on: the scheme, the ring size, the Q and P primes and the
     // plaintext modulus (0 when the scheme has none). Contexts generated from

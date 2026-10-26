@@ -59,7 +59,17 @@ namespace heongpu
         void generate();
         void generate(const MemoryPoolConfig& pool_config);
 
-        void print_parameters();
+        /**
+         * @brief Writes the encryption parameters to os, std::cout by
+         * default.
+         */
+        void print_parameters(std::ostream& os = std::cout) const;
+
+        /**
+         * @brief Returns a one line description, for example for logs and
+         * error reports. Also written by operator<<.
+         */
+        std::string to_string() const;
 
         inline int get_poly_modulus_degree() const noexcept { return n; }
 
@@ -186,6 +196,12 @@ namespace heongpu
         // int* prime_location_leveled;
         std::shared_ptr<DeviceVector<int>> prime_location_leveled;
     };
+
+    std::ostream& operator<<(std::ostream& os,
+                             const HEContextImpl<Scheme::CKKS>& object);
+
+    std::ostream& operator<<(std::ostream& os,
+                             const HEContext<Scheme::CKKS>& context);
 
 } // namespace heongpu
 #endif // HEONGPU_CKKS_CONTEXT_H
