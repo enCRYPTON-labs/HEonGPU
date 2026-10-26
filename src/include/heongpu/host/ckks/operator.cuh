@@ -2195,6 +2195,12 @@ namespace heongpu
 
         ///////////////////////////////////////////////////
 
+        // The ModUp of key switching: splits input, the depth_-th level
+        // polynomial to be key switched in coefficient form, into the digits
+        // of the context and extends each digit to the primes of P * Q_l.
+        __host__ void decompose_to_Qtilde(Data64* input, Data64* output,
+                                          int depth, cudaStream_t stream);
+
         __host__ void rotate_ckks_method_I(Ciphertext<Scheme::CKKS>& input1,
                                            Ciphertext<Scheme::CKKS>& output,
                                            Galoiskey<Scheme::CKKS>& galois_key,

@@ -95,6 +95,14 @@ namespace heongpu
         int d, int current_Qtilda_size, int current_Q_size, int level,
         int* mod_index);
 
+    // base_conversion_DtoQtilde_relin_leveled_kernel for digits of one prime:
+    // lifts each coefficient to its centered representative and reduces it
+    // by the other moduli (Q primes below current_Q_size, then the P primes,
+    // which start level positions later).
+    __global__ void single_prime_digits_to_Qtilde_kernel(
+        Data64* ciphertext, Data64* output, Modulus64* modulus, int n_power,
+        int current_Qtilda_size, int current_Q_size, int level);
+
     __global__ void multiply_accumulate_extended_kernel(
         Data64* input, Data64* relinkey, Data64* output, Modulus64* B_prime,
         int n_power, int d_tilda, int d, int r_prime);

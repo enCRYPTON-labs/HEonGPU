@@ -647,16 +647,9 @@ namespace heongpu
         Data64* temp2_relin = temp1_relin + (context_->n * context_->Q_size *
                                              context_->Q_prime_size);
 
-        base_conversion_DtoQtilde_relin_kernel<<<dim3((context_->n >> 8), d, 1),
-                                                 256, 0, stream>>>(
-            input1.data() + (context_->Q_size << (context_->n_power + 1)),
-            temp1_relin, context_->modulus_->data(),
-            context_->base_change_matrix_D_to_Q_tilda_->data(),
-            context_->Mi_inv_D_to_Q_tilda_->data(),
-            context_->prod_D_to_Q_tilda_->data(), context_->I_j_->data(),
-            context_->I_location_->data(), context_->n_power, context_->Q_size,
-            context_->Q_prime_size, d);
-        HEONGPU_CUDA_CHECK(cudaGetLastError());
+        decompose_to_Qtilde(input1.data() +
+                                (context_->Q_size << (context_->n_power + 1)),
+                            temp1_relin, stream);
 
         gpuntt::ntt_rns_configuration<Data64> cfg_ntt = {
             .n_power = context_->n_power,
@@ -710,13 +703,53 @@ namespace heongpu
                                  2 * context_->Q_prime_size,
                                  context_->Q_prime_size);
 
-        divide_round_lastq_extended_kernel<<<
-            dim3((context_->n >> 8), context_->Q_size, 2), 256, 0, stream>>>(
-            temp2_relin, input1.data(), input1.data(),
-            context_->modulus_->data(), context_->half_p_->data(),
-            context_->half_mod_->data(), context_->last_q_modinv_->data(),
-            context_->n_power, context_->Q_prime_size, context_->Q_size,
-            context_->P_size);
+        if (context_->P_size == 1)
+        {
+            divide_round_lastq_kernel<<<dim3((context_->n >> 8),
+                                             context_->Q_size, 2),
+                                        256, 0, stream>>>(
+                temp2_relin, input1.data(), input1.data(),
+                context_->modulus_->data(), context_->half_p_->data(),
+                context_->half_mod_->data(), context_->last_q_modinv_->data(),
+                context_->n_power, context_->Q_size);
+        }
+        else
+        {
+            divide_round_lastq_extended_kernel<<<dim3((context_->n >> 8),
+                                                      context_->Q_size, 2),
+                                                 256, 0, stream>>>(
+                temp2_relin, input1.data(), input1.data(),
+                context_->modulus_->data(), context_->half_p_->data(),
+                context_->half_mod_->data(), context_->last_q_modinv_->data(),
+                context_->n_power, context_->Q_prime_size, context_->Q_size,
+                context_->P_size);
+        }
+        HEONGPU_CUDA_CHECK(cudaGetLastError());
+    }
+
+    __host__ void
+    HEOperator<Scheme::BFV>::decompose_to_Qtilde(Data64* input, Data64* output,
+                                                 cudaStream_t stream)
+    {
+        if (context_->P_size == 1)
+        {
+            // Every digit is one prime.
+            single_prime_digits_to_Qtilde_kernel<<<
+                dim3((context_->n >> 8), context_->d, 1), 256, 0, stream>>>(
+                input, output, context_->modulus_->data(), context_->n_power,
+                context_->Q_prime_size, context_->Q_size, 0);
+            HEONGPU_CUDA_CHECK(cudaGetLastError());
+            return;
+        }
+
+        base_conversion_DtoQtilde_relin_kernel<<<
+            dim3((context_->n >> 8), context_->d, 1), 256, 0, stream>>>(
+            input, output, context_->modulus_->data(),
+            context_->base_change_matrix_D_to_Q_tilda_->data(),
+            context_->Mi_inv_D_to_Q_tilda_->data(),
+            context_->prod_D_to_Q_tilda_->data(), context_->I_j_->data(),
+            context_->I_location_->data(), context_->n_power, context_->Q_size,
+            context_->Q_prime_size, context_->d);
         HEONGPU_CUDA_CHECK(cudaGetLastError());
     }
 
@@ -944,22 +977,12 @@ namespace heongpu
         Data64* temp3_rotation =
             temp2_rotation + (2 * context_->n * context_->Q_prime_size * d);
 
-        // TODO: make it efficient
-        global_memory_replace_kernel<<<
-            dim3((context_->n >> 8), context_->Q_size, 1), 256, 0, stream>>>(
-            input1.data(), temp0_rotation, context_->n_power);
-        HEONGPU_CUDA_CHECK(cudaGetLastError());
+        // c0 is read from input1, which is replaced only at the end.
+        temp0_rotation = input1.data();
 
-        base_conversion_DtoQtilde_relin_kernel<<<dim3((context_->n >> 8), d, 1),
-                                                 256, 0, stream>>>(
-            input1.data() + (context_->Q_size << context_->n_power),
-            temp2_rotation, context_->modulus_->data(),
-            context_->base_change_matrix_D_to_Q_tilda_->data(),
-            context_->Mi_inv_D_to_Q_tilda_->data(),
-            context_->prod_D_to_Q_tilda_->data(), context_->I_j_->data(),
-            context_->I_location_->data(), context_->n_power, context_->Q_size,
-            context_->Q_prime_size, d);
-        HEONGPU_CUDA_CHECK(cudaGetLastError());
+        decompose_to_Qtilde(input1.data() +
+                                (context_->Q_size << context_->n_power),
+                            temp2_rotation, stream);
 
         gpuntt::ntt_rns_configuration<Data64> cfg_ntt = {
             .n_power = context_->n_power,
@@ -1149,22 +1172,12 @@ namespace heongpu
         Data64* temp3_rotation =
             temp2_rotation + (2 * context_->n * context_->Q_prime_size * d);
 
-        // TODO: make it efficient
-        global_memory_replace_kernel<<<
-            dim3((context_->n >> 8), context_->Q_size, 1), 256, 0, stream>>>(
-            input1.data(), temp0_rotation, context_->n_power);
-        HEONGPU_CUDA_CHECK(cudaGetLastError());
+        // c0 is read from input1, which is replaced only at the end.
+        temp0_rotation = input1.data();
 
-        base_conversion_DtoQtilde_relin_kernel<<<dim3((context_->n >> 8), d, 1),
-                                                 256, 0, stream>>>(
-            input1.data() + (context_->Q_size << context_->n_power),
-            temp2_rotation, context_->modulus_->data(),
-            context_->base_change_matrix_D_to_Q_tilda_->data(),
-            context_->Mi_inv_D_to_Q_tilda_->data(),
-            context_->prod_D_to_Q_tilda_->data(), context_->I_j_->data(),
-            context_->I_location_->data(), context_->n_power, context_->Q_size,
-            context_->Q_prime_size, d);
-        HEONGPU_CUDA_CHECK(cudaGetLastError());
+        decompose_to_Qtilde(input1.data() +
+                                (context_->Q_size << context_->n_power),
+                            temp2_rotation, stream);
 
         gpuntt::ntt_rns_configuration<Data64> cfg_ntt = {
             .n_power = context_->n_power,
@@ -1346,21 +1359,12 @@ namespace heongpu
         Data64* temp3_rotation =
             temp2_rotation + (2 * context_->n * context_->Q_prime_size * d);
 
-        cipher_broadcast_switchkey_method_II_kernel<<<
-            dim3((context_->n >> 8), context_->Q_size, 2), 256, 0, stream>>>(
-            input1.data(), temp0_rotation, temp1_rotation,
-            context_->modulus_->data(), context_->n_power, context_->Q_size);
-        HEONGPU_CUDA_CHECK(cudaGetLastError());
+        // c0 and c1 are read from input1, which is replaced only at the end.
+        temp0_rotation = input1.data();
+        temp1_rotation =
+            input1.data() + (context_->Q_size << context_->n_power);
 
-        base_conversion_DtoQtilde_relin_kernel<<<dim3((context_->n >> 8), d, 1),
-                                                 256, 0, stream>>>(
-            temp1_rotation, temp2_rotation, context_->modulus_->data(),
-            context_->base_change_matrix_D_to_Q_tilda_->data(),
-            context_->Mi_inv_D_to_Q_tilda_->data(),
-            context_->prod_D_to_Q_tilda_->data(), context_->I_j_->data(),
-            context_->I_location_->data(), context_->n_power, context_->Q_size,
-            context_->Q_prime_size, d);
-        HEONGPU_CUDA_CHECK(cudaGetLastError());
+        decompose_to_Qtilde(temp1_rotation, temp2_rotation, stream);
 
         gpuntt::ntt_rns_configuration<Data64> cfg_ntt = {
             .n_power = context_->n_power,
@@ -1415,13 +1419,27 @@ namespace heongpu
                                  2 * context_->Q_prime_size,
                                  context_->Q_prime_size);
 
-        divide_round_lastq_extended_switchkey_kernel<<<
-            dim3((context_->n >> 8), context_->Q_size, 2), 256, 0, stream>>>(
-            temp3_rotation, temp0_rotation, output_memory.data(),
-            context_->modulus_->data(), context_->half_p_->data(),
-            context_->half_mod_->data(), context_->last_q_modinv_->data(),
-            context_->n_power, context_->Q_prime_size, context_->Q_size,
-            context_->P_size);
+        if (context_->P_size == 1)
+        {
+            divide_round_lastq_switchkey_kernel<<<dim3((context_->n >> 8),
+                                                       context_->Q_size, 2),
+                                                  256, 0, stream>>>(
+                temp3_rotation, temp0_rotation, output_memory.data(),
+                context_->modulus_->data(), context_->half_p_->data(),
+                context_->half_mod_->data(), context_->last_q_modinv_->data(),
+                context_->n_power, context_->Q_size);
+        }
+        else
+        {
+            divide_round_lastq_extended_switchkey_kernel<<<
+                dim3((context_->n >> 8), context_->Q_size, 2), 256, 0,
+                stream>>>(temp3_rotation, temp0_rotation, output_memory.data(),
+                          context_->modulus_->data(), context_->half_p_->data(),
+                          context_->half_mod_->data(),
+                          context_->last_q_modinv_->data(), context_->n_power,
+                          context_->Q_prime_size, context_->Q_size,
+                          context_->P_size);
+        }
         HEONGPU_CUDA_CHECK(cudaGetLastError());
 
         output.memory_set(std::move(output_memory));

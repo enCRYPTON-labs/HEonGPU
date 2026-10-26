@@ -1045,6 +1045,36 @@ namespace heongpu
         }
     }
 
+    __global__ void single_prime_digits_to_Qtilde_kernel(
+        Data64* ciphertext, Data64* output, Modulus64* modulus, int n_power,
+        int current_Qtilda_size, int current_Q_size, int level)
+    {
+        int idx = blockIdx.x * blockDim.x + threadIdx.x; // Ring Sizes
+        int block_y = blockIdx.y; // digit, which is the prime block_y
+
+        Data64 value = ciphertext[idx + (block_y << n_power)];
+        Data64 q = modulus[block_y].value;
+        // The centered representative is value - q when value > q / 2; its
+        // residues are those of -(q - value).
+        bool negative = value > (q >> 1);
+        Data64 magnitude = negative ? (q - value) : value;
+
+        int location_out = idx + ((block_y * current_Qtilda_size) << n_power);
+        for (int i = 0; i < current_Qtilda_size; i++)
+        {
+            int mod_location = (i < current_Q_size) ? i : (i + level);
+            Modulus64 output_modulus = modulus[mod_location];
+
+            Data64 result =
+                OPERATOR_GPU_64::reduce_forced(magnitude, output_modulus);
+            if (negative && result != 0)
+            {
+                result = output_modulus.value - result;
+            }
+            output[location_out + (i << n_power)] = result;
+        }
+    }
+
     __global__ void multiply_accumulate_extended_kernel(
         Data64* input, Data64* relinkey, Data64* output, Modulus64* B_prime,
         int n_power, int d_tilda, int d, int r_prime)

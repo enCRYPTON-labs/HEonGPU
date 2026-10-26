@@ -1526,6 +1526,16 @@ namespace heongpu
 
         ///////////////////////////////////////////////////
 
+        // The ModUp of key switching: splits input, a polynomial in coefficient
+
+        // form, into the digits of the context and extends each digit to the
+
+        // primes of P * Q.
+
+        __host__ void decompose_to_Qtilde(Data64* input, Data64* output,
+
+                                          cudaStream_t stream);
+
         __host__ void rotate_method_I(Ciphertext<Scheme::BFV>& input1,
                                       Ciphertext<Scheme::BFV>& output,
                                       Galoiskey<Scheme::BFV>& galois_key,
