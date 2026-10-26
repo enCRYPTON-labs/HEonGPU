@@ -77,6 +77,12 @@ The library uses a standard CMake build process. The most critical configuration
 
         sudo cmake --install build
 
+    To install somewhere else, for example without ``sudo``, pass a prefix, and point your project to it with ``-D CMAKE_PREFIX_PATH=<dir>``. The installed package can be moved to another directory afterwards.
+
+    .. code-block:: bash
+
+        cmake --install build --prefix $HOME/.local
+
 Verifying the Installation
 --------------------------
 

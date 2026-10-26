@@ -324,6 +324,8 @@ $ sudo cmake --install build
 ```
 Available build types: `Debug`, `Release` (default), `RelWithDebInfo`, `MinSizeRel`. Override with `-D CMAKE_BUILD_TYPE=<type>`. These propagate to all bundled libraries (GPU-FFT, GPU-NTT, RNGonGPU).
 
+The default install prefix is `/usr/local`. To install somewhere else, for example without `sudo`, set it when configuring (`-D CMAKE_INSTALL_PREFIX=<dir>`) or when installing (`cmake --install build --prefix <dir>`), and pass the same directory to your project with `-D CMAKE_PREFIX_PATH=<dir>`. The installed package can be moved to another directory afterwards.
+
 ### Uninstall
 
 To uninstall HEonGPU and thirdparty libraries:

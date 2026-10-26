@@ -13,6 +13,8 @@ FetchContent_Declare(
   SOURCE_DIR     "${CMAKE_BINARY_DIR}/googletest-src"
 )
 
+# GoogleTest is only used to build the tests; do not install it with HEonGPU.
+set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 list(APPEND CMAKE_MODULE_PATH ${googletest_SOURCE_DIR}/cmake)
