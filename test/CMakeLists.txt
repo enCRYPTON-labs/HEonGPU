@@ -39,6 +39,7 @@ set(EXECUTABLES
     ckks_relinearization_testcases test_ckks_relinearization.cpp
     ckks_rotation_method_1_testcases test_ckks_rotation_method_1.cpp
     ckks_rotation_method_2_testcases test_ckks_rotation_method_2.cpp
+    ckks_galoiskey_testcases test_ckks_galoiskey.cpp
 
     secretkey_security_testcases test_secretkey_security.cpp
     tfhe_gate_boot_testcases test_tfhe_gate_boot.cpp

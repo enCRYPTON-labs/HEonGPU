@@ -434,9 +434,6 @@ namespace heongpu
 
                 galois_elt_zero =
                     steps_to_galois_elt(0, ring_size, group_order_);
-
-                max_shift_ = MAX_SHIFT - 1;
-                max_log_slot_ = int(std::log2(ring_size >> 1));
             }
             break;
             case 2: // KEYSWITCHING_METHOD_II
@@ -453,9 +450,6 @@ namespace heongpu
                 galois_elt_zero =
                     steps_to_galois_elt(0, ring_size, group_order_);
 
-                max_shift_ = MAX_SHIFT - 1;
-                max_log_slot_ = int(std::log2(ring_size >> 1));
-
                 d_ = context->d_leveled->operator[](0);
                 galoiskey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
             }
@@ -468,6 +462,8 @@ namespace heongpu
                                   "KEYSWITCHING_METHOD_II (2)."));
                 break;
         }
+
+        set_rotation_limits();
     }
 
     __host__ Galoiskey<Scheme::CKKS>::Galoiskey(HEContext<Scheme::CKKS> context,
@@ -510,9 +506,6 @@ namespace heongpu
 
                 galois_elt_zero =
                     steps_to_galois_elt(0, ring_size, group_order_);
-
-                max_shift_ = max_shift;
-                max_log_slot_ = int(std::log2(ring_size >> 1));
             }
             break;
             case 2: // KEYSWITCHING_METHOD_II
@@ -529,9 +522,6 @@ namespace heongpu
                 galois_elt_zero =
                     steps_to_galois_elt(0, ring_size, group_order_);
 
-                max_shift_ = max_shift;
-                max_log_slot_ = int(std::log2(ring_size >> 1));
-
                 d_ = context->d_leveled->operator[](0);
                 galoiskey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
             }
@@ -544,6 +534,8 @@ namespace heongpu
                                   "KEYSWITCHING_METHOD_II (2)."));
                 break;
         }
+
+        set_rotation_limits();
     }
 
     __host__ Galoiskey<Scheme::CKKS>::Galoiskey(HEContext<Scheme::CKKS> context,
@@ -609,6 +601,8 @@ namespace heongpu
                                   "KEYSWITCHING_METHOD_II (2)."));
                 break;
         }
+
+        set_rotation_limits();
     }
 
     __host__
@@ -661,6 +655,22 @@ namespace heongpu
                                   "! Expected KEYSWITCHING_METHOD_I (1) or "
                                   "KEYSWITCHING_METHOD_II (2)."));
                 break;
+        }
+
+        set_rotation_limits();
+    }
+
+    void Galoiskey<Scheme::CKKS>::set_rotation_limits()
+    {
+        // A shift without its own key is split into the power of two steps
+        // 1, 2, 4, ..., 2^max_shift_ the key contains without a gap; larger
+        // steps are repeated from the largest one.
+        max_log_slot_ = int(std::log2(ring_size >> 1));
+        max_shift_ = -1;
+        while (max_shift_ + 1 < max_log_slot_ &&
+               galois_elt.count(1 << (max_shift_ + 1)) != 0)
+        {
+            max_shift_++;
         }
     }
 
@@ -939,6 +949,8 @@ namespace heongpu
                        cudaMemcpyHostToDevice);
             HEONGPU_CUDA_CHECK(cudaGetLastError());
             cudaDeviceSynchronize();
+
+            set_rotation_limits();
         }
         else
         {

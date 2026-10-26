@@ -603,6 +603,7 @@ namespace heongpu
               storage_type_(copy.storage_type_),
               galoiskey_size_(copy.galoiskey_size_),
               custom_galois_elt(copy.custom_galois_elt),
+              max_shift_(copy.max_shift_), max_log_slot_(copy.max_log_slot_),
               galois_elt(copy.galois_elt),
               galois_elt_zero(copy.galois_elt_zero),
               galois_key_generated_(copy.galois_key_generated_)
@@ -663,6 +664,8 @@ namespace heongpu
               storage_type_(std::move(assign.storage_type_)),
               galoiskey_size_(std::move(assign.galoiskey_size_)),
               custom_galois_elt(std::move(assign.custom_galois_elt)),
+              max_shift_(assign.max_shift_),
+              max_log_slot_(assign.max_log_slot_),
               galois_elt(std::move(assign.galois_elt)),
               galois_elt_zero(std::move(assign.galois_elt_zero)),
               galois_key_generated_(std::move(assign.galois_key_generated_))
@@ -718,6 +721,8 @@ namespace heongpu
                 storage_type_ = copy.storage_type_;
                 galoiskey_size_ = copy.galoiskey_size_;
                 custom_galois_elt = copy.custom_galois_elt;
+                max_shift_ = copy.max_shift_;
+                max_log_slot_ = copy.max_log_slot_;
                 galois_elt = copy.galois_elt;
                 galois_elt_zero = copy.galois_elt_zero;
                 galois_key_generated_ = copy.galois_key_generated_;
@@ -787,6 +792,8 @@ namespace heongpu
                 storage_type_ = std::move(assign.storage_type_);
                 galoiskey_size_ = std::move(assign.galoiskey_size_);
                 custom_galois_elt = std::move(assign.custom_galois_elt);
+                max_shift_ = assign.max_shift_;
+                max_log_slot_ = assign.max_log_slot_;
                 galois_elt = std::move(assign.galois_elt);
                 galois_elt_zero = std::move(assign.galois_elt_zero);
                 galois_key_generated_ = std::move(assign.galois_key_generated_);
@@ -844,6 +851,8 @@ namespace heongpu
                                       context, "Galoiskey");
         }
 
+        void set_rotation_limits();
+
         scheme_type scheme_;
         keyswitching_type key_type;
 
@@ -860,8 +869,10 @@ namespace heongpu
         storage_type storage_type_;
         Data64 galoiskey_size_;
         std::vector<u_int32_t> custom_galois_elt;
-        int max_shift_;
-        int max_log_slot_;
+        // Rotations without their own key are built from the keys for the
+        // steps 1, 2, 4, ..., 2^max_shift_ (see set_rotation_limits()).
+        int max_shift_ = -1;
+        int max_log_slot_ = 0;
 
         bool galois_key_generated_ = false;
 

@@ -1458,6 +1458,19 @@ namespace heongpu
         {
             std::vector<int> indexs = rotation_index_generator(
                 shift, galois_key.max_log_slot_, galois_key.max_shift_);
+            if (indexs.empty())
+            {
+                if (shift % (context_->n >> 1) == 0)
+                {
+                    // A multiple of the slot count does not move the slots.
+                    output = input1;
+                    return;
+                }
+                throw KeyNotFoundError(error_message(
+                    "Galois key not present for shift ", shift,
+                    "! The Galoiskey has neither a key for this shift nor the "
+                    "power of two keys to build it from."));
+            }
             std::vector<int> required_galoiselt;
             for (int index : indexs)
             {
@@ -1503,6 +1516,19 @@ namespace heongpu
         {
             std::vector<int> indexs = rotation_index_generator(
                 shift, galois_key.max_log_slot_, galois_key.max_shift_);
+            if (indexs.empty())
+            {
+                if (shift % (context_->n >> 1) == 0)
+                {
+                    // A multiple of the slot count does not move the slots.
+                    output = input1;
+                    return;
+                }
+                throw KeyNotFoundError(error_message(
+                    "Galois key not present for shift ", shift,
+                    "! The Galoiskey has neither a key for this shift nor the "
+                    "power of two keys to build it from."));
+            }
             std::vector<int> required_galoiselt;
             for (int index : indexs)
             {
