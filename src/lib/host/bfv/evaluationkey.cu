@@ -311,6 +311,12 @@ namespace heongpu
     }
 
     __host__ Galoiskey<Scheme::BFV>::Galoiskey(HEContext<Scheme::BFV> context)
+        : Galoiskey(context, MAX_SHIFT - 1)
+    {
+    }
+
+    __host__ Galoiskey<Scheme::BFV>::Galoiskey(HEContext<Scheme::BFV> context,
+                                               int max_shift)
     {
         if (!context || !context->context_generated_)
         {
@@ -318,6 +324,12 @@ namespace heongpu
                 "HEContext is not generated! Create the "
                 "context with GenHEContext and call generate() before "
                 "using it.");
+        }
+        if (max_shift < 0)
+        {
+            throw ParameterError(error_message("Invalid Galoiskey max_shift ",
+                                               max_shift,
+                                               "! It must be at least 0."));
         }
 
         context_ = context;
@@ -338,7 +350,7 @@ namespace heongpu
             {
                 galoiskey_size_ = 2 * Q_size_ * Q_prime_size_ * ring_size;
 
-                for (int i = 0; i < MAX_SHIFT; i++)
+                for (int i = 0; i <= max_shift; i++)
                 {
                     int power = pow(2, i);
                     galois_elt[power] =
@@ -353,7 +365,7 @@ namespace heongpu
             break;
             case 2: // KEYSWITCHING_METHOD_II
             {
-                for (int i = 0; i < MAX_SHIFT; i++)
+                for (int i = 0; i <= max_shift; i++)
                 {
                     int power = pow(2, i);
                     galois_elt[power] =

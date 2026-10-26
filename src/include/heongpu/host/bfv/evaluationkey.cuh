@@ -376,13 +376,26 @@ namespace heongpu
          * @brief Constructs a new Galoiskey object with default settings that
          * allow rotations in the range (-255, 255).
          *
-         * This range can be increased by modifying the definition in
-         * kernel/defines.h (MAX_SHIFT).
+         * The range is set by MAX_SHIFT in kernel/defines.h. Use
+         * Galoiskey(context, max_shift) to choose another range without
+         * rebuilding the library.
          *
          * @param context Reference to the Parameters object that sets the
          * encryption parameters.
          */
         __host__ Galoiskey(HEContext<Scheme::BFV> context);
+
+        /**
+         * @brief Constructs a new Galoiskey object with in the range
+         * (-2^(max_shift + 1), 2^(max_shift + 1)), with the keys for the
+         * steps +-1, +-2, +-4, ..., +-2^max_shift.
+         *
+         * @param context Reference to the Parameters object that sets the
+         * encryption parameters.
+         * @param max_shift Largest power of two step, at least 0. The default
+         * Galoiskey(context) uses MAX_SHIFT - 1.
+         */
+        __host__ Galoiskey(HEContext<Scheme::BFV> context, int max_shift);
 
         /**
          * @brief Constructs a new Galoiskey object allowing specific rotations

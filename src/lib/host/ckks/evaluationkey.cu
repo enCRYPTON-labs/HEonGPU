@@ -492,6 +492,12 @@ namespace heongpu
                 "context with GenHEContext and call generate() before "
                 "using it.");
         }
+        if (max_shift < 0)
+        {
+            throw ParameterError(error_message("Invalid Galoiskey max_shift ",
+                                               max_shift,
+                                               "! It must be at least 0."));
+        }
 
         context_ = context;
         scheme_ = context->scheme_;

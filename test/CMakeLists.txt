@@ -52,6 +52,7 @@ set(EXECUTABLES
     serialization_context_testcases test_serialization_context.cpp
     serialization_format_testcases test_serialization_format.cpp
     to_string_testcases test_to_string.cpp
+    galoiskey_range_testcases test_galoiskey_range.cpp
 )
 
 function(add_test exe source)

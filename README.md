@@ -432,7 +432,7 @@ Features in [define.h](src/include/heongpu/kernel/defines.h):
 
 - **Maximum BFV Auxiliary Base Count:** `MAX_BSK_SIZE` (64) sets the maximum size for the BFV auxiliary base.
 
-- **Galois Key Capability:** `MAX_SHIFT` (8) controls the maximum rotation capability for Galois keys. __Don't forget to change it if you need more rotation steps(for default galois key generation)__.
+- **Galois Key Capability:** `MAX_SHIFT` (8) sets the rotation range of the default Galois keys, `Galoiskey(context)`. To use another range without rebuilding the library, construct the key with `Galoiskey(context, max_shift)`.
 
 - **Device**:
   - Initial size (`0.5`): 50% of available GPU memory.
