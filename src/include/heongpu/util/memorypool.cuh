@@ -60,6 +60,13 @@ namespace heongpu
         // context turns it off and at exit.
         bool set_as_rmm_default = false;
 
+        // HEonGPU's kernels need a per-thread stack of at least 2048 bytes.
+        // When the CUDA limit (cudaLimitStackSize) is lower, generate() raises
+        // it for the whole process; a higher limit is kept. Turn this off to
+        // manage the limit in the application; generate() then throws
+        // StateError instead of raising a limit that is too low.
+        bool raise_kernel_stack_size = true;
+
         static MemoryPoolConfig Defaults();
     };
 

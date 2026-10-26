@@ -57,6 +57,7 @@ set(EXECUTABLES
     to_string_testcases test_to_string.cpp
     galoiskey_range_testcases test_galoiskey_range.cpp
     rmm_default_testcases test_rmm_default.cpp
+    kernel_stack_testcases test_kernel_stack.cpp
 )
 
 function(add_test exe source)

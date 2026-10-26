@@ -59,9 +59,10 @@ namespace heongpu
     bool coefficient_validator(const std::vector<int>& log_Q_bases_bit_sizes,
                                const std::vector<int>& log_P_bases_bit_sizes);
 
-    // Raises the per-thread kernel stack size to at least `bytes`, keeping a
-    // larger limit set by the application.
-    void ensure_kernel_stack_size(size_t bytes);
+    // Makes sure the per-thread kernel stack size is at least `bytes`, keeping
+    // a larger limit set by the application. A smaller limit is raised when
+    // `raise` is true and reported with StateError otherwise.
+    void ensure_kernel_stack_size(size_t bytes, bool raise = true);
 
     namespace detail
     {

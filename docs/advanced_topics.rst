@@ -17,6 +17,20 @@ Key settings include:
 * **Galois Key Capability**: ``MAX_SHIFT`` (default: 8) sets the rotation range of the default Galois keys, ``Galoiskey(context)``: the steps 1, 2, 4, ..., 2^(MAX_SHIFT - 1) and their negatives. To use another range without rebuilding the library, construct the key with ``Galoiskey(context, max_shift)``, which generates the steps up to 2^max_shift.
 * **Memory Pool Sizes**: The initial and maximum sizes for the device (GPU) and host (CPU) memory pools are defined as percentages of available system memory. By default, the GPU pool is initialized to 50% of VRAM and can grow to 80%, while the pinned host memory pool is initialized to 10% of RAM and can grow to 20%. These values can be adjusted for systems with different memory capacities or for applications with particularly large memory footprints.
 
+Process-Wide State
+------------------
+
+HEonGPU keeps some state for the whole process. This matters when it is embedded into a larger application:
+
+* **Memory pool**: One pool per process, created by the first ``generate()``. The ``MemoryPoolConfig`` of that call sets its sizes; ``use_memory_pool`` of the most recent call decides whether new allocations use it.
+* **Random number generator**: One generator per process, seeded by the first ``generate()``.
+* **CUDA kernel stack size**: HEonGPU's kernels need at least 2048 bytes per thread. ``generate()`` raises a lower ``cudaLimitStackSize`` and keeps a higher one. With ``MemoryPoolConfig::raise_kernel_stack_size = false``, it does not change the limit and throws ``StateError`` if the limit is too low.
+* **RMM default resource**: Not changed. HEonGPU allocates from its own resource. With ``MemoryPoolConfig::set_as_rmm_default = true``, HEonGPU's pool also becomes the process-wide RMM default; the previous default is restored when a later context turns it off, and at exit.
+
+HEonGPU does not change other CUDA settings and does not select the CUDA device; it uses the current device of the calling thread.
+
+With the static library, every shared library or plugin that embeds HEonGPU has its own copy of this state. With the shared library (``HEonGPU_BUILD_SHARED=ON``), the whole process shares one.
+
 Multiparty Computation (MPC)
 ----------------------------
 

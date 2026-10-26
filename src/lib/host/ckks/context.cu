@@ -282,7 +282,7 @@ namespace heongpu
         {
             // For kernel stack size. Reserved before the memory pool so
             // that the pool does not take the memory the stack needs.
-            ensure_kernel_stack_size(2048);
+            ensure_kernel_stack_size(2048, pool_config.raise_kernel_stack_size);
 
             // Memory pool initialization
             MemoryPool::instance().initialize(pool_config);

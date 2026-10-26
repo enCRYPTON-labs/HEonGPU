@@ -873,14 +873,24 @@ namespace heongpu
         return result_upper_half_threshold;
     }
 
-    void ensure_kernel_stack_size(size_t bytes)
+    void ensure_kernel_stack_size(size_t bytes, bool raise)
     {
         size_t current = 0;
         HEONGPU_CUDA_CHECK(cudaDeviceGetLimit(&current, cudaLimitStackSize));
-        if (current < bytes)
+        if (current >= bytes)
         {
-            HEONGPU_CUDA_CHECK(cudaDeviceSetLimit(cudaLimitStackSize, bytes));
+            return;
         }
+        if (!raise)
+        {
+            throw StateError(error_message(
+                "The CUDA kernel stack size limit is ", current,
+                " bytes, but HEonGPU needs at least ", bytes,
+                ". Raise it with cudaDeviceSetLimit(cudaLimitStackSize, ",
+                bytes,
+                ") or leave MemoryPoolConfig::raise_kernel_stack_size on."));
+        }
+        HEONGPU_CUDA_CHECK(cudaDeviceSetLimit(cudaLimitStackSize, bytes));
     }
 
     //////////////////////////////////////////////////////////////////////////////////

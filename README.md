@@ -493,6 +493,8 @@ context->generate(pool_config);
 
 HEonGPU allocates from its own memory resource and does not change the process-wide RMM default, so other code in the process that uses RMM (for example RAPIDS libraries) keeps its own allocations. Set `pool_config.set_as_rmm_default = true` to make HEonGPU's pool the RMM default as well; the previous default is restored when a later context turns it off, and at exit.
 
+`generate()` also raises the CUDA kernel stack size limit (`cudaLimitStackSize`) to the 2048 bytes HEonGPU's kernels need, if it is lower. Set `pool_config.raise_kernel_stack_size = false` to manage the limit yourself; `generate()` then throws if it is too low. See the documentation (Advanced Topics, Process-Wide State) for all process-wide state of HEonGPU.
+
 
 ## Storage Management
 
