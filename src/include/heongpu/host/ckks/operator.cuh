@@ -2498,12 +2498,15 @@ namespace heongpu
 
         __host__ void
         gen_power(std::unordered_map<int, Ciphertext<Scheme::CKKS>>& cipher,
-                  int power, Relinkey<Scheme::CKKS>& relin_key,
+                  int power, PolyType type, Relinkey<Scheme::CKKS>& relin_key,
                   const ExecutionOptions& options = ExecutionOptions());
 
+        // base_scale is the scale of the computation: intermediate results
+        // with at least half of it are rescaled.
         __host__ Ciphertext<Scheme::CKKS>
         evaluate_poly(Ciphertext<Scheme::CKKS>& cipher, double target_scale,
-                      const Polynomial& pol, Relinkey<Scheme::CKKS>& relin_key,
+                      double base_scale, const Polynomial& pol,
+                      Relinkey<Scheme::CKKS>& relin_key,
                       const ExecutionOptions& options);
 
         __host__ Ciphertext<Scheme::CKKS> evaluate_poly_from_polynomial_basis(
@@ -2512,8 +2515,8 @@ namespace heongpu
             const ExecutionOptions& options = ExecutionOptions());
 
         __host__ Ciphertext<Scheme::CKKS> evaluate_poly_recurse(
-            int target_level, double target_scale, const Polynomial& pol,
-            int log_split,
+            int target_level, double target_scale, double base_scale,
+            const Polynomial& pol, int log_split,
             std::unordered_map<int, Ciphertext<Scheme::CKKS>>& powered_ciphers,
             Relinkey<Scheme::CKKS>& relin_key,
             const ExecutionOptions& options = ExecutionOptions());

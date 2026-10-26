@@ -3750,8 +3750,8 @@ namespace heongpu
 
         add_plain_inplace(cipher_taylor, shift, options);
 
-        cipher_taylor = evaluate_poly(cipher_taylor, target_scale, poly,
-                                      relin_key, options);
+        cipher_taylor = evaluate_poly(cipher_taylor, target_scale, scale_boot_,
+                                      poly, relin_key, options);
 
         double sqrt2pi = eval_mod_config_.sqrt2pi_;
         for (int i = 0; i < eval_mod_config_.double_angle_; i++)
@@ -3771,7 +3771,8 @@ namespace heongpu
 
     __host__ void HEOperator<Scheme::CKKS>::gen_power(
         std::unordered_map<int, Ciphertext<Scheme::CKKS>>& cipher, int power,
-        Relinkey<Scheme::CKKS>& relin_key, const ExecutionOptions& options)
+        PolyType type, Relinkey<Scheme::CKKS>& relin_key,
+        const ExecutionOptions& options)
     {
         if (cipher.count(power))
         {
@@ -3792,14 +3793,14 @@ namespace heongpu
             a = (1 << k) - 1;
             b = power + 1 - (1 << k);
 
-            if (eval_mod_config_.poly_type_ == PolyType::CHEBYSHEV)
+            if (type == PolyType::CHEBYSHEV)
             {
                 c = std::abs(a - b);
             }
         }
 
-        gen_power(cipher, a, relin_key, options);
-        gen_power(cipher, b, relin_key, options);
+        gen_power(cipher, a, type, relin_key, options);
+        gen_power(cipher, b, type, relin_key, options);
 
         int x = cipher[a].level();
         int y = cipher[b].level();
@@ -3832,7 +3833,7 @@ namespace heongpu
         relinearize_inplace(cipher[power], relin_key, options);
         rescale_inplace(cipher[power], options);
 
-        if (eval_mod_config_.poly_type_ == PolyType::CHEBYSHEV)
+        if (type == PolyType::CHEBYSHEV)
         {
             add_inplace(cipher[power], cipher[power], options);
             if (c == 0)
@@ -3842,35 +3843,32 @@ namespace heongpu
             }
             else
             {
-                gen_power(cipher, c, relin_key, options);
+                gen_power(cipher, c, type, relin_key, options);
 
-                int x = cipher[power].level();
-                int y = cipher[c].level();
-                if (x != y)
+                // T_c has a level more than the product. Multiplying it by 1
+                // at the scale that a rescale turns into the scale of the
+                // product makes both scales equal, which mod_drop does not.
+                Ciphertext<Scheme::CKKS> tc = cipher[c];
+                while (tc.level() > cipher[power].level() + 1)
                 {
-                    Ciphertext<Scheme::CKKS> tmp = cipher[c];
-                    Ciphertext<Scheme::CKKS> tmp1 = cipher[power];
-
-                    if (x < y)
-                    {
-                        for (int i = x; i < y; i++)
-                        {
-                            mod_drop_inplace(tmp, options);
-                        }
-                    }
-                    else
-                    {
-                        for (int i = y; i < x; i++)
-                        {
-                            mod_drop_inplace(tmp1, options);
-                        }
-                    }
-                    sub(tmp1, tmp, cipher[power], options);
+                    mod_drop_inplace(tc, options);
                 }
-                else
+                if (tc.level() == cipher[power].level() + 1)
                 {
-                    sub_inplace(cipher[power], cipher[c], options);
+                    double qi = static_cast<double>(
+                        context_->prime_vector_[tc.level()].value);
+                    Ciphertext<Scheme::CKKS> scaled(context_, options);
+                    multiply_plain(tc, 1.0, scaled,
+                                   cipher[power].scale_ * qi / tc.scale_,
+                                   options);
+                    rescale_inplace(scaled, options);
+                    tc = std::move(scaled);
                 }
+                while (cipher[power].level() > tc.level())
+                {
+                    mod_drop_inplace(cipher[power], options);
+                }
+                sub_inplace(cipher[power], tc, options);
             }
         }
 
@@ -3926,9 +3924,7 @@ namespace heongpu
                                                 256, 0, options.stream_>>>(
                 xi_term.data(), encoded_coeff_i.data(), xi_term.data(),
                 context_->modulus_->data(), context_->n_power);
-            xi_term.scale_ = xi_term.scale_ *
-                             static_cast<double>(
-                                 context_->prime_vector_[target_level].value);
+            xi_term.scale_ = target_scale;
             HEONGPU_CUDA_CHECK(cudaGetLastError());
 
             int a = result.level();
@@ -3966,8 +3962,8 @@ namespace heongpu
 
     __host__ Ciphertext<Scheme::CKKS>
     HEOperator<Scheme::CKKS>::evaluate_poly_recurse(
-        int target_level, double target_scale, const Polynomial& pol,
-        int log_split,
+        int target_level, double target_scale, double base_scale,
+        const Polynomial& pol, int log_split,
         std::unordered_map<int, Ciphertext<Scheme::CKKS>>& powered_ciphers,
         Relinkey<Scheme::CKKS>& relin_key, const ExecutionOptions& options)
     {
@@ -3981,9 +3977,9 @@ namespace heongpu
                  (1 << (log_split - 1))))
             {
                 int log_degree = std::ceil(std::log2(degree));
-                return evaluate_poly_recurse(target_level, target_scale, pol,
-                                             log_degree >> 1, powered_ciphers,
-                                             relin_key, options);
+                return evaluate_poly_recurse(
+                    target_level, target_scale, base_scale, pol,
+                    log_degree >> 1, powered_ciphers, relin_key, options);
             }
 
             if (pol.lead_)
@@ -4020,10 +4016,10 @@ namespace heongpu
                                    powered_ciphers[next_power].scale_;
 
         Ciphertext<Scheme::CKKS> result_q = evaluate_poly_recurse(
-            target_level + 1, next_target_scale, coeff_sq, log_split,
-            powered_ciphers, relin_key, options);
+            target_level + 1, next_target_scale, base_scale, coeff_sq,
+            log_split, powered_ciphers, relin_key, options);
 
-        if (result_q.scale_ >= scale_boot_ / 2)
+        if (result_q.scale_ >= base_scale / 2)
         {
             rescale_inplace(result_q, options);
         }
@@ -4059,7 +4055,7 @@ namespace heongpu
         // rescale_inplace(result_q, options);
 
         Ciphertext<Scheme::CKKS> result_r = evaluate_poly_recurse(
-            result_q.level(), result_q.scale_, coeff_sr, log_split,
+            result_q.level(), result_q.scale_, base_scale, coeff_sr, log_split,
             powered_ciphers, relin_key, options);
 
         int a = result_q.level();
@@ -4109,8 +4105,8 @@ namespace heongpu
 
     __host__ Ciphertext<Scheme::CKKS> HEOperator<Scheme::CKKS>::evaluate_poly(
         Ciphertext<Scheme::CKKS>& cipher, double target_scale,
-        const Polynomial& pol, Relinkey<Scheme::CKKS>& relin_key,
-        const ExecutionOptions& options)
+        double base_scale, const Polynomial& pol,
+        Relinkey<Scheme::CKKS>& relin_key, const ExecutionOptions& options)
     {
         cudaStream_t old_stream = cipher.stream();
         cipher.switch_stream(options.stream_);
@@ -4120,27 +4116,27 @@ namespace heongpu
 
         // BSGS optimization: calculate optimal split point
         int poly_degree = pol.degree();
-        int log_degree = std::ceil(std::log2(poly_degree));
+        int log_degree = std::ceil(std::log2(poly_degree + 1));
         int log_split = optimal_split(log_degree);
 
         // Baby-step: Generate powers x^1, x^2, ..., x^(2^logSplit - 1)
         for (int power = (1 << log_split) - 1; power >= 1; power--)
         {
-            gen_power(powered_ciphers, power, relin_key, options);
+            gen_power(powered_ciphers, power, pol.type_, relin_key, options);
         }
 
         // Giant-step: Generate powers x^(2^logSplit), x^(2^(logSplit+1)), ...,
         // x^(2^(logDegree-1))
         for (int i = log_split; i < log_degree; i++)
         {
-            gen_power(powered_ciphers, 1 << i, relin_key, options);
+            gen_power(powered_ciphers, 1 << i, pol.type_, relin_key, options);
         }
 
         int initial_target_level = cipher.level() - log_degree + 1;
 
         Ciphertext<Scheme::CKKS> result = evaluate_poly_recurse(
-            initial_target_level, target_scale, pol, log_split, powered_ciphers,
-            relin_key, options);
+            initial_target_level, target_scale, base_scale, pol, log_split,
+            powered_ciphers, relin_key, options);
 
         Data64 qi = context_->prime_vector_[result.level()].value;
         if (result.scale_ / static_cast<double>(qi) >= target_scale / 2.0)
