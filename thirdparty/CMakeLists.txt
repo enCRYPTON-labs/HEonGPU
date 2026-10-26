@@ -4,27 +4,28 @@
 # SPDX-License-Identifier: Apache-2.0
 # Developer: Alişah Özcan
 
-execute_process(
-    COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/build.sh
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    RESULT_VARIABLE BUILD_SCRIPT_RESULT
-    OUTPUT_VARIABLE BUILD_SCRIPT_OUTPUT
-    ERROR_VARIABLE BUILD_SCRIPT_ERROR
-)
-
-if(NOT BUILD_SCRIPT_RESULT EQUAL 0)
-    message(FATAL_ERROR "Thirdparty build script failed:\n${BUILD_SCRIPT_ERROR}")
-endif()
-
-message(STATUS "Thirdparty build completed successfully")
+# GPU-NTT, GPU-FFT and RNGonGPU are git submodules. Configuring does not fetch
+# them, so it needs no network and does not change the source tree.
+foreach(_heongpu_submodule IN ITEMS GPU-FFT GPU-NTT RNGonGPU)
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${_heongpu_submodule}/CMakeLists.txt")
+        message(FATAL_ERROR
+            "thirdparty/${_heongpu_submodule} is missing. Clone HEonGPU with "
+            "'git clone --recursive', or run "
+            "'git submodule update --init --recursive' in the HEonGPU "
+            "source directory.")
+    endif()
+endforeach()
 
 include(FetchContent)
 
+# An installed RMM 26.08 is used when find_package finds one; otherwise RMM is
+# downloaded and built.
 FetchContent_Declare(
     rmm
     GIT_REPOSITORY https://github.com/rapidsai/rmm
     GIT_TAG        v26.08.00
     SOURCE_SUBDIR  cpp
+    FIND_PACKAGE_ARGS 26.08
 )
 
 set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -44,6 +45,11 @@ if(CPM_DOWNLOAD_CCCL)
 endif()
 
 FetchContent_MakeAvailable(rmm)
+if(rmm_FOUND)
+    message(STATUS "Using the installed RMM ${rmm_VERSION}: ${rmm_DIR}")
+else()
+    message(STATUS "Using RMM built from source")
+endif()
 
 add_subdirectory(GPU-FFT)
 add_subdirectory(GPU-NTT)

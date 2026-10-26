@@ -11,6 +11,8 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/google/googletest.git
   GIT_TAG        release-1.12.0
   SOURCE_DIR     "${CMAKE_BINARY_DIR}/googletest-src"
+  # An installed GoogleTest is used when find_package finds one.
+  FIND_PACKAGE_ARGS NAMES GTest
 )
 
 # GoogleTest is only used to build the tests; do not install it with HEonGPU.
@@ -59,7 +61,7 @@ set(EXECUTABLES
 
 function(add_test exe source)
     add_executable(${exe} ${source})
-    target_link_libraries(${exe} PRIVATE heongpu CUDA::cudart gtest_main)
+    target_link_libraries(${exe} PRIVATE heongpu CUDA::cudart GTest::gtest_main)
     if((exe STREQUAL "ckks_secretkey_randomness_testcases" OR exe STREQUAL "secretkey_security_testcases") AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
         target_compile_definitions(${exe} PRIVATE HEONGPU_TEST_WRAP_RAND_PRIV_BYTES)
         target_link_options(${exe} PRIVATE "-Wl,--wrap=RAND_priv_bytes")

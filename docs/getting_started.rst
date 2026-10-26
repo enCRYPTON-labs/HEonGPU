@@ -32,8 +32,10 @@ The library uses a standard CMake build process. The most critical configuration
 
     .. code-block:: bash
 
-        git clone https://github.com/Alisah-Ozcan/HEonGPU.git
+        git clone --recursive https://github.com/Alisah-Ozcan/HEonGPU.git
         cd HEonGPU
+
+    GPU-NTT, GPU-FFT and RNGonGPU are git submodules. If the repository was cloned without ``--recursive``, fetch them with ``git submodule update --init --recursive``.
 
 **Step 2: Configure with CMake**
     Run CMake from the root of the repository to generate the build files. You **must** set the ``CMAKE_CUDA_ARCHITECTURES`` variable to match your GPU's architecture. This flag instructs the CUDA compiler (``nvcc``) to generate code specifically optimized for your hardware.
@@ -43,6 +45,8 @@ The library uses a standard CMake build process. The most critical configuration
         cmake -S . -D CMAKE_CUDA_ARCHITECTURES=XX -B build
 
     Replace ``XX`` with the appropriate value from the table below. For example, for an NVIDIA RTX 4090 (Ada Lovelace architecture), you would use ``89``.
+
+    Configuring downloads RMM, and GoogleTest when the tests are enabled, unless they are already installed. To build without network access, install RMM 26.08 (and GoogleTest for the tests) and pass their location with ``-D CMAKE_PREFIX_PATH=<dir>``; the installed versions are then used instead.
 
     .. list-table:: GPU Architecture to CMAKE_CUDA_ARCHITECTURES Mapping
        :widths: 25 25

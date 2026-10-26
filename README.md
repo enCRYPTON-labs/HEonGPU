@@ -297,7 +297,7 @@ On Ubuntu: `sudo apt install libgmp-dev libntl-dev libssl-dev zlib1g-dev`.
 - [RMM](https://github.com/rapidsai/rmm)
 - [GoogleTest](https://github.com/google/googletest)
 
-HEonGPU automatically handle third-party dependencies like GPU-NTT, GPU-FFT, RMM, GoogleTest.
+HEonGPU builds GPU-NTT, GPU-FFT and RNGonGPU from its git submodules, and uses an installed RMM and GoogleTest when it finds them, or downloads them otherwise.
 Default CUDA architectures: `80;86;89;90`. Override with `-D CMAKE_CUDA_ARCHITECTURES=<...>` if needed.
 
 ### Build & Install
@@ -318,10 +318,16 @@ To build and install HEonGPU, follow the steps below. This includes configuring 
 </div>
 
 ```bash
+$ git clone --recursive https://github.com/Alisah-Ozcan/HEonGPU.git
+$ cd HEonGPU
 $ cmake -S . -B build -D CMAKE_BUILD_TYPE=Release
 $ cmake --build ./build/
 $ sudo cmake --install build
 ```
+GPU-NTT, GPU-FFT and RNGonGPU are git submodules. If the repository was cloned without `--recursive`, fetch them with `git submodule update --init --recursive`.
+
+Configuring downloads RMM, and GoogleTest when the tests are enabled, unless they are already installed. To build without network access, install RMM 26.08 (and GoogleTest for the tests) and pass their location with `-D CMAKE_PREFIX_PATH=<dir>`; the installed versions are then used instead.
+
 Available build types: `Debug`, `Release` (default), `RelWithDebInfo`, `MinSizeRel`. Override with `-D CMAKE_BUILD_TYPE=<type>`. These propagate to all bundled libraries (GPU-FFT, GPU-NTT, RNGonGPU).
 
 The default install prefix is `/usr/local`. To install somewhere else, for example without `sudo`, set it when configuring (`-D CMAKE_INSTALL_PREFIX=<dir>`) or when installing (`cmake --install build --prefix <dir>`), and pass the same directory to your project with `-D CMAKE_PREFIX_PATH=<dir>`. The installed package can be moved to another directory afterwards.

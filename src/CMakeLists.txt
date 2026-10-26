@@ -99,7 +99,7 @@ target_link_libraries(heongpu_util
         ntt
         fft
         rngongpu
-        rmm
+        rmm::rmm
         GMP::GMP
 )
 set_target_properties(heongpu_util PROPERTIES
@@ -313,7 +313,7 @@ target_link_libraries(heongpu
         fft
         rngongpu
         GMP::GMP
-        rmm
+        rmm::rmm
         CUDA::curand
         OpenSSL::Crypto
         ZLIB::ZLIB
