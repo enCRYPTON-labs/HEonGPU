@@ -102,6 +102,15 @@ HEonGPU includes a high-performance serialization module for all major objects (
 * **Raw Binary Format**: For maximum speed.
 * **Zlib Compression**: An optional compressed format that can reduce storage and bandwidth requirements by up to 60%, useful for network-bound applications or long-term storage.
 
+Since HEonGPU 1.3, ``save`` writes the binary format version 2 by default. It starts with a 16 byte header: the magic number ``HEGP``, the format version, the object type, the scheme and the identity of the context the object belongs to (see `Context Identity`_). ``load`` checks the header and throws ``SerializationError`` for data that is not an HEonGPU object of the expected type and scheme, and ``ContextMismatchError`` for data of another context.
+
+``load`` also reads the format version 1 written by HEonGPU 1.2 and earlier. To write data that older HEonGPU versions can read, pass the format explicitly:
+
+.. code-block:: cpp
+
+    ciphertext.save(stream);                                        // version 2
+    ciphertext.save(stream, heongpu::serialization_format::v1);   // version 1
+
 Error Handling
 --------------
 
@@ -160,7 +169,7 @@ Context Identity
 
 Every generated ``HEContext`` has an identity, returned by ``context_id()``, computed from the scheme, the ring size, the Q and P primes and (for BFV) the plaintext modulus. Ciphertexts, plaintexts and keys remember the identity of the context they were created with, and operators, encryptors, decryptors and encoders throw ``ContextMismatchError`` when they get an object of another context. This catches, for example, two contexts with the same ring size and number of primes but different primes, which would otherwise give wrong results.
 
-Contexts generated from the same parameters, for example on a client and a server, have the same identity, so their objects can be used together. The serialization format does not store the identity yet, so objects loaded with ``load`` are not checked this way.
+Contexts generated from the same parameters, for example on a client and a server, have the same identity, so their objects can be used together. The serialization format version 2 stores the identity, so loaded objects are checked as well: when they are loaded into an object of another context, and when they are used later. Data in the format version 1 has no identity: an object loaded from it keeps the identity of the context it was created with, and a default constructed object loaded from it is not checked this way.
 
 Tutorials
 ---------
