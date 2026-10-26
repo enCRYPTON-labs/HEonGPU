@@ -296,8 +296,7 @@ namespace heongpu
                 throw SystemError("RAND_bytes failed! OpenSSL could not "
                                   "generate random bytes.");
             std::vector<unsigned char> generated_nonce(8); // for 128 bit
-            if (1 !=
-                RAND_bytes(generated_entropy.data(), generated_entropy.size()))
+            if (1 != RAND_bytes(generated_nonce.data(), generated_nonce.size()))
                 throw SystemError("RAND_bytes failed! OpenSSL could not "
                                   "generate random bytes.");
             std::vector<unsigned char> personalization_string = {};

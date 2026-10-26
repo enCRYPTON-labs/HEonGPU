@@ -48,6 +48,7 @@ set(EXECUTABLES
 
     errors_testcases test_errors.cpp
     context_identity_testcases test_context_identity.cpp
+    context_randomness_testcases test_context_randomness.cpp
 )
 
 function(add_test exe source)
@@ -56,6 +57,10 @@ function(add_test exe source)
     if((exe STREQUAL "ckks_secretkey_randomness_testcases" OR exe STREQUAL "secretkey_security_testcases") AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
         target_compile_definitions(${exe} PRIVATE HEONGPU_TEST_WRAP_RAND_PRIV_BYTES)
         target_link_options(${exe} PRIVATE "-Wl,--wrap=RAND_priv_bytes")
+    endif()
+    if(exe STREQUAL "context_randomness_testcases" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        target_compile_definitions(${exe} PRIVATE HEONGPU_TEST_WRAP_RAND_BYTES)
+        target_link_options(${exe} PRIVATE "-Wl,--wrap=RAND_bytes")
     endif()
     set_target_properties(${exe} PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON
