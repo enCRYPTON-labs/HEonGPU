@@ -276,7 +276,14 @@ set_target_properties(heongpu_host_tfhe PROPERTIES
     CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
 )
 
-add_library(heongpu STATIC
+option(HEonGPU_BUILD_SHARED "Build HEonGPU as a shared library" OFF)
+if(HEonGPU_BUILD_SHARED)
+    set(_heongpu_library_type SHARED)
+else()
+    set(_heongpu_library_type STATIC)
+endif()
+
+add_library(heongpu ${_heongpu_library_type}
     $<TARGET_OBJECTS:heongpu_util>
     $<TARGET_OBJECTS:heongpu_kernel>
     $<TARGET_OBJECTS:heongpu_host_core>
@@ -295,6 +302,18 @@ set_target_properties(heongpu PROPERTIES
     CUDA_RUNTIME_LIBRARY Shared
     CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
 )
+if(HEonGPU_BUILD_SHARED)
+    # The library does its own device link, so that programs using it need no
+    # CUDA compilation. The ABI can change between minor versions.
+    set_target_properties(heongpu PROPERTIES
+        CUDA_RESOLVE_DEVICE_SYMBOLS ON
+        SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+        INSTALL_RPATH "$ORIGIN"
+    )
+    # Keep the symbols of the static libraries linked into it (GPU-NTT,
+    # GPU-FFT, RNGonGPU) private.
+    target_link_options(heongpu PRIVATE "LINKER:--exclude-libs,ALL")
+endif()
 
 target_include_directories(heongpu
     PUBLIC
@@ -307,19 +326,41 @@ target_include_directories(heongpu
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_ROOT}/util>
 )
 
-target_link_libraries(heongpu
-    PUBLIC
-        ntt
-        fft
-        rngongpu
-        GMP::GMP
-        rmm::rmm
-        CUDA::curand
-        OpenSSL::Crypto
-        ZLIB::ZLIB
-    PRIVATE
-        NTL::NTL
-)
+if(HEonGPU_BUILD_SHARED)
+    # GPU-NTT, GPU-FFT and RNGonGPU are linked into the shared library;
+    # programs only need their headers, which the public headers include.
+    target_link_libraries(heongpu
+        PUBLIC
+            $<COMPILE_ONLY:ntt>
+            $<COMPILE_ONLY:fft>
+            $<COMPILE_ONLY:rngongpu>
+            GMP::GMP
+            rmm::rmm
+            CUDA::cudart
+            CUDA::curand
+            OpenSSL::Crypto
+            ZLIB::ZLIB
+        PRIVATE
+            ntt
+            fft
+            rngongpu
+            NTL::NTL
+    )
+else()
+    target_link_libraries(heongpu
+        PUBLIC
+            ntt
+            fft
+            rngongpu
+            GMP::GMP
+            rmm::rmm
+            CUDA::curand
+            OpenSSL::Crypto
+            ZLIB::ZLIB
+        PRIVATE
+            NTL::NTL
+    )
+endif()
 target_compile_options(heongpu PRIVATE
     $<$<CONFIG:Release>:-O3 -DNDEBUG>
     $<$<CONFIG:RelWithDebInfo>:-O3 -g -DNDEBUG>

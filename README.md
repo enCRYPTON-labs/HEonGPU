@@ -557,6 +557,18 @@ set_target_properties(<your-target> PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # ...
 ```
 
+This applies to the default static library (`libheongpu.a`), which leaves the CUDA device link to your project.
+
+HEonGPU can also be built as a shared library with `-D HEonGPU_BUILD_SHARED=ON` (`libheongpu.so`). The shared library does its own device link, so your project does not need to enable CUDA or separable compilation, and all libraries in a process that use it share one HEonGPU, including its memory pool:
+
+```cmake
+project(<your-project> LANGUAGES CXX)
+find_package(HEonGPU)
+target_link_libraries(<your-target> PRIVATE HEonGPU::heongpu)
+```
+
+The shared library is versioned with the major and minor version (for example `libheongpu.so.1.4`), because its ABI can change between minor versions. Its kernels are internal and cannot be launched from outside the library.
+
 ## How to Cite HEonGPU
 
 Please use the below BibTeX, to cite HEonGPU in academic papers.

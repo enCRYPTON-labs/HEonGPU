@@ -28,7 +28,6 @@ set(EXECUTABLES
     bfv_addition_testcases test_bfv_addition.cpp
     bfv_encoding_testcases test_bfv_encoding.cpp
     bfv_encryption_testcases test_bfv_encryption.cpp
-    bfv_noise_budget_testcases test_bfv_noise_budget.cu
     bfv_multiplication_testcases test_bfv_multiplication.cpp
     bfv_relinearization_testcases test_bfv_relinearization.cpp
     bfv_rotation_method_1_testcases test_bfv_rotation_method_1.cpp
@@ -64,11 +63,15 @@ function(add_test exe source)
     target_link_libraries(${exe} PRIVATE heongpu CUDA::cudart GTest::gtest_main)
     if((exe STREQUAL "ckks_secretkey_randomness_testcases" OR exe STREQUAL "secretkey_security_testcases") AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
         target_compile_definitions(${exe} PRIVATE HEONGPU_TEST_WRAP_RAND_PRIV_BYTES)
-        target_link_options(${exe} PRIVATE "-Wl,--wrap=RAND_priv_bytes")
+        target_link_libraries(${exe} PRIVATE ${CMAKE_DL_LIBS})
+    endif()
+    if(exe STREQUAL "ckks_secretkey_randomness_testcases")
+        # Uses GPU-NTT directly, which a shared HEonGPU does not export.
+        target_link_libraries(${exe} PRIVATE ntt)
     endif()
     if(exe STREQUAL "context_randomness_testcases" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
         target_compile_definitions(${exe} PRIVATE HEONGPU_TEST_WRAP_RAND_BYTES)
-        target_link_options(${exe} PRIVATE "-Wl,--wrap=RAND_bytes")
+        target_link_libraries(${exe} PRIVATE ${CMAKE_DL_LIBS})
     endif()
     set_target_properties(${exe} PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON
@@ -83,6 +86,12 @@ function(add_test exe source)
     )
 endfunction()
 
+if(NOT HEonGPU_BUILD_SHARED)
+    # Launches a kernel of HEonGPU directly, which is only possible when HEonGPU
+    # is linked statically.
+    list(APPEND EXECUTABLES bfv_noise_budget_testcases test_bfv_noise_budget.cu)
+endif()
+
 list(LENGTH EXECUTABLES EXECUTABLES_LENGTH)
 math(EXPR EXECUTABLES_COUNT "${EXECUTABLES_LENGTH} / 2")
 math(EXPR EXECUTABLES_COUNT_LOOP "${EXECUTABLES_COUNT} - 1")
@@ -94,3 +103,16 @@ foreach(i RANGE 0 ${EXECUTABLES_COUNT_LOOP})
     list(GET EXECUTABLES ${index2} source)
     add_test(${exe} ${source})
 endforeach()
+
+if(HEonGPU_BUILD_SHARED)
+    # Two libraries that use HEonGPU, to check that they share its state.
+    foreach(plugin IN ITEMS plugin_a plugin_b)
+        add_library(heongpu_test_${plugin} SHARED shared_state_plugin.cpp)
+        target_compile_definitions(heongpu_test_${plugin}
+            PRIVATE HEONGPU_PLUGIN=${plugin})
+        target_link_libraries(heongpu_test_${plugin} PRIVATE heongpu)
+    endforeach()
+    add_test(shared_state_testcases test_shared_state.cpp)
+    target_link_libraries(shared_state_testcases
+        PRIVATE heongpu_test_plugin_a heongpu_test_plugin_b)
+endif()

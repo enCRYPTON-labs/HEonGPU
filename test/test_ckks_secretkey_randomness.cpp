@@ -8,13 +8,25 @@
 #include <sstream>
 
 #ifdef HEONGPU_TEST_WRAP_RAND_PRIV_BYTES
+#include <dlfcn.h>
+
+// Replaces the OpenSSL function for HEonGPU, whether HEonGPU is linked
+// statically or as a shared library, and forwards to the OpenSSL one.
+namespace
+{
+    using RandomFunction = int (*)(unsigned char*, int);
+    RandomFunction openssl_function(const char* name)
+    {
+        return reinterpret_cast<RandomFunction>(dlsym(RTLD_NEXT, name));
+    }
+} // namespace
+
 namespace
 {
     int private_random_calls_until_failure = -1;
 }
 
-extern "C" int __real_RAND_priv_bytes(unsigned char*, int);
-extern "C" int __wrap_RAND_priv_bytes(unsigned char* buffer, int size)
+extern "C" int RAND_priv_bytes(unsigned char* buffer, int size)
 {
     if (private_random_calls_until_failure == 0)
     {
@@ -24,7 +36,8 @@ extern "C" int __wrap_RAND_priv_bytes(unsigned char* buffer, int size)
     {
         --private_random_calls_until_failure;
     }
-    return __real_RAND_priv_bytes(buffer, size);
+    static const RandomFunction real = openssl_function("RAND_priv_bytes");
+    return real(buffer, size);
 }
 #endif
 

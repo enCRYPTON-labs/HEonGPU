@@ -17,6 +17,7 @@ endforeach()
 list(REMOVE_DUPLICATES CMAKE_PREFIX_PATH)
 unset(_HEONGPU_CUDA_PREFIX_CANDIDATES)
 
+find_dependency(CUDAToolkit REQUIRED)
 find_dependency(GPUNTT REQUIRED)
 find_dependency(GPUFFT REQUIRED)
 find_dependency(rmm 26.08 REQUIRED)

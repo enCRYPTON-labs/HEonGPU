@@ -10,6 +10,19 @@
 #include <vector>
 
 #ifdef HEONGPU_TEST_WRAP_RAND_BYTES
+#include <dlfcn.h>
+
+// Replaces the OpenSSL function for HEonGPU, whether HEonGPU is linked
+// statically or as a shared library, and forwards to the OpenSSL one.
+namespace
+{
+    using RandomFunction = int (*)(unsigned char*, int);
+    RandomFunction openssl_function(const char* name)
+    {
+        return reinterpret_cast<RandomFunction>(dlsym(RTLD_NEXT, name));
+    }
+} // namespace
+
 namespace
 {
     // Buffers filled by RAND_bytes, recorded while `recording` is set.
@@ -17,14 +30,14 @@ namespace
     std::vector<std::pair<const unsigned char*, int>> requests;
 } // namespace
 
-extern "C" int __real_RAND_bytes(unsigned char*, int);
-extern "C" int __wrap_RAND_bytes(unsigned char* buffer, int size)
+extern "C" int RAND_bytes(unsigned char* buffer, int size)
 {
     if (recording)
     {
         requests.emplace_back(buffer, size);
     }
-    return __real_RAND_bytes(buffer, size);
+    static const RandomFunction real = openssl_function("RAND_bytes");
+    return real(buffer, size);
 }
 
 namespace
