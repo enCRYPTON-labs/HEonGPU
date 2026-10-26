@@ -2161,6 +2161,28 @@ namespace heongpu
 
         ///////////////////////////////////////////////////
 
+        // c0 and c1 of a ciphertext in coefficient form and the digits of c1
+        // in P * Q_l, NTT form: the part of a Galois automorphism that does
+        // not depend on the Galois element, which automorphisms of one
+        // ciphertext can share.
+        struct GaloisDecomposition
+        {
+            DeviceVector<Data64> coefficients;
+            DeviceVector<Data64> digits;
+        };
+
+        __host__ GaloisDecomposition decompose_for_galois(
+            Ciphertext<Scheme::CKKS>& input1, const cudaStream_t stream);
+
+        // Applies the automorphism of galois_elt to input1, given its
+        // decomposition.
+        __host__ void
+        apply_galois_decomposed(Ciphertext<Scheme::CKKS>& input1,
+                                GaloisDecomposition& decomposition,
+                                Ciphertext<Scheme::CKKS>& output,
+                                Galoiskey<Scheme::CKKS>& galois_key,
+                                int galois_elt, const cudaStream_t stream);
+
         // The ModUp of key switching: splits input, the depth_-th level
         // polynomial to be key switched in coefficient form, into the digits
         // of the context and extends each digit to the primes of P * Q_l.

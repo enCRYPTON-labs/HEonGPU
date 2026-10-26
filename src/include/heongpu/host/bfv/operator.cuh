@@ -1448,6 +1448,36 @@ namespace heongpu
 
         ///////////////////////////////////////////////////
 
+        // The digits of c1 of a ciphertext in P * Q, NTT form: the part of a
+
+        // Galois automorphism that does not depend on the Galois element, which
+
+        // automorphisms of one ciphertext can share.
+
+        struct GaloisDecomposition
+
+        {
+            DeviceVector<Data64> digits;
+        };
+
+        __host__ GaloisDecomposition
+
+        decompose_for_galois(Ciphertext<Scheme::BFV>& input1,
+
+                             const cudaStream_t stream);
+
+        // Applies the automorphism of galois_elt to input1, given its
+
+        // decomposition.
+
+        __host__ void apply_galois_decomposed(
+
+            Ciphertext<Scheme::BFV>& input1, GaloisDecomposition& decomposition,
+
+            Ciphertext<Scheme::BFV>& output, Galoiskey<Scheme::BFV>& galois_key,
+
+            int galois_elt, const cudaStream_t stream);
+
         // The ModUp of key switching: splits input, a polynomial in coefficient
 
         // form, into the digits of the context and extends each digit to the

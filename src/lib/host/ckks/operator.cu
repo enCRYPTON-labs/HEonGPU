@@ -1434,40 +1434,19 @@ namespace heongpu
         }
     }
 
-    __host__ void HEOperator<Scheme::CKKS>::apply_galois_ckks_method_II(
-        Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& output,
-        Galoiskey<Scheme::CKKS>& galois_key, int galois_elt,
-        const cudaStream_t stream)
+    __host__ HEOperator<Scheme::CKKS>::GaloisDecomposition
+    HEOperator<Scheme::CKKS>::decompose_for_galois(
+        Ciphertext<Scheme::CKKS>& input1, const cudaStream_t stream)
     {
-        int first_rns_mod_count = context_->Q_prime_size;
         int current_rns_mod_count = context_->Q_prime_size - input1.depth_;
-
-        int first_decomp_count = context_->Q_size;
         int current_decomp_count = context_->Q_size - input1.depth_;
+        int d = context_->d_leveled->operator[](input1.depth_);
 
-        DeviceVector<Data64> output_memory(
-            (2 * context_->n * current_decomp_count), stream);
-
-        DeviceVector<Data64> temp_rotation(
-            (2 * context_->n * context_->Q_size) +
-                (2 * context_->n * context_->Q_size) +
-                (context_->n * context_->Q_size) +
-                (2 * context_->n * context_->d_leveled->operator[](0) *
-                 context_->Q_prime_size) +
-                (2 * context_->n * context_->Q_prime_size),
-            stream);
-
-        Data64* temp0_rotation = temp_rotation.data();
-        Data64* temp1_rotation =
-            temp0_rotation + (2 * context_->n * context_->Q_size);
-        Data64* temp2_rotation =
-            temp1_rotation + (2 * context_->n * context_->Q_size);
-        Data64* temp3_rotation =
-            temp2_rotation + (context_->n * context_->Q_size);
-        Data64* temp4_rotation =
-            temp3_rotation +
-            (2 * context_->n * context_->d_leveled->operator[](0) *
-             context_->Q_prime_size);
+        GaloisDecomposition decomposition{
+            DeviceVector<Data64>(2 * context_->n * current_decomp_count,
+                                 stream),
+            DeviceVector<Data64>(context_->n * d * current_rns_mod_count,
+                                 stream)};
 
         gpuntt::ntt_rns_configuration<Data64> cfg_intt = {
             .n_power = context_->n_power,
@@ -1478,7 +1457,7 @@ namespace heongpu
             .mod_inverse = context_->n_inverse_->data(),
             .stream = stream};
 
-        gpuntt::GPU_INTT(input1.data(), temp0_rotation,
+        gpuntt::GPU_INTT(input1.data(), decomposition.coefficients.data(),
                          context_->intt_table_->data(),
                          context_->modulus_->data(), cfg_intt,
                          2 * current_decomp_count, current_decomp_count);
@@ -1491,7 +1470,7 @@ namespace heongpu
             .zero_padding = false,
             .stream = stream};
 
-        int counter = first_rns_mod_count;
+        int counter = context_->Q_prime_size;
         int location = 0;
         for (int i = 0; i < input1.depth_; i++)
         {
@@ -1499,16 +1478,41 @@ namespace heongpu
             counter--;
         }
 
-        decompose_to_Qtilde(temp0_rotation +
+        decompose_to_Qtilde(decomposition.coefficients.data() +
                                 (current_decomp_count << context_->n_power),
-                            temp3_rotation, input1.depth_, stream);
+                            decomposition.digits.data(), input1.depth_, stream);
 
         gpuntt::GPU_NTT_Modulus_Ordered_Inplace(
-            temp3_rotation, context_->ntt_table_->data(),
-            context_->modulus_->data(), cfg_ntt,
-            context_->d_leveled->operator[](input1.depth_) *
-                current_rns_mod_count,
+            decomposition.digits.data(), context_->ntt_table_->data(),
+            context_->modulus_->data(), cfg_ntt, d * current_rns_mod_count,
             current_rns_mod_count, new_prime_locations + location);
+
+        return decomposition;
+    }
+
+    __host__ void HEOperator<Scheme::CKKS>::apply_galois_decomposed(
+        Ciphertext<Scheme::CKKS>& input1, GaloisDecomposition& decomposition,
+        Ciphertext<Scheme::CKKS>& output, Galoiskey<Scheme::CKKS>& galois_key,
+        int galois_elt, const cudaStream_t stream)
+    {
+        int first_rns_mod_count = context_->Q_prime_size;
+        int current_rns_mod_count = context_->Q_prime_size - input1.depth_;
+
+        int first_decomp_count = context_->Q_size;
+        int current_decomp_count = context_->Q_size - input1.depth_;
+
+        DeviceVector<Data64> output_memory(
+            (2 * context_->n * current_decomp_count), stream);
+        DeviceVector<Data64> key_switched(
+            2 * context_->n * current_rns_mod_count, stream);
+
+        int counter = first_rns_mod_count;
+        int location = 0;
+        for (int i = 0; i < input1.depth_; i++)
+        {
+            location += counter;
+            counter--;
+        }
 
         // MultSum
         // TODO: make it efficient
@@ -1520,11 +1524,12 @@ namespace heongpu
         {
             keyswitch_multiply_accumulate_leveled_method_II_kernel<<<
                 dim3((context_->n >> 8), current_rns_mod_count, 1), 256, 0,
-                stream>>>(
-                temp3_rotation, galois_key.device_location_[galois_elt].data(),
-                temp4_rotation, context_->modulus_->data(), first_rns_mod_count,
-                current_decomp_count, current_rns_mod_count, iteration_count_1,
-                iteration_count_2, input1.depth_, context_->n_power);
+                stream>>>(decomposition.digits.data(),
+                          galois_key.device_location_[galois_elt].data(),
+                          key_switched.data(), context_->modulus_->data(),
+                          first_rns_mod_count, current_decomp_count,
+                          current_rns_mod_count, iteration_count_1,
+                          iteration_count_2, input1.depth_, context_->n_power);
             HEONGPU_CUDA_CHECK(cudaGetLastError());
         }
         else
@@ -1533,16 +1538,25 @@ namespace heongpu
                 galois_key.host_location_[galois_elt], stream);
             keyswitch_multiply_accumulate_leveled_method_II_kernel<<<
                 dim3((context_->n >> 8), current_rns_mod_count, 1), 256, 0,
-                stream>>>(temp3_rotation, key_location.data(), temp4_rotation,
-                          context_->modulus_->data(), first_rns_mod_count,
-                          current_decomp_count, current_rns_mod_count,
-                          iteration_count_1, iteration_count_2, input1.depth_,
-                          context_->n_power);
+                stream>>>(decomposition.digits.data(), key_location.data(),
+                          key_switched.data(), context_->modulus_->data(),
+                          first_rns_mod_count, current_decomp_count,
+                          current_rns_mod_count, iteration_count_1,
+                          iteration_count_2, input1.depth_, context_->n_power);
             HEONGPU_CUDA_CHECK(cudaGetLastError());
         }
 
+        gpuntt::ntt_rns_configuration<Data64> cfg_intt = {
+            .n_power = context_->n_power,
+            .ntt_type = gpuntt::INVERSE,
+            .ntt_layout = gpuntt::PerPolynomial,
+            .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
+            .zero_padding = false,
+            .mod_inverse = context_->n_inverse_->data(),
+            .stream = stream};
+
         gpuntt::GPU_NTT_Modulus_Ordered_Inplace(
-            temp4_rotation, context_->intt_table_->data(),
+            key_switched.data(), context_->intt_table_->data(),
             context_->modulus_->data(), cfg_intt, 2 * current_rns_mod_count,
             current_rns_mod_count, new_prime_locations + location);
 
@@ -1550,18 +1564,34 @@ namespace heongpu
         divide_round_lastq_permute_ckks_kernel<<<dim3((context_->n >> 8),
                                                       current_decomp_count, 2),
                                                  256, 0, stream>>>(
-            temp4_rotation, temp0_rotation, output_memory.data(),
-            context_->modulus_->data(), context_->half_p_->data(),
-            context_->half_mod_->data(), context_->last_q_modinv_->data(),
-            galois_elt, context_->n_power, current_rns_mod_count,
-            current_decomp_count, first_rns_mod_count, first_decomp_count,
-            context_->P_size);
+            key_switched.data(), decomposition.coefficients.data(),
+            output_memory.data(), context_->modulus_->data(),
+            context_->half_p_->data(), context_->half_mod_->data(),
+            context_->last_q_modinv_->data(), galois_elt, context_->n_power,
+            current_rns_mod_count, current_decomp_count, first_rns_mod_count,
+            first_decomp_count, context_->P_size);
         HEONGPU_CUDA_CHECK(cudaGetLastError());
+
+        gpuntt::ntt_rns_configuration<Data64> cfg_ntt = {
+            .n_power = context_->n_power,
+            .ntt_type = gpuntt::FORWARD,
+            .ntt_layout = gpuntt::PerPolynomial,
+            .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
+            .zero_padding = false,
+            .stream = stream};
 
         gpuntt::GPU_NTT_Inplace(output_memory.data(),
                                 context_->ntt_table_->data(),
                                 context_->modulus_->data(), cfg_ntt,
                                 2 * current_decomp_count, current_decomp_count);
+
+        // Read before output is replaced, as output can be input1.
+        double scale = input1.scale_;
+        int depth = input1.depth_;
+        bool in_ntt_domain = input1.in_ntt_domain_;
+        encoding encoding_type = input1.encoding_;
+        bool rescale_required = input1.rescale_required_;
+        bool relinearization_required = input1.relinearization_required_;
 
         output.memory_set(std::move(output_memory));
 
@@ -1570,13 +1600,24 @@ namespace heongpu
         output.ring_size_ = context_->n;
         output.coeff_modulus_count_ = context_->Q_size;
         output.cipher_size_ = 2;
-        output.depth_ = input1.depth_;
-        output.scale_ = input1.scale_;
-        output.in_ntt_domain_ = input1.in_ntt_domain_;
-        output.encoding_ = input1.encoding_;
-        output.rescale_required_ = input1.rescale_required_;
-        output.relinearization_required_ = input1.relinearization_required_;
+        output.depth_ = depth;
+        output.scale_ = scale;
+        output.in_ntt_domain_ = in_ntt_domain;
+        output.encoding_ = encoding_type;
+        output.rescale_required_ = rescale_required;
+        output.relinearization_required_ = relinearization_required;
         output.ciphertext_generated_ = true;
+    }
+
+    __host__ void HEOperator<Scheme::CKKS>::apply_galois_ckks_method_II(
+        Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& output,
+        Galoiskey<Scheme::CKKS>& galois_key, int galois_elt,
+        const cudaStream_t stream)
+    {
+        GaloisDecomposition decomposition =
+            decompose_for_galois(input1, stream);
+        apply_galois_decomposed(input1, decomposition, output, galois_key,
+                                galois_elt, stream);
     }
 
     __host__ void HEOperator<Scheme::CKKS>::switchkey_ckks_method_II(

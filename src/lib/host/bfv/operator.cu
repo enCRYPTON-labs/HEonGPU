@@ -725,37 +725,18 @@ namespace heongpu
         }
     }
 
-    __host__ void HEOperator<Scheme::BFV>::apply_galois_method_II(
-        Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& output,
-        Galoiskey<Scheme::BFV>& galois_key, int galois_elt,
-        const cudaStream_t stream)
+    __host__ HEOperator<Scheme::BFV>::GaloisDecomposition
+    HEOperator<Scheme::BFV>::decompose_for_galois(
+        Ciphertext<Scheme::BFV>& input1, const cudaStream_t stream)
     {
         const int d = context_->d;
 
-        DeviceVector<Data64> output_memory((2 * context_->n * context_->Q_size),
-                                           stream);
-
-        DeviceVector<Data64> temp_rotation(
-            (2 * context_->n * context_->Q_size) +
-                (context_->n * context_->Q_size) +
-                (2 * context_->n * context_->Q_prime_size * d) +
-                (2 * context_->n * context_->Q_prime_size),
-            stream);
-
-        Data64* temp0_rotation = temp_rotation.data();
-        Data64* temp1_rotation =
-            temp0_rotation + (2 * context_->n * context_->Q_size);
-        Data64* temp2_rotation =
-            temp1_rotation + (context_->n * context_->Q_size);
-        Data64* temp3_rotation =
-            temp2_rotation + (2 * context_->n * context_->Q_prime_size * d);
-
-        // c0 is read from input1, which is replaced only at the end.
-        temp0_rotation = input1.data();
+        GaloisDecomposition decomposition{DeviceVector<Data64>(
+            context_->n * context_->Q_prime_size * d, stream)};
 
         decompose_to_Qtilde(input1.data() +
                                 (context_->Q_size << context_->n_power),
-                            temp2_rotation, stream);
+                            decomposition.digits.data(), stream);
 
         gpuntt::ntt_rns_configuration<Data64> cfg_ntt = {
             .n_power = context_->n_power,
@@ -765,10 +746,25 @@ namespace heongpu
             .zero_padding = false,
             .stream = stream};
 
-        gpuntt::GPU_NTT_Inplace(temp2_rotation, context_->ntt_table_->data(),
-                                context_->modulus_->data(), cfg_ntt,
-                                d * context_->Q_prime_size,
-                                context_->Q_prime_size);
+        gpuntt::GPU_NTT_Inplace(
+            decomposition.digits.data(), context_->ntt_table_->data(),
+            context_->modulus_->data(), cfg_ntt, d * context_->Q_prime_size,
+            context_->Q_prime_size);
+
+        return decomposition;
+    }
+
+    __host__ void HEOperator<Scheme::BFV>::apply_galois_decomposed(
+        Ciphertext<Scheme::BFV>& input1, GaloisDecomposition& decomposition,
+        Ciphertext<Scheme::BFV>& output, Galoiskey<Scheme::BFV>& galois_key,
+        int galois_elt, const cudaStream_t stream)
+    {
+        const int d = context_->d;
+
+        DeviceVector<Data64> output_memory((2 * context_->n * context_->Q_size),
+                                           stream);
+        DeviceVector<Data64> key_switched(
+            2 * context_->n * context_->Q_prime_size, stream);
 
         // MultSum
         // TODO: make it efficient
@@ -778,10 +774,11 @@ namespace heongpu
         {
             keyswitch_multiply_accumulate_kernel<<<
                 dim3((context_->n >> 8), context_->Q_prime_size, 1), 256, 0,
-                stream>>>(
-                temp2_rotation, galois_key.device_location_[galois_elt].data(),
-                temp3_rotation, context_->modulus_->data(), context_->n_power,
-                context_->Q_prime_size, iteration_count_1, iteration_count_2);
+                stream>>>(decomposition.digits.data(),
+                          galois_key.device_location_[galois_elt].data(),
+                          key_switched.data(), context_->modulus_->data(),
+                          context_->n_power, context_->Q_prime_size,
+                          iteration_count_1, iteration_count_2);
             HEONGPU_CUDA_CHECK(cudaGetLastError());
         }
         else
@@ -790,10 +787,10 @@ namespace heongpu
                 galois_key.host_location_[galois_elt], stream);
             keyswitch_multiply_accumulate_kernel<<<
                 dim3((context_->n >> 8), context_->Q_prime_size, 1), 256, 0,
-                stream>>>(temp2_rotation, key_location.data(), temp3_rotation,
-                          context_->modulus_->data(), context_->n_power,
-                          context_->Q_prime_size, iteration_count_1,
-                          iteration_count_2);
+                stream>>>(decomposition.digits.data(), key_location.data(),
+                          key_switched.data(), context_->modulus_->data(),
+                          context_->n_power, context_->Q_prime_size,
+                          iteration_count_1, iteration_count_2);
             HEONGPU_CUDA_CHECK(cudaGetLastError());
         }
 
@@ -806,15 +803,16 @@ namespace heongpu
             .mod_inverse = context_->n_inverse_->data(),
             .stream = stream};
 
-        gpuntt::GPU_INTT_Inplace(temp3_rotation, context_->intt_table_->data(),
-                                 context_->modulus_->data(), cfg_intt,
-                                 2 * context_->Q_prime_size,
-                                 context_->Q_prime_size);
+        gpuntt::GPU_INTT_Inplace(
+            key_switched.data(), context_->intt_table_->data(),
+            context_->modulus_->data(), cfg_intt, 2 * context_->Q_prime_size,
+            context_->Q_prime_size);
 
-        // ModDown + Permute
+        // ModDown + Permute; c0 is read from input1, which output replaces
+        // only afterwards.
         divide_round_lastq_permute_bfv_kernel<<<
             dim3((context_->n >> 8), context_->Q_size, 2), 256, 0, stream>>>(
-            temp3_rotation, temp0_rotation, output_memory.data(),
+            key_switched.data(), input1.data(), output_memory.data(),
             context_->modulus_->data(), context_->half_p_->data(),
             context_->half_mod_->data(), context_->last_q_modinv_->data(),
             galois_elt, context_->n_power, context_->Q_prime_size,
@@ -822,6 +820,17 @@ namespace heongpu
         HEONGPU_CUDA_CHECK(cudaGetLastError());
 
         output.memory_set(std::move(output_memory));
+    }
+
+    __host__ void HEOperator<Scheme::BFV>::apply_galois_method_II(
+        Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& output,
+        Galoiskey<Scheme::BFV>& galois_key, int galois_elt,
+        const cudaStream_t stream)
+    {
+        GaloisDecomposition decomposition =
+            decompose_for_galois(input1, stream);
+        apply_galois_decomposed(input1, decomposition, output, galois_key,
+                                galois_elt, stream);
     }
 
     __host__ void HEOperator<Scheme::BFV>::rotate_columns_method_II(
