@@ -1199,6 +1199,7 @@ namespace heongpu
             is.read((char*) host_locations_temp.data(),
                     sizeof(Data64) * switchkey_size_);
 
+            device_location_.resize(switchkey_size_);
             cudaMemcpy(device_location_.data(), host_locations_temp.data(),
                        switchkey_size_ * sizeof(Data64),
                        cudaMemcpyHostToDevice);

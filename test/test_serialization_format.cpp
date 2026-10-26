@@ -289,3 +289,41 @@ TYPED_TEST(SerializationFormat, Unknown_Format_Is_Rejected)
                      stream, static_cast<heongpu::serialization_format>(3)),
                  heongpu::ParameterError);
 }
+
+TYPED_TEST(SerializationFormat, Loaded_Keys_Give_The_Same_Results)
+{
+    constexpr auto S = TestFixture::S;
+    using Ciphertext = heongpu::Ciphertext<S>;
+    auto& a = this->a;
+    auto ciphertext = a.encrypt();
+
+    auto data = [](Ciphertext& c)
+    {
+        std::vector<Data64> values;
+        c.get_data(values);
+        return values;
+    };
+    auto expect_same = [&](auto operation, auto& key)
+    {
+        std::decay_t<decltype(key)> loaded;
+        load(loaded, save(key));
+        Ciphertext expected(a.context), result(a.context);
+        operation(key, expected);
+        operation(loaded, result);
+        EXPECT_EQ(data(result), data(expected));
+    };
+
+    expect_same(
+        [&](heongpu::Relinkey<S>& key, Ciphertext& output)
+        {
+            a.operators.multiply(ciphertext, ciphertext, output);
+            a.operators.relinearize_inplace(output, key);
+        },
+        a.relin_key);
+    expect_same([&](heongpu::Galoiskey<S>& key, Ciphertext& output)
+                { a.operators.rotate_rows(ciphertext, output, key, 1); },
+                a.galois_key);
+    expect_same([&](heongpu::Switchkey<S>& key, Ciphertext& output)
+                { a.operators.keyswitch(ciphertext, output, key); },
+                a.switch_key);
+}
