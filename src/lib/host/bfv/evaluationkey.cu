@@ -28,11 +28,6 @@ namespace heongpu
 
         switch (static_cast<int>(context->keyswitching_type_))
         {
-            case 1: // KEYSWITCHING_METHOD_I
-            {
-                relinkey_size_ = 2 * Q_size_ * Q_prime_size_ * ring_size;
-            }
-            break;
             case 2: // KEYSWITCHING_METHOD_II
             {
                 d_ = context->d;
@@ -349,23 +344,6 @@ namespace heongpu
 
         switch (static_cast<int>(context->keyswitching_type_))
         {
-            case 1: // KEYSWITCHING_METHOD_I
-            {
-                galoiskey_size_ = 2 * Q_size_ * Q_prime_size_ * ring_size;
-
-                for (int i = 0; i <= max_shift; i++)
-                {
-                    int power = pow(2, i);
-                    galois_elt[power] =
-                        steps_to_galois_elt(power, ring_size, group_order_);
-                    galois_elt[(-power)] =
-                        steps_to_galois_elt((-power), ring_size, group_order_);
-                }
-
-                galois_elt_zero =
-                    steps_to_galois_elt(0, ring_size, group_order_);
-            }
-            break;
             case 2: // KEYSWITCHING_METHOD_II
             {
                 for (int i = 0; i <= max_shift; i++)
@@ -388,8 +366,7 @@ namespace heongpu
                 throw ParameterError(
                     error_message("Invalid Key Switching Type ",
                                   static_cast<int>(context->keyswitching_type_),
-                                  "! Expected KEYSWITCHING_METHOD_I (1) or "
-                                  "KEYSWITCHING_METHOD_II (2)."));
+                                  "! Expected KEYSWITCHING_METHOD_II (2)."));
                 break;
         }
     }
@@ -419,20 +396,6 @@ namespace heongpu
 
         switch (static_cast<int>(context->keyswitching_type_))
         {
-            case 1: // KEYSWITCHING_METHOD_I
-            {
-                galoiskey_size_ = 2 * Q_size_ * Q_prime_size_ * ring_size;
-
-                for (int shift : shift_vec)
-                {
-                    galois_elt[shift] =
-                        steps_to_galois_elt(shift, ring_size, group_order_);
-                }
-
-                galois_elt_zero =
-                    steps_to_galois_elt(0, ring_size, group_order_);
-            }
-            break;
             case 2: // KEYSWITCHING_METHOD_II
             {
                 for (int shift : shift_vec)
@@ -452,8 +415,7 @@ namespace heongpu
                 throw ParameterError(
                     error_message("Invalid Key Switching Type ",
                                   static_cast<int>(context->keyswitching_type_),
-                                  "! Expected KEYSWITCHING_METHOD_I (1) or "
-                                  "KEYSWITCHING_METHOD_II (2)."));
+                                  "! Expected KEYSWITCHING_METHOD_II (2)."));
                 break;
         }
     }
@@ -484,14 +446,6 @@ namespace heongpu
 
         switch (static_cast<int>(context->keyswitching_type_))
         {
-            case 1: // KEYSWITCHING_METHOD_I
-            {
-                galois_elt_zero =
-                    steps_to_galois_elt(0, ring_size, group_order_);
-                galoiskey_size_ = 2 * Q_size_ * Q_prime_size_ * ring_size;
-                custom_galois_elt = galois_elts;
-            }
-            break;
             case 2: // KEYSWITCHING_METHOD_II
             {
                 d_ = context->d;
@@ -505,8 +459,7 @@ namespace heongpu
                 throw ParameterError(
                     error_message("Invalid Key Switching Type ",
                                   static_cast<int>(context->keyswitching_type_),
-                                  "! Expected KEYSWITCHING_METHOD_I (1) or "
-                                  "KEYSWITCHING_METHOD_II (2)."));
+                                  "! Expected KEYSWITCHING_METHOD_II (2)."));
                 break;
         }
     }
@@ -852,9 +805,6 @@ namespace heongpu
 
         switch (static_cast<int>(context->keyswitching_type_))
         {
-            case 1: // KEYSWITCHING_METHOD_I
-                switchkey_size_ = 2 * Q_size_ * Q_prime_size_ * ring_size;
-                break;
             case 2: // KEYSWITCHING_METHOD_II
             {
                 d_ = context->d;
@@ -865,8 +815,7 @@ namespace heongpu
                 throw ParameterError(
                     error_message("Invalid Key Switching Type ",
                                   static_cast<int>(context->keyswitching_type_),
-                                  "! Expected KEYSWITCHING_METHOD_I (1) or "
-                                  "KEYSWITCHING_METHOD_II (2)."));
+                                  "! Expected KEYSWITCHING_METHOD_II (2)."));
                 break;
         }
     }

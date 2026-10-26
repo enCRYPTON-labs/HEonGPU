@@ -105,91 +105,8 @@ namespace heongpu
     /////////////////////////////////////////////////////////////////////////////////////
     // Relinearization Key Generation
 
-    __global__ void relinkey_gen_kernel(Data64* relin_key, Data64* secret_key,
-                                        Data64* error_poly, Data64* a_poly,
-                                        Modulus64* modulus, Data64* factor,
-                                        int n_power, int rns_mod_count)
-    {
-        int idx = blockIdx.x * blockDim.x + threadIdx.x; // Ring Sizes
-        int block_y = blockIdx.y; // rns_mod_count
-
-        int location1 = block_y << n_power;
-
-        Data64 sk = secret_key[idx + (block_y << n_power)];
-
-#pragma unroll
-        for (int i = 0; i < rns_mod_count - 1; i++)
-        {
-            Data64 e = error_poly[idx + (block_y << n_power) +
-                                  ((rns_mod_count * i) << n_power)];
-            Data64 a = a_poly[idx + (block_y << n_power) +
-                              ((rns_mod_count * i) << n_power)];
-
-            Data64 rk_0 = OPERATOR_GPU_64::mult(sk, a, modulus[block_y]);
-            rk_0 = OPERATOR_GPU_64::add(rk_0, e, modulus[block_y]);
-            Data64 zero = 0;
-
-            rk_0 = OPERATOR_GPU_64::sub(zero, rk_0, modulus[block_y]);
-
-            if (i == block_y)
-            {
-                Data64 temp = OPERATOR_GPU_64::mult(sk, sk, modulus[block_y]);
-                temp = OPERATOR_GPU_64::mult(temp, factor[block_y],
-                                             modulus[block_y]);
-
-                rk_0 = OPERATOR_GPU_64::add(rk_0, temp, modulus[block_y]);
-            }
-
-            relin_key[idx + location1 +
-                      ((rns_mod_count * i) << (n_power + 1))] = rk_0;
-            relin_key[idx + location1 + ((rns_mod_count * i) << (n_power + 1)) +
-                      (rns_mod_count << n_power)] = a;
-        }
-    }
-
     ////////////////////////
     //////////////////////// -
-
-    __global__ void multi_party_relinkey_piece_method_I_stage_I_kernel(
-        Data64* rk, Data64* sk, Data64* a, Data64* u, Data64* e0, Data64* e1,
-        Modulus64* modulus, Data64* factor, int n_power, int rns_mod_count)
-    {
-        int idx = blockIdx.x * blockDim.x + threadIdx.x; // Ring Sizes
-        int block_y = blockIdx.y; // rns_mod_count
-
-        int location = block_y << n_power;
-
-        Data64 sk_ = sk[idx + (block_y << n_power)];
-        Data64 u_ = u[idx + (block_y << n_power)];
-
-        Data64 zero = 0ULL;
-#pragma unroll
-        for (int i = 0; i < rns_mod_count - 1; i++)
-        {
-            Data64 e_0 = e0[idx + location + ((rns_mod_count * i) << n_power)];
-            Data64 e_1 = e1[idx + location + ((rns_mod_count * i) << n_power)];
-            Data64 a_ = a[idx + location + ((rns_mod_count * i) << n_power)];
-
-            Data64 rk_0 = OPERATOR_GPU_64::mult(u_, a_, modulus[block_y]);
-            rk_0 = OPERATOR_GPU_64::sub(zero, rk_0, modulus[block_y]);
-            rk_0 = OPERATOR_GPU_64::add(rk_0, e_0, modulus[block_y]);
-
-            if (i == block_y)
-            {
-                Data64 temp = OPERATOR_GPU_64::mult(sk_, factor[block_y],
-                                                    modulus[block_y]);
-
-                rk_0 = OPERATOR_GPU_64::add(rk_0, temp, modulus[block_y]);
-            }
-
-            Data64 rk_1 = OPERATOR_GPU_64::mult(a_, sk_, modulus[block_y]);
-            rk_1 = OPERATOR_GPU_64::add(rk_1, e_1, modulus[block_y]);
-
-            rk[idx + location + ((rns_mod_count * i) << (n_power + 1))] = rk_0;
-            rk[idx + location + ((rns_mod_count * i) << (n_power + 1)) +
-               (rns_mod_count << n_power)] = rk_1;
-        }
-    }
 
     __global__ void multi_party_relinkey_piece_method_II_stage_I_kernel(
         Data64* rk, Data64* sk, Data64* a, Data64* u, Data64* e0, Data64* e1,
@@ -717,56 +634,6 @@ namespace heongpu
         return bitreverse_gpu(index_raw, n_power);
     }
 
-    __global__ void galoiskey_gen_kernel(Data64* galois_key, Data64* secret_key,
-                                         Data64* error_poly, Data64* a_poly,
-                                         Modulus64* modulus, Data64* factor,
-                                         int galois_elt, int n_power,
-                                         int rns_mod_count)
-    {
-        int idx = blockIdx.x * blockDim.x + threadIdx.x; // Ring Sizes
-        int block_y = blockIdx.y; // rns_mod_count
-
-        int location1 = block_y << n_power;
-        int coeff_count = 1 << n_power;
-
-        int permutation_location =
-            permutation(idx, galois_elt, coeff_count, n_power);
-        Data64 sk_permutation =
-            secret_key[(block_y << n_power) + permutation_location];
-
-#pragma unroll
-        for (int i = 0; i < rns_mod_count - 1; i++)
-        {
-            Data64 e = error_poly[idx + (block_y << n_power) +
-                                  ((rns_mod_count * i) << n_power)];
-            Data64 a = a_poly[idx + (block_y << n_power) +
-                              ((rns_mod_count * i) << n_power)];
-
-            Data64 gk_0 =
-                OPERATOR_GPU_64::mult(sk_permutation, a, modulus[block_y]);
-            gk_0 = OPERATOR_GPU_64::add(gk_0, e, modulus[block_y]);
-            Data64 zero = 0;
-
-            gk_0 = OPERATOR_GPU_64::sub(zero, gk_0, modulus[block_y]);
-
-            if (i == block_y)
-            {
-                Data64 sk = secret_key[idx + (block_y << n_power)];
-
-                sk = OPERATOR_GPU_64::mult(sk, factor[block_y],
-                                           modulus[block_y]);
-
-                gk_0 = OPERATOR_GPU_64::add(gk_0, sk, modulus[block_y]);
-            }
-
-            galois_key[idx + location1 +
-                       ((rns_mod_count * i) << (n_power + 1))] = gk_0;
-            galois_key[idx + location1 +
-                       ((rns_mod_count * i) << (n_power + 1)) +
-                       (rns_mod_count << n_power)] = a;
-        }
-    }
-
     __global__ void galoiskey_gen_II_kernel(
         Data64* galois_key_temp, Data64* secret_key, Data64* error_poly,
         Data64* a_poly, Modulus64* modulus, Data64* factor, int galois_elt,
@@ -855,51 +722,6 @@ namespace heongpu
     }
 
     /////////////////////
-
-    __global__ void switchkey_gen_kernel(Data64* switch_key,
-                                         Data64* new_secret_key,
-                                         Data64* old_secret_key,
-                                         Data64* error_poly, Data64* a_poly,
-                                         Modulus64* modulus, Data64* factor,
-                                         int n_power, int rns_mod_count)
-    {
-        int idx = blockIdx.x * blockDim.x + threadIdx.x; // Ring Sizes
-        int block_y = blockIdx.y; // rns_mod_count
-
-        int location1 = block_y << n_power;
-
-        Data64 new_sk = new_secret_key[idx + (block_y << n_power)];
-        Data64 old_sk = old_secret_key[idx + (block_y << n_power)];
-
-#pragma unroll
-        for (int i = 0; i < rns_mod_count - 1; i++)
-        {
-            Data64 e = error_poly[idx + (block_y << n_power) +
-                                  ((rns_mod_count * i) << n_power)];
-            Data64 a = a_poly[idx + (block_y << n_power) +
-                              ((rns_mod_count * i) << n_power)];
-
-            Data64 rk_0 = OPERATOR_GPU_64::mult(new_sk, a, modulus[block_y]);
-            rk_0 = OPERATOR_GPU_64::add(rk_0, e, modulus[block_y]);
-            Data64 zero = 0;
-
-            rk_0 = OPERATOR_GPU_64::sub(zero, rk_0, modulus[block_y]);
-
-            if (i == block_y)
-            {
-                Data64 temp = OPERATOR_GPU_64::mult(old_sk, factor[block_y],
-                                                    modulus[block_y]);
-
-                rk_0 = OPERATOR_GPU_64::add(rk_0, temp, modulus[block_y]);
-            }
-
-            switch_key[idx + location1 +
-                       ((rns_mod_count * i) << (n_power + 1))] = rk_0;
-            switch_key[idx + location1 +
-                       ((rns_mod_count * i) << (n_power + 1)) +
-                       (rns_mod_count << n_power)] = a;
-        }
-    }
 
     __global__ void switchkey_gen_II_kernel(
         Data64* switch_key, Data64* new_secret_key, Data64* old_secret_key,

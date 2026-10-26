@@ -693,9 +693,6 @@ namespace heongpu
 
             switch (static_cast<int>(keyswitching_type_))
             {
-                case 1: // KEYSWITCHING_METHOD_I
-                    // Deafult
-                    break;
                 case 2: // KEYSWITCHING_METHOD_II
                 {
                     KeySwitchParameterGenerator pool(n, base_q, P_size, scheme_,
@@ -737,11 +734,10 @@ namespace heongpu
                 }
                 break;
                 default:
-                    throw ParameterError(
-                        error_message("Invalid Key Switching Type ",
-                                      static_cast<int>(keyswitching_type_),
-                                      "! Expected KEYSWITCHING_METHOD_I (1) or "
-                                      "KEYSWITCHING_METHOD_II (2)."));
+                    throw ParameterError(error_message(
+                        "Invalid Key Switching Type ",
+                        static_cast<int>(keyswitching_type_),
+                        "! Expected KEYSWITCHING_METHOD_II (2)."));
                     break;
             }
 

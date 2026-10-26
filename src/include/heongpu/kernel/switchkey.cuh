@@ -11,24 +11,10 @@
 
 namespace heongpu
 {
-    __global__ void cipher_broadcast_kernel(Data64* input, Data64* output,
-                                            Modulus64* modulus, int n_power,
-                                            int rns_mod_count);
-    __global__ void
-    cipher_broadcast_leveled_kernel(Data64* input, Data64* output,
-                                    Modulus64* modulus, int first_rns_mod_count,
-                                    int current_rns_mod_count, int n_power);
-
     __global__ void keyswitch_multiply_accumulate_kernel(
         Data64* input, const Data64* __restrict__ relinkey, Data64* output,
         Modulus64* modulus, int n_power, int Q_tilda_size, int iteration_count1,
         int iteration_count2);
-
-    __global__ void keyswitch_multiply_accumulate_leveled_kernel(
-        Data64* input, const Data64* __restrict__ relinkey, Data64* output,
-        Modulus64* modulus, int first_rns_mod_count,
-        int current_decomp_mod_count, int iteration_count1,
-        int iteration_count2, int n_power);
 
     __global__ void keyswitch_multiply_accumulate_leveled_method_II_kernel(
         Data64* input, const Data64* __restrict__ relinkey, Data64* output,
@@ -143,22 +129,8 @@ namespace heongpu
                                         int current_decomposition_count,
                                         int n_power);
 
-    __global__ void
-    cipher_broadcast_switchkey_kernel(Data64* cipher, Data64* out0,
-                                      Data64* out1, Modulus64* modulus,
-                                      int n_power, int decomp_mod_count);
-
-    __global__ void cipher_broadcast_switchkey_method_II_kernel(
-        Data64* cipher, Data64* out0, Data64* out1, Modulus64* modulus,
-        int n_power, int decomp_mod_count);
-
     __global__ void addition_switchkey(Data64* in1, Data64* in2, Data64* out,
                                        Modulus64* modulus, int n_power);
-
-    __global__ void cipher_broadcast_switchkey_leveled_kernel(
-        Data64* cipher, Data64* out0, Data64* out1, Modulus64* modulus,
-        int n_power, int first_rns_mod_count, int current_rns_mod_count,
-        int current_decomp_mod_count);
 
     __global__ void negacyclic_shift_poly_coeffmod_kernel(Data64* cipher_in,
                                                           Data64* cipher_out,
@@ -190,16 +162,6 @@ namespace heongpu
 
     ////////////////////////////////////////
     // Optimized Hoisting-Rotations
-
-    __global__ void ckks_duplicate_kernel(Data64* cipher, Data64* output,
-                                          Modulus64* modulus, int n_power,
-                                          int first_rns_mod_count,
-                                          int current_rns_mod_count,
-                                          int current_decomp_mod_count);
-
-    __global__ void bfv_duplicate_kernel(Data64* cipher, Data64* output1,
-                                         Data64* output2, Modulus64* modulus,
-                                         int n_power, int rns_mod_count);
 
     __global__ void divide_round_lastq_permute_ckks_kernel(
         Data64* input, Data64* input2, Data64* output, Modulus64* modulus,

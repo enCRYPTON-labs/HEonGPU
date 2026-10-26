@@ -86,18 +86,14 @@ namespace heongpu
         {
             switch (static_cast<int>(rk.key_type))
             {
-                case 1: // KEYSWITCHING_METHOD_I
-                    generate_relin_key_method_I(rk, sk, options);
-                    break;
                 case 2: // KEYSWITCHING_METHOD_II
                     generate_ckks_relin_key_method_II(rk, sk, options);
                     break;
                 default:
-                    throw ParameterError(
-                        error_message("Invalid Key Switching Type ",
-                                      static_cast<int>(rk.key_type),
-                                      "! Expected KEYSWITCHING_METHOD_I (1) or "
-                                      "KEYSWITCHING_METHOD_II (2)."));
+                    throw ParameterError(error_message(
+                        "Invalid Key Switching Type ",
+                        static_cast<int>(rk.key_type),
+                        "! Expected KEYSWITCHING_METHOD_II (2)."));
                     break;
             }
         }
@@ -116,18 +112,14 @@ namespace heongpu
         {
             switch (static_cast<int>(gk.key_type))
             {
-                case 1: // KEYSWITCHING_METHOD_I
-                    generate_galois_key_method_I(gk, sk, options);
-                    break;
                 case 2: // KEYSWITCHING_METHOD_II
                     generate_ckks_galois_key_method_II(gk, sk, options);
                     break;
                 default:
-                    throw ParameterError(
-                        error_message("Invalid Key Switching Type ",
-                                      static_cast<int>(gk.key_type),
-                                      "! Expected KEYSWITCHING_METHOD_I (1) or "
-                                      "KEYSWITCHING_METHOD_II (2)."));
+                    throw ParameterError(error_message(
+                        "Invalid Key Switching Type ",
+                        static_cast<int>(gk.key_type),
+                        "! Expected KEYSWITCHING_METHOD_II (2)."));
                     break;
             }
         }
@@ -148,19 +140,15 @@ namespace heongpu
         {
             switch (static_cast<int>(swk.key_type))
             {
-                case 1: // KEYSWITCHING_METHOD_I
-                    generate_switch_key_method_I(swk, new_sk, old_sk, options);
-                    break;
                 case 2: // KEYSWITCHING_METHOD_II
                     generate_ckks_switch_key_method_II(swk, new_sk, old_sk,
                                                        options);
                     break;
                 default:
-                    throw ParameterError(
-                        error_message("Invalid Key Switching Type ",
-                                      static_cast<int>(swk.key_type),
-                                      "! Expected KEYSWITCHING_METHOD_I (1) or "
-                                      "KEYSWITCHING_METHOD_II (2)."));
+                    throw ParameterError(error_message(
+                        "Invalid Key Switching Type ",
+                        static_cast<int>(swk.key_type),
+                        "! Expected KEYSWITCHING_METHOD_II (2)."));
                     break;
             }
         }
@@ -292,28 +280,14 @@ namespace heongpu
 
       private:
         __host__ void
-        generate_relin_key_method_I(Relinkey<Scheme::CKKS>& rk,
-                                    Secretkey<Scheme::CKKS>& sk,
-                                    const ExecutionOptions& options);
-
-        __host__ void
         generate_ckks_relin_key_method_II(Relinkey<Scheme::CKKS>& rk,
                                           Secretkey<Scheme::CKKS>& sk,
                                           const ExecutionOptions& options);
 
         __host__ void
-        generate_galois_key_method_I(Galoiskey<Scheme::CKKS>& gk,
-                                     Secretkey<Scheme::CKKS>& sk,
-                                     const ExecutionOptions& options);
-
-        __host__ void
         generate_ckks_galois_key_method_II(Galoiskey<Scheme::CKKS>& gk,
                                            Secretkey<Scheme::CKKS>& sk,
                                            const ExecutionOptions& options);
-
-        __host__ void generate_switch_key_method_I(
-            Switchkey<Scheme::CKKS>& swk, Secretkey<Scheme::CKKS>& new_sk,
-            Secretkey<Scheme::CKKS>& old_sk, const ExecutionOptions& options);
 
         __host__ void generate_ckks_switch_key_method_II(
             Switchkey<Scheme::CKKS>& swk, Secretkey<Scheme::CKKS>& new_sk,

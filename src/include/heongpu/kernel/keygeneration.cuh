@@ -39,15 +39,6 @@ namespace heongpu
 
     // Relinearization Key Generation
 
-    __global__ void relinkey_gen_kernel(Data64* relin_key, Data64* secret_key,
-                                        Data64* error_poly, Data64* a_poly,
-                                        Modulus64* modulus, Data64* factor,
-                                        int n_power, int rns_mod_count);
-
-    __global__ void multi_party_relinkey_piece_method_I_stage_I_kernel(
-        Data64* rk, Data64* sk, Data64* a, Data64* u, Data64* e0, Data64* e1,
-        Modulus64* modulus, Data64* factor, int n_power, int rns_mod_count);
-
     __global__ void multi_party_relinkey_piece_method_I_II_stage_II_kernel(
         Data64* rk_1, Data64* rk_2, Data64* sk, Data64* u, Data64* e0,
         Data64* e1, Modulus64* modulus, int n_power, int rns_mod_count,
@@ -103,12 +94,6 @@ namespace heongpu
     __device__ int permutation(int index, int galois_elt, int coeff_count,
                                int n_power);
 
-    __global__ void galoiskey_gen_kernel(Data64* galois_key, Data64* secret_key,
-                                         Data64* error_poly, Data64* a_poly,
-                                         Modulus64* modulus, Data64* factor,
-                                         int galois_elt, int n_power,
-                                         int rns_mod_count);
-
     __global__ void galoiskey_gen_II_kernel(
         Data64* galois_key_temp, Data64* secret_key, Data64* error_poly,
         Data64* a_poly, Modulus64* modulus, Data64* factor, int galois_elt,
@@ -119,13 +104,6 @@ namespace heongpu
         int rns_mod_count, int decomp_mod_count, bool first);
 
     // Switch Key Generation
-
-    __global__ void switchkey_gen_kernel(Data64* switch_key,
-                                         Data64* new_secret_key,
-                                         Data64* old_secret_key,
-                                         Data64* error_poly, Data64* a_poly,
-                                         Modulus64* modulus, Data64* factor,
-                                         int n_power, int rns_mod_count);
 
     __global__ void switchkey_gen_II_kernel(
         Data64* switch_key, Data64* new_secret_key, Data64* old_secret_key,

@@ -1176,10 +1176,6 @@ namespace heongpu
                 {
                     switch (static_cast<int>(relin_key.key_type))
                     {
-                        case 1: // KEYSWITCHING_METHOD_I
-                            relinearize_seal_method_inplace_ckks(
-                                input1_, relin_key, options.stream_);
-                            break;
                         case 2: // KEYSWITCHING_METHOD_II
                             relinearize_external_product_method2_inplace_ckks(
                                 input1_, relin_key, options.stream_);
@@ -1188,8 +1184,7 @@ namespace heongpu
                             throw ParameterError(error_message(
                                 "Invalid Key Switching Type ",
                                 static_cast<int>(relin_key.key_type),
-                                "! Expected KEYSWITCHING_METHOD_I (1) or "
-                                "KEYSWITCHING_METHOD_II (2)."));
+                                "! Expected KEYSWITCHING_METHOD_II (2)."));
                             break;
                     }
 
@@ -1254,11 +1249,6 @@ namespace heongpu
                         {
                             switch (static_cast<int>(galois_key.key_type))
                             {
-                                case 1: // KEYSWITCHING_METHOD_I
-                                    rotate_ckks_method_I(input1_, output_,
-                                                         galois_key, shift,
-                                                         options.stream_);
-                                    break;
                                 case 2: // KEYSWITCHING_METHOD_II
                                     rotate_ckks_method_II(input1_, output_,
                                                           galois_key, shift,
@@ -1268,9 +1258,8 @@ namespace heongpu
                                     throw ParameterError(error_message(
                                         "Invalid Key Switching Type ",
                                         static_cast<int>(galois_key.key_type),
-                                        "! Expected KEYSWITCHING_METHOD_I (1) "
-                                        "or "
-                                        "KEYSWITCHING_METHOD_II (2)."));
+                                        "! Expected KEYSWITCHING_METHOD_II "
+                                        "(2)."));
                                     break;
                             }
                         },
@@ -1353,11 +1342,6 @@ namespace heongpu
                         {
                             switch (static_cast<int>(galois_key.key_type))
                             {
-                                case 1: // KEYSWITCHING_METHOD_I
-                                    apply_galois_ckks_method_I(
-                                        input1_, output_, galois_key,
-                                        galois_elt, options.stream_);
-                                    break;
                                 case 2: // KEYSWITCHING_METHOD_II
                                     apply_galois_ckks_method_II(
                                         input1_, output_, galois_key,
@@ -1367,9 +1351,8 @@ namespace heongpu
                                     throw ParameterError(error_message(
                                         "Invalid Key Switching Type ",
                                         static_cast<int>(galois_key.key_type),
-                                        "! Expected KEYSWITCHING_METHOD_I (1) "
-                                        "or "
-                                        "KEYSWITCHING_METHOD_II (2)."));
+                                        "! Expected KEYSWITCHING_METHOD_II "
+                                        "(2)."));
                                     break;
                             }
 
@@ -1461,11 +1444,6 @@ namespace heongpu
                         {
                             switch (static_cast<int>(switch_key.key_type))
                             {
-                                case 1: // KEYSWITCHING_METHOD_I
-                                    switchkey_ckks_method_I(input1_, output_,
-                                                            switch_key,
-                                                            options.stream_);
-                                    break;
                                 case 2: // KEYSWITCHING_METHOD_II
                                     switchkey_ckks_method_II(input1_, output_,
                                                              switch_key,
@@ -1475,9 +1453,8 @@ namespace heongpu
                                     throw ParameterError(error_message(
                                         "Invalid Key Switching Type ",
                                         static_cast<int>(switch_key.key_type),
-                                        "! Expected KEYSWITCHING_METHOD_I (1) "
-                                        "or "
-                                        "KEYSWITCHING_METHOD_II (2)."));
+                                        "! Expected KEYSWITCHING_METHOD_II "
+                                        "(2)."));
                                     break;
                             }
 
@@ -1548,11 +1525,6 @@ namespace heongpu
                         {
                             switch (static_cast<int>(conjugate_key.key_type))
                             {
-                                case 1: // KEYSWITHING_METHOD_I
-                                    conjugate_ckks_method_I(input1_, output_,
-                                                            conjugate_key,
-                                                            options.stream_);
-                                    break;
                                 case 2: // KEYSWITHING_METHOD_II
                                     conjugate_ckks_method_II(input1_, output_,
                                                              conjugate_key,
@@ -1563,9 +1535,8 @@ namespace heongpu
                                         "Invalid Key Switching Type ",
                                         static_cast<int>(
                                             conjugate_key.key_type),
-                                        "! Expected KEYSWITCHING_METHOD_I (1) "
-                                        "or "
-                                        "KEYSWITCHING_METHOD_II (2)."));
+                                        "! Expected KEYSWITCHING_METHOD_II "
+                                        "(2)."));
                                     break;
                             }
 
@@ -2184,11 +2155,6 @@ namespace heongpu
 
         ///////////////////////////////////////////////////
 
-        __host__ void
-        relinearize_seal_method_inplace_ckks(Ciphertext<Scheme::CKKS>& input1,
-                                             Relinkey<Scheme::CKKS>& relin_key,
-                                             const cudaStream_t stream);
-
         __host__ void relinearize_external_product_method2_inplace_ckks(
             Ciphertext<Scheme::CKKS>& input1, Relinkey<Scheme::CKKS>& relin_key,
             const cudaStream_t stream);
@@ -2201,12 +2167,6 @@ namespace heongpu
         __host__ void decompose_to_Qtilde(Data64* input, Data64* output,
                                           int depth, cudaStream_t stream);
 
-        __host__ void rotate_ckks_method_I(Ciphertext<Scheme::CKKS>& input1,
-                                           Ciphertext<Scheme::CKKS>& output,
-                                           Galoiskey<Scheme::CKKS>& galois_key,
-                                           int shift,
-                                           const cudaStream_t stream);
-
         __host__ void rotate_ckks_method_II(Ciphertext<Scheme::CKKS>& input1,
                                             Ciphertext<Scheme::CKKS>& output,
                                             Galoiskey<Scheme::CKKS>& galois_key,
@@ -2214,13 +2174,6 @@ namespace heongpu
                                             const cudaStream_t stream);
 
         ///////////////////////////////////////////////////
-
-        // TODO: Merge with rotation, provide code integrity
-        __host__ void
-        apply_galois_ckks_method_I(Ciphertext<Scheme::CKKS>& input1,
-                                   Ciphertext<Scheme::CKKS>& output,
-                                   Galoiskey<Scheme::CKKS>& galois_key,
-                                   int galois_elt, const cudaStream_t stream);
 
         __host__ void
         apply_galois_ckks_method_II(Ciphertext<Scheme::CKKS>& input1,
@@ -2230,19 +2183,11 @@ namespace heongpu
 
         ///////////////////////////////////////////////////
 
-        __host__ void switchkey_ckks_method_I(
-            Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& output,
-            Switchkey<Scheme::CKKS>& switch_key, const cudaStream_t stream);
-
         __host__ void switchkey_ckks_method_II(
             Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& output,
             Switchkey<Scheme::CKKS>& switch_key, const cudaStream_t stream);
 
         ///////////////////////////////////////////////////
-
-        __host__ void conjugate_ckks_method_I(
-            Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& output,
-            Galoiskey<Scheme::CKKS>& conjugate_key, const cudaStream_t stream);
 
         __host__ void conjugate_ckks_method_II(
             Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& output,
