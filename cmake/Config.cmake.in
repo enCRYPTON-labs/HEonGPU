@@ -37,4 +37,17 @@ if(NOT TARGET GMP::GMP)
     )
 endif()
 
+# NTL is linked privately, but a static HEonGPU still needs it at link time.
+if(NOT TARGET NTL::NTL)
+    find_library(NTL_LIBRARY NAMES ntl)
+    if(NOT NTL_LIBRARY)
+        message(FATAL_ERROR "NTL not found. Please install the NTL development package.")
+    endif()
+    add_library(NTL::NTL UNKNOWN IMPORTED)
+    set_target_properties(NTL::NTL PROPERTIES
+        IMPORTED_LOCATION ${NTL_LIBRARY}
+        INTERFACE_LINK_LIBRARIES GMP::GMP
+    )
+endif()
+
 include("${CMAKE_CURRENT_LIST_DIR}/@HEonGPU_TARGETS_EXPORT_NAME@.cmake")

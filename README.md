@@ -283,9 +283,12 @@ HEonGPU now includes support for **Multiparty Computation (MPC)** protocols, pro
 - [CMake](https://cmake.org/download/) >=4.0
 - [GCC](https://gcc.gnu.org/) with C++20 support (tested with GCC 11.4)
 - [GMP](https://gmplib.org/)
+- [NTL](https://libntl.org/)
 - [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) >=12.2
-- [OpenSSL](https://www.openssl.org/) >= 1.1.0
+- [OpenSSL](https://www.openssl.org/) >= 1.1.1
 - [ZLIB](https://zlib.net/)
+
+On Ubuntu: `sudo apt install libgmp-dev libntl-dev libssl-dev zlib1g-dev`.
 
 ### Third-Party Dependencies
 - [GPU-NTT](https://github.com/Alisah-Ozcan/GPU-NTT)

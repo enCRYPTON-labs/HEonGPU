@@ -15,9 +15,12 @@ Before building the library, ensure your development environment meets the follo
 * **CMake**: Version 4.0 or higher
 * **GCC**: A modern C++ compiler with C++20 support (tested with GCC 11.4)
 * **GMP**: The GNU Multiple Precision Arithmetic Library
+* **NTL**: A Library for doing Number Theory
 * **CUDA Toolkit**: Version 12.2 or higher
-* **OpenSSL**: Version 1.1.0 or higher
+* **OpenSSL**: Version 1.1.1 or higher
 * **ZLIB**: The data compression library
+
+On Ubuntu, the system packages are installed with ``sudo apt install libgmp-dev libntl-dev libssl-dev zlib1g-dev``.
 
 Building the Library
 --------------------

@@ -40,6 +40,39 @@ if(NOT TARGET GMP::GMP)
     )
 endif()
 
+# NTL
+# Used only inside the library (CKKS bootstrapping), so it is linked
+# privately. Like GMP, it usually has no CMake package.
+if(NOT TARGET NTL::NTL)
+    set(_heongpu_ntl_hints "")
+    if(DEFINED NTL_ROOT)
+        list(APPEND _heongpu_ntl_hints "${NTL_ROOT}")
+    endif()
+    if(DEFINED ENV{NTL_ROOT})
+        list(APPEND _heongpu_ntl_hints "$ENV{NTL_ROOT}")
+    endif()
+
+    find_library(NTL_LIBRARY NAMES ntl
+        HINTS ${_heongpu_ntl_hints}
+        PATH_SUFFIXES lib lib64
+    )
+    find_path(NTL_INCLUDE_DIR NAMES NTL/ZZ.h
+        HINTS ${_heongpu_ntl_hints}
+        PATH_SUFFIXES include
+    )
+
+    if(NOT NTL_LIBRARY OR NOT NTL_INCLUDE_DIR)
+        message(FATAL_ERROR "NTL not found. Install the NTL development package (e.g. libntl-dev) or set NTL_ROOT.")
+    endif()
+
+    add_library(NTL::NTL UNKNOWN IMPORTED)
+    set_target_properties(NTL::NTL PROPERTIES
+        IMPORTED_LOCATION "${NTL_LIBRARY}"
+        INTERFACE_INCLUDE_DIRECTORIES "${NTL_INCLUDE_DIR}"
+        INTERFACE_LINK_LIBRARIES GMP::GMP
+    )
+endif()
+
 set(HEONGPU_UTIL_SOURCES
     lib/util/defaultmodulus.cpp
     lib/util/memorypool.cu
@@ -67,8 +100,7 @@ target_link_libraries(heongpu_util
         fft
         rngongpu
         rmm
-        gmp
-        ntl
+        GMP::GMP
 )
 set_target_properties(heongpu_util PROPERTIES
     POSITION_INDEPENDENT_CODE ON
@@ -203,7 +235,7 @@ target_include_directories(heongpu_host_ckks
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_ROOT}/kernel>
 )
 target_link_libraries(heongpu_host_ckks PUBLIC heongpu_host_core heongpu_kernel heongpu_util
-    PRIVATE OpenSSL::Crypto)
+    PRIVATE OpenSSL::Crypto NTL::NTL)
 set_target_properties(heongpu_host_ckks PROPERTIES
     POSITION_INDEPENDENT_CODE ON
     CUDA_SEPARABLE_COMPILATION ON
@@ -275,16 +307,18 @@ target_include_directories(heongpu
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_ROOT}/util>
 )
 
-target_link_libraries(heongpu PUBLIC
-    ntt
-    fft
-    rngongpu
-    gmp
-    ntl
-    rmm
-    CUDA::curand
-    OpenSSL::Crypto
-    ZLIB::ZLIB
+target_link_libraries(heongpu
+    PUBLIC
+        ntt
+        fft
+        rngongpu
+        GMP::GMP
+        rmm
+        CUDA::curand
+        OpenSSL::Crypto
+        ZLIB::ZLIB
+    PRIVATE
+        NTL::NTL
 )
 target_compile_options(heongpu PRIVATE
     $<$<CONFIG:Release>:-O3 -DNDEBUG>
