@@ -140,3 +140,16 @@ TEST(HEonGPU, Print_Parameters_Writes_To_A_Stream)
               "-->   Q_tilda size: Q( 40 + 30 + 30 ) + P( 40 ) bits\n"
               "\n");
 }
+
+TEST(HEonGPU, Memory_Pool_Status_Writes_To_A_Stream)
+{
+    auto context = heongpu::GenHEContext<heongpu::Scheme::CKKS>(
+        heongpu::sec_level_type::none);
+    context->set_poly_modulus_degree(degree);
+    context->set_coeff_modulus_bit_sizes({40, 30, 30}, {40});
+    context->generate();
+    std::ostringstream stream;
+    heongpu::MemoryPool::instance().print_memory_pool_status(stream);
+    EXPECT_EQ(stream.str().rfind("[HEonGPU] Memory Pool Status\n", 0), 0u)
+        << stream.str();
+}

@@ -7,6 +7,7 @@
 #include <heongpu/heongpu.hpp>
 #include <gtest/gtest.h>
 #include <rmm/device_buffer.hpp>
+#include <rmm/logger.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 
 // HEonGPU allocates from its own memory resource and leaves the process-wide
@@ -73,4 +74,14 @@ TEST(HEonGPU, MemoryPool_Keeps_A_Default_Set_By_The_Application)
                 rmm::device_async_resource_ref{application_resource});
 
     rmm::mr::reset_current_device_resource();
+}
+
+// The documented way to silence RMM, the only library that HEonGPU uses that
+// can log.
+TEST(HEonGPU, RMM_Log_Level_Can_Be_Set)
+{
+    const auto level = rmm::default_logger().level();
+    rmm::default_logger().set_level(rapids_logger::level_enum::off);
+    EXPECT_EQ(rmm::default_logger().level(), rapids_logger::level_enum::off);
+    rmm::default_logger().set_level(level);
 }

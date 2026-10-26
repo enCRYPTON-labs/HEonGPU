@@ -101,7 +101,8 @@ namespace heongpu
         void* host_allocate(size_t size);
         void host_deallocate(void* ptr, size_t size);
 
-        void print_memory_pool_status() const;
+        // Writes the pool sizes and usage to os, std::cout by default.
+        void print_memory_pool_status(std::ostream& os = std::cout) const;
         size_t get_current_device_pool_memory_usage() const;
         size_t get_free_device_pool_memory() const;
 

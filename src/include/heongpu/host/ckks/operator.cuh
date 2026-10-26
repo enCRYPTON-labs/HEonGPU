@@ -1233,6 +1233,8 @@ namespace heongpu
                     " coefficients, got ", input1.memory_size(), "."));
             }
 
+            // Rotating by a multiple of the row size gives the input.
+            shift %= (context_->n >> 1);
             if (shift == 0)
             {
                 output = input1;

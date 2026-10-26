@@ -29,6 +29,8 @@ HEonGPU keeps some state for the whole process. This matters when it is embedded
 
 HEonGPU does not change other CUDA settings and does not select the CUDA device; it uses the current device of the calling thread.
 
+HEonGPU writes no output on its own. Only ``print_parameters()`` and ``MemoryPool::print_memory_pool_status()`` print, when called, to the stream they are given (``std::cout`` by default); errors are reported with exceptions. RMM, which HEonGPU uses for device memory, can log to ``stderr``, for example when an allocation fails. Its log level is set with ``rmm::default_logger().set_level(rapids_logger::level_enum::off)`` (from ``<rmm/logger.hpp>``) or another level.
+
 With the static library, every shared library or plugin that embeds HEonGPU has its own copy of this state. With the shared library (``HEonGPU_BUILD_SHARED=ON``), the whole process shares one.
 
 Multiparty Computation (MPC)

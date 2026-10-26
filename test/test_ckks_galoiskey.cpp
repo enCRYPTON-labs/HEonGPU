@@ -184,6 +184,20 @@ TEST_P(CKKSGaloiskey, Full_Rotation_Returns_The_Input)
     expect_rotation(galois_key, -slots);
 }
 
+TEST_P(CKKSGaloiskey, Shifts_Beyond_The_Slot_Count_Wrap_Around)
+{
+    auto galois_key = default_key();
+    expect_rotation(galois_key, slots + 3);
+    expect_rotation(galois_key, -slots - 6);
+}
+
+TEST_P(CKKSGaloiskey, Key_For_A_Shift_Beyond_The_Slot_Count_Is_Rejected)
+{
+    std::vector<int> shifts = {slots + 1};
+    EXPECT_THROW(heongpu::Galoiskey<scheme>(context, shifts),
+                 heongpu::ParameterError);
+}
+
 INSTANTIATE_TEST_SUITE_P(HEonGPU, CKKSGaloiskey,
                          ::testing::Values(std::vector<int>{40},
                                            std::vector<int>{40, 40}));

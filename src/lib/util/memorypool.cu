@@ -381,7 +381,7 @@ namespace heongpu
                                size, rmm::CUDA_ALLOCATION_ALIGNMENT);
     }
 
-    void MemoryPool::print_memory_pool_status() const
+    void MemoryPool::print_memory_pool_status(std::ostream& os) const
     {
         std::lock_guard<std::mutex> guard(mutex_);
         if (device_stats_adaptor_ && device_pool_ && host_stats_adaptor_ &&
@@ -397,27 +397,20 @@ namespace heongpu
             const auto host_used = host_status.value;
             const auto host_free = host_total - host_used;
 
-            std::cout << "[HEonGPU] Memory Pool Status" << std::endl;
-            std::cout << "  Device Pool:" << std::endl;
-            std::cout << "    Total     : " << device_total << " bytes"
-                      << std::endl;
-            std::cout << "    Used      : " << device_used << " bytes"
-                      << std::endl;
-            std::cout << "    Free      : " << device_free << " bytes"
-                      << std::endl;
-            std::cout << "  Host Pool:" << std::endl;
-            std::cout << "    Total     : " << host_total << " bytes"
-                      << std::endl;
-            std::cout << "    Used      : " << host_used << " bytes"
-                      << std::endl;
-            std::cout << "    Free      : " << host_free << " bytes"
-                      << std::endl;
+            os << "[HEonGPU] Memory Pool Status" << std::endl;
+            os << "  Device Pool:" << std::endl;
+            os << "    Total     : " << device_total << " bytes" << std::endl;
+            os << "    Used      : " << device_used << " bytes" << std::endl;
+            os << "    Free      : " << device_free << " bytes" << std::endl;
+            os << "  Host Pool:" << std::endl;
+            os << "    Total     : " << host_total << " bytes" << std::endl;
+            os << "    Used      : " << host_used << " bytes" << std::endl;
+            os << "    Free      : " << host_free << " bytes" << std::endl;
         }
         else
         {
-            std::cout
-                << "[HEonGPU] Memory pool is not initialized or is disabled."
-                << std::endl;
+            os << "[HEonGPU] Memory pool is not initialized or is disabled."
+               << std::endl;
         }
     }
 

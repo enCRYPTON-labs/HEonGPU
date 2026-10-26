@@ -661,10 +661,10 @@ namespace heongpu
 
             if (pos_steps >= (n >> 1))
             {
-                std::cerr
-                    << "Galois Key can not be generated, Step count too large "
-                    << std::endl;
-                return 0;
+                throw ParameterError(error_message(
+                    "Invalid rotation step ", steps,
+                    "! A Galois key step must be smaller than the row size ",
+                    n >> 1, " in absolute value."));
             }
 
             if (sign)
