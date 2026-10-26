@@ -81,4 +81,24 @@ namespace heongpu
         return chebyshev_coeffs(nodes, fi, a, b);
     }
 
+    __host__ std::vector<double>
+    chebyshev_coefficients(const std::function<double(double)>& function,
+                           double a, double b, int degree)
+    {
+        std::vector<double> nodes = chebyshev_nodes(degree + 1, a, b);
+        std::vector<Complex64> fi(nodes.size());
+        for (size_t i = 0; i < nodes.size(); i++)
+        {
+            fi[i] = Complex64(function(nodes[i]), 0.0);
+        }
+
+        std::vector<Complex64> coeffs = chebyshev_coeffs(nodes, fi, a, b);
+        std::vector<double> result(coeffs.size());
+        for (size_t i = 0; i < coeffs.size(); i++)
+        {
+            result[i] = coeffs[i].real();
+        }
+        return result;
+    }
+
 } // namespace heongpu

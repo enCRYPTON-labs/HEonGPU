@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cmath>
+#include <functional>
 #include "gpuntt/ntt_merge/ntt.cuh"
 #include "gpufft/fft.cuh"
 #include <heongpu/kernel/addition.cuh>
@@ -24,6 +25,7 @@
 #include <heongpu/host/ckks/plaintext.cuh>
 #include <heongpu/host/ckks/ciphertext.cuh>
 #include <heongpu/host/ckks/evaluationkey.cuh>
+#include <heongpu/host/ckks/chebyshev_interpolation.cuh>
 
 namespace heongpu
 {
@@ -1864,6 +1866,62 @@ namespace heongpu
             return sum_slots(product, galois_key, options);
         }
 
+        /**
+         * @brief Returns the polynomial
+         * coefficients[0] + coefficients[1] * x + ... + coefficients[d] * x^d
+         * evaluated on the slots x of input1, with the same scale as input1.
+         *
+         * Uses ceil(log2(d + 1)) levels, where d = coefficients.size() - 1;
+         * input1 must have at least as many levels left. The values of x
+         * should stay small (about |x| <= 1) for the result to be precise;
+         * for other ranges, evaluate_chebyshev is more stable.
+         *
+         * @throws ParameterError if the degree is less than 1.
+         * @throws LevelMismatchError if input1 does not have enough levels.
+         */
+        __host__ Ciphertext<Scheme::CKKS> evaluate_polynomial(
+            Ciphertext<Scheme::CKKS>& input1,
+            const std::vector<double>& coefficients,
+            Relinkey<Scheme::CKKS>& relin_key,
+            const ExecutionOptions& options = ExecutionOptions());
+
+        /**
+         * @brief Returns the Chebyshev series
+         * coefficients[0] * T0(y) + ... + coefficients[d] * Td(y), where
+         * y = (2x - a - b) / (b - a), evaluated on the slots x of input1, with
+         * the same scale as input1. The slots must lie in [a, b].
+         *
+         * Uses ceil(log2(d + 1)) levels, where d = coefficients.size() - 1,
+         * and one more unless [a, b] is [-1, 1].
+         *
+         * @throws ParameterError if the degree is less than 1 or a >= b.
+         * @throws LevelMismatchError if input1 does not have enough levels.
+         */
+        __host__ Ciphertext<Scheme::CKKS> evaluate_chebyshev(
+            Ciphertext<Scheme::CKKS>& input1,
+            const std::vector<double>& coefficients, double a, double b,
+            Relinkey<Scheme::CKKS>& relin_key,
+            const ExecutionOptions& options = ExecutionOptions());
+
+        /**
+         * @brief Approximates function on [a, b] by Chebyshev interpolation
+         * of the given degree and evaluates the approximation on the slots of
+         * input1; see chebyshev_coefficients and evaluate_chebyshev.
+         */
+        __host__ Ciphertext<Scheme::CKKS> evaluate_chebyshev(
+            Ciphertext<Scheme::CKKS>& input1,
+            const std::function<double(double)>& function, double a, double b,
+            int degree, Relinkey<Scheme::CKKS>& relin_key,
+            const ExecutionOptions& options = ExecutionOptions());
+
+        /**
+         * @brief Returns the levels evaluate_polynomial (with chebyshev =
+         * false) or evaluate_chebyshev uses for a polynomial of the given
+         * degree on [a, b].
+         */
+        __host__ static int polynomial_depth(int degree, bool chebyshev = false,
+                                             double a = -1.0, double b = 1.0);
+
         // Value-returning versions of the functions above. They give the
         // same results.
 
@@ -2500,6 +2558,14 @@ namespace heongpu
         gen_power(std::unordered_map<int, Ciphertext<Scheme::CKKS>>& cipher,
                   int power, PolyType type, Relinkey<Scheme::CKKS>& relin_key,
                   const ExecutionOptions& options = ExecutionOptions());
+
+        // Evaluates the polynomial in the given basis on input1 for
+        // evaluate_polynomial and evaluate_chebyshev.
+        __host__ Ciphertext<Scheme::CKKS>
+        evaluate_in_basis(Ciphertext<Scheme::CKKS>& input1,
+                          const std::vector<double>& coefficients,
+                          PolyType type, Relinkey<Scheme::CKKS>& relin_key,
+                          const ExecutionOptions& options);
 
         // base_scale is the scale of the computation: intermediate results
         // with at least half of it are rescaled.

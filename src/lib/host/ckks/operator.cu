@@ -4147,6 +4147,129 @@ namespace heongpu
         return result;
     }
 
+    __host__ int HEOperator<Scheme::CKKS>::polynomial_depth(int degree,
+                                                            bool chebyshev,
+                                                            double a, double b)
+    {
+        if (degree < 1)
+        {
+            throw ParameterError(error_message(
+                "Polynomial degree must be at least 1, got ", degree, "."));
+        }
+
+        int depth = 0;
+        while ((1 << depth) <= degree)
+        {
+            depth++;
+        }
+        if (chebyshev && !(a == -1.0 && b == 1.0))
+        {
+            depth++;
+        }
+        return depth;
+    }
+
+    __host__ Ciphertext<Scheme::CKKS>
+    HEOperator<Scheme::CKKS>::evaluate_in_basis(
+        Ciphertext<Scheme::CKKS>& input1,
+        const std::vector<double>& coefficients, PolyType type,
+        Relinkey<Scheme::CKKS>& relin_key, const ExecutionOptions& options)
+    {
+        std::vector<Complex64> coeffs(coefficients.size());
+        for (size_t i = 0; i < coefficients.size(); i++)
+        {
+            coeffs[i] = Complex64(coefficients[i], 0.0);
+        }
+        int degree = static_cast<int>(coefficients.size()) - 1;
+        Polynomial pol(degree, coeffs, true, type, -1.0, 1.0);
+
+        // evaluate_poly moves its input to the stream of options.
+        Ciphertext<Scheme::CKKS> input = input1;
+        return evaluate_poly(input, input1.scale_, input1.scale_, pol,
+                             relin_key, options);
+    }
+
+    __host__ Ciphertext<Scheme::CKKS>
+    HEOperator<Scheme::CKKS>::evaluate_polynomial(
+        Ciphertext<Scheme::CKKS>& input1,
+        const std::vector<double>& coefficients,
+        Relinkey<Scheme::CKKS>& relin_key, const ExecutionOptions& options)
+    {
+        input1.validate_context(context_);
+        int degree = static_cast<int>(coefficients.size()) - 1;
+        int depth = polynomial_depth(degree);
+        if (input1.level() < depth)
+        {
+            throw LevelMismatchError(error_message(
+                "A polynomial of degree ", degree, " needs ", depth,
+                " levels, but the ciphertext has ", input1.level(), "."));
+        }
+
+        return evaluate_in_basis(input1, coefficients, PolyType::MONOMIAL,
+                                 relin_key, options);
+    }
+
+    __host__ Ciphertext<Scheme::CKKS>
+    HEOperator<Scheme::CKKS>::evaluate_chebyshev(
+        Ciphertext<Scheme::CKKS>& input1,
+        const std::vector<double>& coefficients, double a, double b,
+        Relinkey<Scheme::CKKS>& relin_key, const ExecutionOptions& options)
+    {
+        input1.validate_context(context_);
+        if (!(a < b))
+        {
+            throw ParameterError(
+                error_message("The interval [", a, ", ", b, "] is empty."));
+        }
+        int degree = static_cast<int>(coefficients.size()) - 1;
+        int depth = polynomial_depth(degree, true, a, b);
+        if (input1.level() < depth)
+        {
+            throw LevelMismatchError(error_message(
+                "A Chebyshev series of degree ", degree, " on [", a, ", ", b,
+                "] needs ", depth, " levels, but the ciphertext has ",
+                input1.level(), "."));
+        }
+
+        if (a == -1.0 && b == 1.0)
+        {
+            return evaluate_in_basis(input1, coefficients, PolyType::CHEBYSHEV,
+                                     relin_key, options);
+        }
+
+        // Maps [a, b] to [-1, 1]. The constant is encoded with the scale of
+        // the prime that rescale divides by, so the scale stays the same.
+        Ciphertext<Scheme::CKKS> mapped(context_, options);
+        double prime =
+            static_cast<double>(context_->prime_vector_[input1.level()].value);
+        multiply_plain(input1, 2.0 / (b - a), mapped, prime, options);
+        rescale_inplace(mapped, options);
+        mapped.scale_ = input1.scale_;
+        add_plain_inplace(mapped, -(a + b) / (b - a), options);
+
+        return evaluate_in_basis(mapped, coefficients, PolyType::CHEBYSHEV,
+                                 relin_key, options);
+    }
+
+    __host__ Ciphertext<Scheme::CKKS>
+    HEOperator<Scheme::CKKS>::evaluate_chebyshev(
+        Ciphertext<Scheme::CKKS>& input1,
+        const std::function<double(double)>& function, double a, double b,
+        int degree, Relinkey<Scheme::CKKS>& relin_key,
+        const ExecutionOptions& options)
+    {
+        if (degree < 1 || !(a < b))
+        {
+            throw ParameterError(error_message(
+                "Chebyshev interpolation needs a degree of at least 1 and a "
+                "non-empty interval, got degree ",
+                degree, " on [", a, ", ", b, "]."));
+        }
+        return evaluate_chebyshev(
+            input1, chebyshev_coefficients(function, a, b, degree), a, b,
+            relin_key, options);
+    }
+
     __host__ HEOperator<Scheme::CKKS>::Vandermonde::Vandermonde(
         const int poly_degree, const int CtoS_piece, const int StoC_piece,
         const double CtoS_Scaling, const double StoC_Scaling,

@@ -33,6 +33,19 @@ The inputs are taken by non-const reference, so they have to be named objects; t
 
 For vectors packed into the slots, ``sum_slots(ciphertext, galois_key)`` puts the sum of all slots into every slot, and ``inner_product(x, y, relin_key, galois_key)`` the inner product of two ciphertexts (or of a ciphertext and a plaintext). They need the Galois keys for the steps 1, 2, 4, ... up to half the slot count, as ``Galoiskey(context, log2(slot count) - 1)`` has; for CKKS, the default ``Galoiskey`` also works, with more rotations.
 
+CKKS ciphertexts can be put through polynomials, and through functions approximated by them. The result has the scale of the input:
+
+.. code-block:: cpp
+
+    // 0.5 + 0.25 x - 0.02 x^3, for slots x with |x| <= 1.
+    auto p = operators.evaluate_polynomial(x, {0.5, 0.25, 0.0, -0.02}, relin_key);
+
+    // The sigmoid on [-8, 8], approximated by a Chebyshev interpolant of degree 31.
+    auto sigmoid = [](double v) { return 1.0 / (1.0 + std::exp(-v)); };
+    auto s = operators.evaluate_chebyshev(x, sigmoid, -8.0, 8.0, 31, relin_key);
+
+A polynomial of degree :math:`d` uses :math:`\lceil \log_2(d + 1) \rceil` levels, and a Chebyshev series on an interval other than :math:`[-1, 1]` one more; ``HEArithmeticOperator<Scheme::CKKS>::polynomial_depth`` returns this number. The slots must lie in the interval of the approximation. ``chebyshev_coefficients(function, a, b, degree)`` returns the coefficients of the interpolant, so that its error can be checked on the CPU, and ``evaluate_chebyshev(x, coefficients, a, b, relin_key)`` evaluates given coefficients.
+
 Parameter Selection Guide
 -------------------------
 

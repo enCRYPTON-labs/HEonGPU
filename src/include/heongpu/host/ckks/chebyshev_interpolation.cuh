@@ -49,6 +49,16 @@ namespace heongpu
     approximate_function(std::function<Complex64(Complex64)> function, double a,
                          double b, int degree);
 
+    /**
+     * @brief Returns the coefficients of the Chebyshev interpolant of the
+     * given degree of function on [a, b], for evaluate_chebyshev: the
+     * polynomial that equals function at the degree + 1 Chebyshev nodes of
+     * [a, b].
+     */
+    __host__ std::vector<double>
+    chebyshev_coefficients(const std::function<double(double)>& function,
+                           double a, double b, int degree);
+
 } // namespace heongpu
 
 #endif // HEONGPU_CHEBYSHEV_INTERPOLATION_H
