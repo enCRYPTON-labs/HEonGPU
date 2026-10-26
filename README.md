@@ -573,6 +573,26 @@ target_link_libraries(<your-target> PRIVATE HEonGPU::heongpu)
 
 The shared library is versioned with the major and minor version (for example `libheongpu.so.1.4`), because its ABI can change between minor versions. Its kernels are internal and cannot be launched from outside the library.
 
+## Versioning and Compatibility
+
+HEonGPU follows [semantic versioning](https://semver.org/):
+- **Major versions** (2.0, 3.0, ...) can change or remove APIs.
+- **Minor versions** (1.4, 1.5, ...) add features without breaking code that compiles against the previous minor version. They can change the ABI, so rebuild code that uses HEonGPU; the shared library is versioned accordingly (`libheongpu.so.1.4`).
+- **Patch versions** (1.4.1, ...) fix bugs without changing the API or the ABI.
+
+APIs that will be removed are first marked `[[deprecated]]`, with the replacement in the warning, for at least one minor version, and removed in the next major version.
+
+Serialized data stays readable: HEonGPU 1.x reads the data written by every earlier 1.x version. A newer version can write data that older versions cannot read; `save(stream, heongpu::serialization_format::v1)` writes data for HEonGPU 1.2 and earlier until 2.0.
+
+Supported toolchain: CUDA 12.8 or newer, a C++20 compiler (tested with GCC 11.4) and CMake 4.0 or newer.
+
+### Thread safety
+- A generated context is not changed afterwards and can be shared by threads.
+- Keys and operators can be shared by threads that run operations on their own ciphertexts and plaintexts and their own CUDA streams, as the multi-stream examples do.
+- An object that an operation writes, or moves between host and device memory, must not be used by another thread at the same time.
+- The memory pool is thread-safe. Call `heongpu::initialize()` and `heongpu::shutdown()` while no other thread uses HEonGPU.
+- Key generation and encryption draw from one process-wide random number generator that is not synchronized: run them from one thread at a time.
+
 ## How to Cite HEonGPU
 
 Please use the below BibTeX, to cite HEonGPU in academic papers.
