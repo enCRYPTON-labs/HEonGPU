@@ -1291,6 +1291,20 @@ namespace heongpu
             return sum_slots(product, galois_key, options);
         }
 
+        /**
+         * @brief Returns input1 rotated by each of shifts: the same results as
+         * rotate_rows(input1, output, galois_key, shift) for each shift. The
+         * rotations by shifts that galois_key has a key for share the
+         * decomposition of input1 that key switching starts with, which is
+         * computed once, so each of them after the first costs less than a
+         * rotate_rows. Other shifts are composed from the power of two keys,
+         * as rotate_rows does.
+         */
+        __host__ std::vector<Ciphertext<Scheme::BFV>> rotate_rows_hoisted(
+            Ciphertext<Scheme::BFV>& input1, Galoiskey<Scheme::BFV>& galois_key,
+            const std::vector<int>& shifts,
+            const ExecutionOptions& options = ExecutionOptions());
+
         // Value-returning versions of the functions above. They give the
         // same results.
 

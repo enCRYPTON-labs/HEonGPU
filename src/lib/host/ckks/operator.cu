@@ -6,6 +6,7 @@
 
 #include <NTL/ZZ.h>
 #include <NTL/RR.h>
+#include <optional>
 #include <heongpu/host/ckks/operator.cuh>
 #include <heongpu/host/ckks/cosine_approx.cuh>
 
@@ -1432,6 +1433,91 @@ namespace heongpu
                 current_input = &output;
             }
         }
+    }
+
+    __host__ std::vector<Ciphertext<Scheme::CKKS>>
+    HEOperator<Scheme::CKKS>::rotate_rows_hoisted(
+        Ciphertext<Scheme::CKKS>& input1, Galoiskey<Scheme::CKKS>& galois_key,
+        const std::vector<int>& shifts, const ExecutionOptions& options)
+    {
+        input1.validate_context(context_);
+        galois_key.validate_context(context_);
+
+        if (input1.rescale_required_ || input1.relinearization_required_)
+        {
+            throw StateError(error_message("Ciphertext can not be rotated! ",
+                                           input1.relinearization_required_
+                                               ? "Relinearize it first."
+                                               : "Rescale it first."));
+        }
+
+        int current_decomp_count = context_->Q_size - input1.depth_;
+
+        if (input1.memory_size() < (2 * context_->n * current_decomp_count))
+        {
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (2 * context_->n * current_decomp_count), " coefficients, got ",
+                input1.memory_size(), "."));
+        }
+
+        auto has_key = [&](int galois_elt)
+        {
+            return (galois_key.storage_type_ == storage_type::DEVICE)
+                       ? (galois_key.device_location_.find(galois_elt) !=
+                          galois_key.device_location_.end())
+                       : (galois_key.host_location_.find(galois_elt) !=
+                          galois_key.host_location_.end());
+        };
+
+        std::vector<Ciphertext<Scheme::CKKS>> results;
+        results.reserve(shifts.size());
+        input_storage_manager(
+            input1,
+            [&](Ciphertext<Scheme::CKKS>& input1_)
+            {
+                std::optional<GaloisDecomposition> decomposition;
+                for (int shift : shifts)
+                {
+                    Ciphertext<Scheme::CKKS> output(context_, options);
+                    // Rotating by a multiple of the row size gives the input.
+                    shift %= (context_->n >> 1);
+                    int galois_elt =
+                        (shift == 0)
+                            ? 0
+                            : steps_to_galois_elt(shift, context_->n,
+                                                  galois_key.group_order_);
+                    if (shift == 0)
+                    {
+                        output = input1;
+                    }
+                    else if (has_key(galois_elt))
+                    {
+                        if (!decomposition)
+                        {
+                            decomposition =
+                                decompose_for_galois(input1_, options.stream_);
+                        }
+                        output_storage_manager(
+                            output,
+                            [&](Ciphertext<Scheme::CKKS>& output_)
+                            {
+                                apply_galois_decomposed(
+                                    input1_, *decomposition, output_,
+                                    galois_key, galois_elt, options.stream_);
+                            },
+                            options);
+                    }
+                    else
+                    {
+                        rotate_rows(input1_, output, galois_key, shift,
+                                    options);
+                    }
+                    results.push_back(std::move(output));
+                }
+            },
+            options, false);
+        return results;
     }
 
     __host__ HEOperator<Scheme::CKKS>::GaloisDecomposition

@@ -1839,6 +1839,20 @@ namespace heongpu
         }
 
         /**
+         * @brief Returns input1 rotated by each of shifts: the same results as
+         * rotate_rows(input1, output, galois_key, shift) for each shift. The
+         * rotations by shifts that galois_key has a key for share the
+         * decomposition of input1 that key switching starts with, which is
+         * computed once, so each of them after the first costs less than a
+         * rotate_rows. Other shifts are composed from the power of two keys,
+         * as rotate_rows does.
+         */
+        __host__ std::vector<Ciphertext<Scheme::CKKS>> rotate_rows_hoisted(
+            Ciphertext<Scheme::CKKS>& input1,
+            Galoiskey<Scheme::CKKS>& galois_key, const std::vector<int>& shifts,
+            const ExecutionOptions& options = ExecutionOptions());
+
+        /**
          * @brief Returns the polynomial
          * coefficients[0] + coefficients[1] * x + ... + coefficients[d] * x^d
          * evaluated on the slots x of input1, with the same scale as input1.

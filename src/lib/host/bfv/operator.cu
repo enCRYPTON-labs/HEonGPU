@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Developer: Alişah Özcan
 
+#include <optional>
 #include <heongpu/host/bfv/operator.cuh>
 
 namespace heongpu
@@ -723,6 +724,89 @@ namespace heongpu
                 current_input = &output;
             }
         }
+    }
+
+    __host__ std::vector<Ciphertext<Scheme::BFV>>
+    HEOperator<Scheme::BFV>::rotate_rows_hoisted(
+        Ciphertext<Scheme::BFV>& input1, Galoiskey<Scheme::BFV>& galois_key,
+        const std::vector<int>& shifts, const ExecutionOptions& options)
+    {
+        input1.validate_context(context_);
+        galois_key.validate_context(context_);
+
+        if (input1.relinearization_required_)
+        {
+            throw StateError("Ciphertext can not be rotated! "
+                             "Relinearize it first.");
+        }
+
+        int current_decomp_count = context_->Q_size;
+
+        if (input1.memory_size() < (2 * context_->n * current_decomp_count))
+        {
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (2 * context_->n * current_decomp_count), " coefficients, got ",
+                input1.memory_size(), "."));
+        }
+
+        auto has_key = [&](int galois_elt)
+        {
+            return (galois_key.storage_type_ == storage_type::DEVICE)
+                       ? (galois_key.device_location_.find(galois_elt) !=
+                          galois_key.device_location_.end())
+                       : (galois_key.host_location_.find(galois_elt) !=
+                          galois_key.host_location_.end());
+        };
+
+        std::vector<Ciphertext<Scheme::BFV>> results;
+        results.reserve(shifts.size());
+        input_storage_manager(
+            input1,
+            [&](Ciphertext<Scheme::BFV>& input1_)
+            {
+                std::optional<GaloisDecomposition> decomposition;
+                for (int shift : shifts)
+                {
+                    Ciphertext<Scheme::BFV> output(context_, options);
+                    // Rotating by a multiple of the row size gives the input.
+                    shift %= (context_->n >> 1);
+                    int galois_elt =
+                        (shift == 0)
+                            ? 0
+                            : steps_to_galois_elt(shift, context_->n,
+                                                  galois_key.group_order_);
+                    if (shift == 0)
+                    {
+                        output = input1;
+                    }
+                    else if (has_key(galois_elt))
+                    {
+                        if (!decomposition)
+                        {
+                            decomposition =
+                                decompose_for_galois(input1_, options.stream_);
+                        }
+                        output_storage_manager(
+                            output,
+                            [&](Ciphertext<Scheme::BFV>& output_)
+                            {
+                                apply_galois_decomposed(
+                                    input1_, *decomposition, output_,
+                                    galois_key, galois_elt, options.stream_);
+                            },
+                            options);
+                    }
+                    else
+                    {
+                        rotate_rows(input1_, output, galois_key, shift,
+                                    options);
+                    }
+                    results.push_back(std::move(output));
+                }
+            },
+            options, false);
+        return results;
     }
 
     __host__ HEOperator<Scheme::BFV>::GaloisDecomposition

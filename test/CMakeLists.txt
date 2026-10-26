@@ -64,6 +64,7 @@ set(EXECUTABLES
     linear_helpers_testcases test_linear_helpers.cpp
     polynomial_testcases test_polynomial.cpp
     bootstrapping_presets_testcases test_bootstrapping_presets.cpp
+    rotate_hoisted_testcases test_rotate_hoisted.cpp
     ckks_decrypt_depth_testcases test_ckks_decrypt_depth.cpp
 )
 
