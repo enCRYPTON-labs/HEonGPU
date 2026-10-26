@@ -20,6 +20,7 @@ namespace heongpu
         }
 
         scheme_ = context->scheme_;
+        context_id_ = context->context_id_;
         plain_size_ = context->n;
         storage_type_ = options.storage_;
     }
@@ -181,6 +182,12 @@ namespace heongpu
         {
             throw std::runtime_error("Plaintext has been already exist!");
         }
+    }
+
+    void Plaintext<Scheme::BFV>::validate_context(
+        const HEContext<Scheme::BFV>& context) const
+    {
+        validate_context_identity(context_id_, context, "Plaintext");
     }
 
     int Plaintext<Scheme::BFV>::memory_size()

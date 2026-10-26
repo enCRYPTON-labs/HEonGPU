@@ -100,6 +100,7 @@ namespace heongpu
 
                     plain.plain_size_ = context_->n * context_->Q_size;
                     plain.scheme_ = context_->scheme_;
+                    plain.context_id_ = context_->context_id_;
                     plain.depth_ = 0;
                     plain.scale_ = scale;
                     plain.in_ntt_domain_ = true;
@@ -169,6 +170,7 @@ namespace heongpu
 
                     plain.plain_size_ = context_->n * context_->Q_size;
                     plain.scheme_ = context_->scheme_;
+                    plain.context_id_ = context_->context_id_;
                     plain.depth_ = 0;
                     plain.scale_ = scale;
                     plain.in_ntt_domain_ = true;
@@ -223,6 +225,7 @@ namespace heongpu
 
                     plain.plain_size_ = context_->n * context_->Q_size;
                     plain.scheme_ = context_->scheme_;
+                    plain.context_id_ = context_->context_id_;
                     plain.depth_ = 0;
                     plain.scale_ = scale;
                     plain.in_ntt_domain_ = true;
@@ -277,6 +280,7 @@ namespace heongpu
 
                     plain.plain_size_ = context_->n * context_->Q_size;
                     plain.scheme_ = context_->scheme_;
+                    plain.context_id_ = context_->context_id_;
                     plain.depth_ = 0;
                     plain.scale_ = scale;
                     plain.in_ntt_domain_ = true;
@@ -327,6 +331,7 @@ namespace heongpu
 
                     plain.plain_size_ = context_->n * context_->Q_size;
                     plain.scheme_ = context_->scheme_;
+                    plain.context_id_ = context_->context_id_;
                     plain.depth_ = 0;
                     plain.scale_ = scale;
                     plain.in_ntt_domain_ = true;
@@ -375,6 +380,7 @@ namespace heongpu
 
                     plain.plain_size_ = context_->n * context_->Q_size;
                     plain.scheme_ = context_->scheme_;
+                    plain.context_id_ = context_->context_id_;
                     plain.depth_ = 0;
                     plain.scale_ = scale;
                     plain.in_ntt_domain_ = true;
@@ -394,6 +400,8 @@ namespace heongpu
         decode(std::vector<double>& message, Plaintext<Scheme::CKKS>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
+            plain.validate_context(context_);
+
             input_storage_manager(
                 plain,
                 [&](Plaintext<Scheme::CKKS>& plain_)
@@ -422,6 +430,8 @@ namespace heongpu
         decode(HostVector<double>& message, Plaintext<Scheme::CKKS>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
+            plain.validate_context(context_);
+
             input_storage_manager(
                 plain,
                 [&](Plaintext<Scheme::CKKS>& plain_)
@@ -448,6 +458,8 @@ namespace heongpu
         decode(std::vector<Complex64>& message, Plaintext<Scheme::CKKS>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
+            plain.validate_context(context_);
+
             input_storage_manager(
                 plain,
                 [&](Plaintext<Scheme::CKKS>& plain_)
@@ -475,6 +487,8 @@ namespace heongpu
         decode(HostVector<Complex64>& message, Plaintext<Scheme::CKKS>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
+            plain.validate_context(context_);
+
             input_storage_manager(
                 plain,
                 [&](Plaintext<Scheme::CKKS>& plain_)

@@ -137,7 +137,8 @@ namespace heongpu
               depth_(copy.depth_), scale_(copy.scale_),
               in_ntt_domain_(copy.in_ntt_domain_), encoding_(copy.encoding_),
               storage_type_(copy.storage_type_),
-              plaintext_generated_(copy.plaintext_generated_)
+              plaintext_generated_(copy.plaintext_generated_),
+              context_id_(copy.context_id_)
         {
             if (copy.storage_type_ == storage_type::DEVICE)
             {
@@ -167,6 +168,7 @@ namespace heongpu
               encoding_(std::move(assign.encoding_)),
               storage_type_(std::move(assign.storage_type_)),
               plaintext_generated_(std::move(assign.plaintext_generated_)),
+              context_id_(assign.context_id_),
               device_locations_(std::move(assign.device_locations_)),
               host_locations_(std::move(assign.host_locations_))
         {
@@ -184,6 +186,7 @@ namespace heongpu
                 encoding_ = copy.encoding_;
                 storage_type_ = copy.storage_type_;
                 plaintext_generated_ = copy.plaintext_generated_;
+                context_id_ = copy.context_id_;
 
                 if (copy.storage_type_ == storage_type::DEVICE)
                 {
@@ -217,6 +220,7 @@ namespace heongpu
                 encoding_ = std::move(assign.encoding_);
                 storage_type_ = std::move(assign.storage_type_);
                 plaintext_generated_ = std::move(assign.plaintext_generated_);
+                context_id_ = assign.context_id_;
                 depth_ = std::move(assign.depth_);
                 scale_ = std::move(assign.scale_);
                 device_locations_ = std::move(assign.device_locations_);
@@ -241,10 +245,12 @@ namespace heongpu
         storage_type storage_type_;
 
         bool plaintext_generated_ = false;
+        std::uint64_t context_id_ = 0;
 
         DeviceVector<Data64> device_locations_;
         HostVector<Data64> host_locations_;
 
+        void validate_context(const HEContext<Scheme::CKKS>& context) const;
         int memory_size();
         void memory_clear(cudaStream_t stream);
         void memory_set(DeviceVector<Data64>&& new_device_vector);

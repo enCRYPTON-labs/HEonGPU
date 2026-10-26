@@ -274,6 +274,13 @@ namespace heongpu
 
       private:
         HEContext<Scheme::CKKS> context_;
+
+        void validate_context(const HEContext<Scheme::CKKS>& context) const
+        {
+            validate_context_identity(context_ ? context_->context_id() : 0,
+                                      context, "Publickey");
+        }
+
         scheme_type scheme_;
         int ring_size_;
         int coeff_modulus_count_;

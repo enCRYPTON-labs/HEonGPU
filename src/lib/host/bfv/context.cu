@@ -770,6 +770,8 @@ namespace heongpu
                     break;
             }
 
+            context_id_ = context_identity(static_cast<int>(scheme_), n,
+                                           prime_vector_, plain_modulus_.value);
             context_generated_ = true;
         }
         else

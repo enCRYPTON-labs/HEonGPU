@@ -61,6 +61,8 @@ namespace heongpu
                 Ciphertext<Scheme::BFV>& ciphertext,
                 const ExecutionOptions& options = ExecutionOptions())
         {
+            ciphertext.validate_context(context_);
+
             input_storage_manager(
                 ciphertext,
                 [&](Ciphertext<Scheme::BFV>& ciphertext_)
@@ -74,6 +76,7 @@ namespace heongpu
 
                             plaintext.plain_size_ = context_->n;
                             plaintext.scheme_ = context_->scheme_;
+                            plaintext.context_id_ = context_->context_id_;
                             plaintext.in_ntt_domain_ = false;
                         },
                         options);

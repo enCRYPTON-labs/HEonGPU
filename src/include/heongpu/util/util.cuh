@@ -62,6 +62,38 @@ namespace heongpu
     // larger limit set by the application.
     void ensure_kernel_stack_size(size_t bytes);
 
+    // Identity of an HEContext, computed from the parameters its objects
+    // depend on: the scheme, the ring size, the Q and P primes and the
+    // plaintext modulus (0 when the scheme has none). Contexts generated from
+    // the same parameters get the same identity. Never returns 0, which marks
+    // objects whose context is unknown.
+    std::uint64_t context_identity(int scheme, int ring_size,
+                                   const std::vector<Modulus64>& primes,
+                                   Data64 plain_modulus);
+
+    // Throws ContextMismatchError when an object of the context with identity
+    // `object_id` is used with `context`. Objects with identity 0 (for example
+    // ones loaded from a stream) are not checked.
+    template <typename Context>
+    void validate_context_identity(std::uint64_t object_id,
+                                   const Context& context,
+                                   const char* object_name)
+    {
+        if (object_id == 0 || !context || object_id == context->context_id())
+        {
+            return;
+        }
+        std::ostringstream stream;
+        stream << object_name << " context mismatch! The " << object_name
+               << " belongs to the context with id 0x" << std::hex << object_id
+               << " but is used with the context with id 0x"
+               << context->context_id()
+               << ". Objects can only be used with the context they were "
+                  "created with or with a context generated from the same "
+                  "parameters.";
+        throw ContextMismatchError(stream.str());
+    }
+
     enum class SineType
     {
         COS1,

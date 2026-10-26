@@ -91,6 +91,15 @@ namespace heongpu
             return prime_vector_;
         }
 
+        /**
+         * @brief Returns the identity of the context, computed in generate()
+         * from the parameters the objects of the context depend on. Contexts
+         * generated from the same parameters have the same identity, and
+         * objects can only be used with a context that has the identity of
+         * the context they were created with. Returns 0 before generate().
+         */
+        inline std::uint64_t context_id() const noexcept { return context_id_; }
+
         void save(std::ostream& os) const;
 
         void load(std::istream& is);
@@ -175,6 +184,7 @@ namespace heongpu
         bool coeff_modulus_specified_ = false;
         bool plain_modulus_specified_ = false;
         bool context_generated_ = false;
+        std::uint64_t context_id_ = 0;
 
         scheme_type scheme_;
         sec_level_type sec_level_;

@@ -53,6 +53,8 @@ namespace heongpu
                 Plaintext<Scheme::CKKS>& plaintext,
                 const ExecutionOptions& options = ExecutionOptions())
         {
+            plaintext.validate_context(context_);
+
             if (plaintext.size() < (context_->n * context_->Q_size))
             {
                 throw std::invalid_argument("Invalid plaintext size.");
@@ -76,6 +78,7 @@ namespace heongpu
                                          options.stream_);
 
                             ciphertext.scheme_ = context_->scheme_;
+                            ciphertext.context_id_ = context_->context_id_;
                             ciphertext.ring_size_ = context_->n;
                             ciphertext.coeff_modulus_count_ = context_->Q_size;
                             ciphertext.cipher_size_ = 2;

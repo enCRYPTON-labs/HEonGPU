@@ -46,6 +46,7 @@ set(EXECUTABLES
     memory_pool_testcases test_memory_pool.cpp
 
     errors_testcases test_errors.cpp
+    context_identity_testcases test_context_identity.cpp
 )
 
 function(add_test exe source)

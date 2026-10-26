@@ -20,6 +20,7 @@ namespace heongpu
         }
 
         context_ = std::move(context);
+        public_key.validate_context(context_);
 
         std::random_device rd;
         std::mt19937 gen(rd());

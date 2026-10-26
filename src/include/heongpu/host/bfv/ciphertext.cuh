@@ -176,7 +176,8 @@ namespace heongpu
               in_ntt_domain_(copy.in_ntt_domain_),
               storage_type_(copy.storage_type_),
               relinearization_required_(copy.relinearization_required_),
-              ciphertext_generated_(copy.ciphertext_generated_)
+              ciphertext_generated_(copy.ciphertext_generated_),
+              context_id_(copy.context_id_)
         {
             if (copy.storage_type_ == storage_type::DEVICE)
             {
@@ -207,6 +208,7 @@ namespace heongpu
               relinearization_required_(
                   std::move(assign.relinearization_required_)),
               ciphertext_generated_(std::move(assign.ciphertext_generated_)),
+              context_id_(assign.context_id_),
               device_locations_(std::move(assign.device_locations_)),
               host_locations_(std::move(assign.host_locations_))
         {
@@ -225,6 +227,7 @@ namespace heongpu
 
                 relinearization_required_ = copy.relinearization_required_;
                 ciphertext_generated_ = copy.ciphertext_generated_;
+                context_id_ = copy.context_id_;
 
                 if (copy.storage_type_ == storage_type::DEVICE)
                 {
@@ -263,6 +266,7 @@ namespace heongpu
                     std::move(assign.relinearization_required_);
 
                 ciphertext_generated_ = std::move(assign.ciphertext_generated_);
+                context_id_ = assign.context_id_;
 
                 device_locations_ = std::move(assign.device_locations_);
                 host_locations_ = std::move(assign.host_locations_);
@@ -286,10 +290,12 @@ namespace heongpu
         bool relinearization_required_;
 
         bool ciphertext_generated_ = false;
+        std::uint64_t context_id_ = 0;
 
         DeviceVector<Data64> device_locations_;
         HostVector<Data64> host_locations_;
 
+        void validate_context(const HEContext<Scheme::BFV>& context) const;
         int memory_size();
         void memory_clear(cudaStream_t stream);
         void memory_set(DeviceVector<Data64>&& new_device_vector);

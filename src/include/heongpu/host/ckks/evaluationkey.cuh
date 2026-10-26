@@ -397,6 +397,13 @@ namespace heongpu
 
       private:
         HEContext<Scheme::CKKS> context_;
+
+        void validate_context(const HEContext<Scheme::CKKS>& context) const
+        {
+            validate_context_identity(context_ ? context_->context_id() : 0,
+                                      context, "Relinkey");
+        }
+
         scheme_type scheme_;
         keyswitching_type key_type;
 
@@ -830,6 +837,13 @@ namespace heongpu
 
       private:
         HEContext<Scheme::CKKS> context_;
+
+        void validate_context(const HEContext<Scheme::CKKS>& context) const
+        {
+            validate_context_identity(context_ ? context_->context_id() : 0,
+                                      context, "Galoiskey");
+        }
+
         scheme_type scheme_;
         keyswitching_type key_type;
 
@@ -979,6 +993,13 @@ namespace heongpu
 
       private:
         HEContext<Scheme::CKKS> context_;
+
+        void validate_context(const HEContext<Scheme::CKKS>& context) const
+        {
+            validate_context_identity(context_ ? context_->context_id() : 0,
+                                      context, "Switchkey");
+        }
+
         scheme_type scheme_;
         keyswitching_type key_type;
 

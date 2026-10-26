@@ -29,6 +29,9 @@ namespace heongpu
                                                Ciphertext<Scheme::BFV>& output,
                                                const ExecutionOptions& options)
     {
+        input1.validate_context(context_);
+        input2.validate_context(context_);
+
         if (input1.relinearization_required_ !=
             input2.relinearization_required_)
         {
@@ -83,6 +86,7 @@ namespace heongpu
                                 HEONGPU_CUDA_CHECK(cudaGetLastError());
 
                                 output_.scheme_ = context_->scheme_;
+                                output_.context_id_ = context_->context_id_;
                                 output_.ring_size_ = context_->n;
                                 output_.coeff_modulus_count_ = context_->Q_size;
                                 output_.cipher_size_ = cipher_size;
@@ -105,6 +109,9 @@ namespace heongpu
                                                Ciphertext<Scheme::BFV>& output,
                                                const ExecutionOptions& options)
     {
+        input1.validate_context(context_);
+        input2.validate_context(context_);
+
         if (input1.relinearization_required_ !=
             input2.relinearization_required_)
         {
@@ -160,6 +167,7 @@ namespace heongpu
                                 HEONGPU_CUDA_CHECK(cudaGetLastError());
 
                                 output_.scheme_ = context_->scheme_;
+                                output_.context_id_ = context_->context_id_;
                                 output_.ring_size_ = context_->n;
                                 output_.coeff_modulus_count_ = context_->Q_size;
                                 output_.cipher_size_ = cipher_size;
@@ -182,6 +190,8 @@ namespace heongpu
                                     Ciphertext<Scheme::BFV>& output,
                                     const ExecutionOptions& options)
     {
+        input1.validate_context(context_);
+
         int cipher_size = input1.relinearization_required_ ? 3 : 2;
 
         if (input1.memory_size() <
@@ -213,6 +223,7 @@ namespace heongpu
                         HEONGPU_CUDA_CHECK(cudaGetLastError());
 
                         output_.scheme_ = context_->scheme_;
+                        output_.context_id_ = context_->context_id_;
                         output_.ring_size_ = context_->n;
                         output_.coeff_modulus_count_ = context_->Q_size;
                         output_.cipher_size_ = cipher_size;
@@ -1541,6 +1552,7 @@ namespace heongpu
         cipher.ring_size_ = input.ring_size_;
 
         cipher.scheme_ = input.scheme_;
+        cipher.context_id_ = input.context_id_;
         cipher.in_ntt_domain_ = input.in_ntt_domain_;
 
         cipher.storage_type_ = storage_type::DEVICE;

@@ -354,6 +354,7 @@ namespace heongpu
                                     options.stream_);
 
             partial_ciphertext.scheme_ = context_->scheme_;
+            partial_ciphertext.context_id_ = context_->context_id_;
             partial_ciphertext.ring_size_ = context_->n;
             partial_ciphertext.coeff_modulus_count_ = context_->Q_size;
             partial_ciphertext.cipher_size_ = 2;
@@ -442,6 +443,7 @@ namespace heongpu
                             plaintext_.plain_size_ =
                                 context_->n * context_->Q_size;
                             plaintext_.scheme_ = context_->scheme_;
+                            plaintext_.context_id_ = context_->context_id_;
                             plaintext_.depth_ = depth_check;
                             plaintext_.scale_ = scale_check;
                             plaintext_.in_ntt_domain_ = true;
@@ -495,6 +497,7 @@ namespace heongpu
                                         options.stream_);
 
                                     output.scheme_ = context_->scheme_;
+                                    output.context_id_ = context_->context_id_;
                                     output.ring_size_ = context_->n;
                                     output.coeff_modulus_count_ =
                                         context_->Q_size;
@@ -575,6 +578,7 @@ namespace heongpu
                                         options.stream_);
 
                                     output.scheme_ = context_->scheme_;
+                                    output.context_id_ = context_->context_id_;
                                     output.ring_size_ = context_->n;
                                     output.coeff_modulus_count_ =
                                         context_->Q_size;

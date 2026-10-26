@@ -73,6 +73,9 @@ namespace heongpu
                     Ciphertext<Scheme::BFV>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             add(input1, input2, input1, options);
         }
 
@@ -102,6 +105,9 @@ namespace heongpu
                     Ciphertext<Scheme::BFV>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             sub(input1, input2, input1, options);
         }
 
@@ -124,6 +130,8 @@ namespace heongpu
         negate_inplace(Ciphertext<Scheme::BFV>& input1,
                        const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             negate(input1, input1, options);
         }
 
@@ -141,6 +149,9 @@ namespace heongpu
                   Ciphertext<Scheme::BFV>& output,
                   const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             if (input1.relinearization_required_)
             {
                 throw std::invalid_argument(
@@ -173,6 +184,7 @@ namespace heongpu
                                                   options.stream_);
 
                                     output_.scheme_ = context_->scheme_;
+                                    output_.context_id_ = context_->context_id_;
                                     output_.ring_size_ = context_->n;
                                     output_.coeff_modulus_count_ =
                                         context_->Q_size;
@@ -202,6 +214,9 @@ namespace heongpu
                           Plaintext<Scheme::BFV>& input2,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             if (input1.relinearization_required_)
             {
                 throw std::invalid_argument(
@@ -246,6 +261,9 @@ namespace heongpu
                   Ciphertext<Scheme::BFV>& output,
                   const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             if (input1.relinearization_required_)
             {
                 throw std::invalid_argument(
@@ -278,6 +296,7 @@ namespace heongpu
                                                   options.stream_);
 
                                     output_.scheme_ = context_->scheme_;
+                                    output_.context_id_ = context_->context_id_;
                                     output_.ring_size_ = context_->n;
                                     output_.coeff_modulus_count_ =
                                         context_->Q_size;
@@ -307,6 +326,9 @@ namespace heongpu
                           Plaintext<Scheme::BFV>& input2,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             if (input1.relinearization_required_)
             {
                 throw std::invalid_argument(
@@ -351,6 +373,9 @@ namespace heongpu
                  Ciphertext<Scheme::BFV>& output,
                  const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             if (input1.relinearization_required_ ||
                 input2.relinearization_required_)
             {
@@ -375,6 +400,7 @@ namespace heongpu
                                                  options.stream_);
 
                                     output_.scheme_ = context_->scheme_;
+                                    output_.context_id_ = context_->context_id_;
                                     output_.ring_size_ = context_->n;
                                     output_.coeff_modulus_count_ =
                                         context_->Q_size;
@@ -404,6 +430,9 @@ namespace heongpu
                          Ciphertext<Scheme::BFV>& input2,
                          const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             multiply(input1, input2, input1, options);
         }
 
@@ -422,6 +451,9 @@ namespace heongpu
                        Ciphertext<Scheme::BFV>& output,
                        const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             if (input1.relinearization_required_)
             {
                 throw std::invalid_argument(
@@ -474,6 +506,7 @@ namespace heongpu
                                                        options.stream_);
 
                                     output_.scheme_ = context_->scheme_;
+                                    output_.context_id_ = context_->context_id_;
                                     output_.ring_size_ = context_->n;
                                     output_.coeff_modulus_count_ =
                                         context_->Q_size;
@@ -503,6 +536,9 @@ namespace heongpu
             Ciphertext<Scheme::BFV>& input1, Plaintext<Scheme::BFV>& input2,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             multiply_plain(input1, input2, input1, options);
         }
 
@@ -517,6 +553,9 @@ namespace heongpu
             Ciphertext<Scheme::BFV>& input1, Relinkey<Scheme::BFV>& relin_key,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            relin_key.validate_context(context_);
+
             if ((!input1.relinearization_required_))
             {
                 throw std::invalid_argument(
@@ -591,6 +630,9 @@ namespace heongpu
                     Galoiskey<Scheme::BFV>& galois_key, int shift,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            galois_key.validate_context(context_);
+
             if (input1.relinearization_required_)
             {
                 throw StateError("Ciphertext can not be rotated! "
@@ -660,6 +702,7 @@ namespace heongpu
                             }
 
                             output_.scheme_ = context_->scheme_;
+                            output_.context_id_ = context_->context_id_;
                             output_.ring_size_ = context_->n;
                             output_.coeff_modulus_count_ = context_->Q_size;
                             output_.cipher_size_ = 2;
@@ -685,6 +728,9 @@ namespace heongpu
             Ciphertext<Scheme::BFV>& input1, Galoiskey<Scheme::BFV>& galois_key,
             int shift, const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            galois_key.validate_context(context_);
+
             if (shift == 0)
             {
                 return;
@@ -707,6 +753,9 @@ namespace heongpu
                        Galoiskey<Scheme::BFV>& galois_key,
                        const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            galois_key.validate_context(context_);
+
             if (input1.relinearization_required_)
             {
                 throw StateError("Ciphertext can not be rotated! "
@@ -763,6 +812,7 @@ namespace heongpu
                             }
 
                             output_.scheme_ = context_->scheme_;
+                            output_.context_id_ = context_->context_id_;
                             output_.ring_size_ = context_->n;
                             output_.coeff_modulus_count_ = context_->Q_size;
                             output_.cipher_size_ = 2;
@@ -793,6 +843,9 @@ namespace heongpu
                      Galoiskey<Scheme::BFV>& galois_key, int galois_elt,
                      const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            galois_key.validate_context(context_);
+
             if (input1.relinearization_required_)
             {
                 throw StateError("Ciphertext can not be rotated! "
@@ -856,6 +909,7 @@ namespace heongpu
                             }
 
                             output_.scheme_ = context_->scheme_;
+                            output_.context_id_ = context_->context_id_;
                             output_.ring_size_ = context_->n;
                             output_.coeff_modulus_count_ = context_->Q_size;
                             output_.cipher_size_ = 2;
@@ -883,6 +937,9 @@ namespace heongpu
             int galois_elt,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            galois_key.validate_context(context_);
+
             apply_galois(input1, input1, galois_key, galois_elt, options);
         }
 
@@ -901,6 +958,9 @@ namespace heongpu
                   Switchkey<Scheme::BFV>& switch_key,
                   const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            switch_key.validate_context(context_);
+
             if (input1.relinearization_required_)
             {
                 throw StateError("Ciphertext can not be rotated! "
@@ -964,6 +1024,7 @@ namespace heongpu
                             }
 
                             output_.scheme_ = context_->scheme_;
+                            output_.context_id_ = context_->context_id_;
                             output_.ring_size_ = context_->n;
                             output_.coeff_modulus_count_ = context_->Q_size;
                             output_.cipher_size_ = 2;
@@ -981,6 +1042,8 @@ namespace heongpu
             Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& output,
             int index, const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (index != 0)
             {
                 if (input1.in_ntt_domain_ != false)
@@ -1009,6 +1072,7 @@ namespace heongpu
                                     input1_, output_, index, options.stream_);
 
                                 output.scheme_ = context_->scheme_;
+                                output.context_id_ = context_->context_id_;
                                 output.ring_size_ = context_->n;
                                 output.coeff_modulus_count_ = context_->Q_size;
                                 output.cipher_size_ = 2;
@@ -1036,6 +1100,8 @@ namespace heongpu
                          Plaintext<Scheme::BFV>& output,
                          const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (!input1.in_ntt_domain_)
             {
                 if (input1.size() < context_->n)
@@ -1058,6 +1124,7 @@ namespace heongpu
                                                            options.stream_);
 
                                 output.scheme_ = input1.scheme_;
+                                output.context_id_ = input1.context_id_;
                                 output.plain_size_ =
                                     (context_->n * context_->Q_size);
                                 output.in_ntt_domain_ = true;
@@ -1079,6 +1146,8 @@ namespace heongpu
             Plaintext<Scheme::BFV>& input1,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             transform_to_ntt(input1, input1, options);
         }
 
@@ -1095,6 +1164,8 @@ namespace heongpu
                          Ciphertext<Scheme::BFV>& output,
                          const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (input1.relinearization_required_)
             {
                 throw std::invalid_argument(
@@ -1123,6 +1194,7 @@ namespace heongpu
                                                             options.stream_);
 
                                 output.scheme_ = context_->scheme_;
+                                output.context_id_ = context_->context_id_;
                                 output.ring_size_ = context_->n;
                                 output.coeff_modulus_count_ = context_->Q_size;
                                 output.cipher_size_ = 2;
@@ -1147,6 +1219,8 @@ namespace heongpu
             Ciphertext<Scheme::BFV>& input1,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             transform_to_ntt(input1, input1, options);
         }
 
@@ -1163,6 +1237,8 @@ namespace heongpu
                            Ciphertext<Scheme::BFV>& output,
                            const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             if (input1.relinearization_required_)
             {
                 throw std::invalid_argument(
@@ -1191,6 +1267,7 @@ namespace heongpu
                                                               options.stream_);
 
                                 output.scheme_ = context_->scheme_;
+                                output.context_id_ = context_->context_id_;
                                 output.ring_size_ = context_->n;
                                 output.coeff_modulus_count_ = context_->Q_size;
                                 output.cipher_size_ = 2;
@@ -1215,6 +1292,8 @@ namespace heongpu
             Ciphertext<Scheme::BFV>& input1,
             const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             transform_from_ntt(input1, input1, options);
         }
 
@@ -1401,6 +1480,8 @@ namespace heongpu
                           Ciphertext<Scheme::BFV>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
@@ -1430,6 +1511,8 @@ namespace heongpu
         NOT_inplace(Ciphertext<Scheme::BFV>& input1,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
@@ -1458,6 +1541,10 @@ namespace heongpu
                           Relinkey<Scheme::BFV>& relin_key,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+            relin_key.validate_context(context_);
+
             // TODO: Make it efficient
             ExecutionOptions options_inner =
                 ExecutionOptions()
@@ -1503,6 +1590,10 @@ namespace heongpu
                     Relinkey<Scheme::BFV>& relin_key,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+            relin_key.validate_context(context_);
+
             AND(input1, input2, input1, relin_key, options);
         }
 
@@ -1519,6 +1610,9 @@ namespace heongpu
                           Ciphertext<Scheme::BFV>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
@@ -1558,6 +1652,9 @@ namespace heongpu
                     Plaintext<Scheme::BFV>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             AND(input1, input2, input1, options);
         }
 
@@ -1576,6 +1673,10 @@ namespace heongpu
                          Relinkey<Scheme::BFV>& relin_key,
                          const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+            relin_key.validate_context(context_);
+
             // TODO: Make it efficient
             ExecutionOptions options_inner =
                 ExecutionOptions()
@@ -1632,6 +1733,10 @@ namespace heongpu
                    Relinkey<Scheme::BFV>& relin_key,
                    const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+            relin_key.validate_context(context_);
+
             OR(input1, input2, input1, relin_key, options);
         }
 
@@ -1648,6 +1753,9 @@ namespace heongpu
                          Ciphertext<Scheme::BFV>& output,
                          const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
@@ -1699,6 +1807,9 @@ namespace heongpu
                    Plaintext<Scheme::BFV>& input2,
                    const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             OR(input1, input2, input1, options);
         }
 
@@ -1717,6 +1828,10 @@ namespace heongpu
                           Relinkey<Scheme::BFV>& relin_key,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+            relin_key.validate_context(context_);
+
             // TODO: Make it efficient
             ExecutionOptions options_inner =
                 ExecutionOptions()
@@ -1775,6 +1890,10 @@ namespace heongpu
                     Relinkey<Scheme::BFV>& relin_key,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+            relin_key.validate_context(context_);
+
             XOR(input1, input2, input1, relin_key, options);
         }
 
@@ -1791,6 +1910,9 @@ namespace heongpu
                           Ciphertext<Scheme::BFV>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
@@ -1844,6 +1966,9 @@ namespace heongpu
                     Plaintext<Scheme::BFV>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             XOR(input1, input2, input1, options);
         }
 
@@ -1862,6 +1987,10 @@ namespace heongpu
                            Relinkey<Scheme::BFV>& relin_key,
                            const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+            relin_key.validate_context(context_);
+
             // TODO: Make it efficient
             ExecutionOptions options_inner =
                 ExecutionOptions()
@@ -1909,6 +2038,10 @@ namespace heongpu
                      Relinkey<Scheme::BFV>& relin_key,
                      const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+            relin_key.validate_context(context_);
+
             NAND(input1, input2, input1, relin_key, options);
         }
 
@@ -1925,6 +2058,9 @@ namespace heongpu
                            Ciphertext<Scheme::BFV>& output,
                            const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
@@ -1968,6 +2104,9 @@ namespace heongpu
                      Plaintext<Scheme::BFV>& input2,
                      const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             NAND(input1, input2, input1, options);
         }
 
@@ -1986,6 +2125,10 @@ namespace heongpu
                           Relinkey<Scheme::BFV>& relin_key,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+            relin_key.validate_context(context_);
+
             // TODO: Make it efficient
             ExecutionOptions options_inner =
                 ExecutionOptions()
@@ -2045,6 +2188,10 @@ namespace heongpu
                     Relinkey<Scheme::BFV>& relin_key,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+            relin_key.validate_context(context_);
+
             NOR(input1, input2, input1, relin_key, options);
         }
 
@@ -2061,6 +2208,9 @@ namespace heongpu
                           Ciphertext<Scheme::BFV>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
@@ -2115,6 +2265,9 @@ namespace heongpu
                     Plaintext<Scheme::BFV>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             NOR(input1, input2, input1, options);
         }
 
@@ -2133,6 +2286,10 @@ namespace heongpu
                            Relinkey<Scheme::BFV>& relin_key,
                            const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+            relin_key.validate_context(context_);
+
             // TODO: Make it efficient
             ExecutionOptions options_inner =
                 ExecutionOptions()
@@ -2194,6 +2351,10 @@ namespace heongpu
                      Relinkey<Scheme::BFV>& relin_key,
                      const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+            relin_key.validate_context(context_);
+
             XNOR(input1, input2, input1, relin_key, options);
         }
 
@@ -2210,6 +2371,9 @@ namespace heongpu
                            Ciphertext<Scheme::BFV>& output,
                            const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             // TODO: Make it efficient
             ExecutionOptions options_inner =
                 ExecutionOptions()
@@ -2268,6 +2432,9 @@ namespace heongpu
                      Plaintext<Scheme::BFV>& input2,
                      const ExecutionOptions& options = ExecutionOptions())
         {
+            input1.validate_context(context_);
+            input2.validate_context(context_);
+
             XNOR(input1, input2, input1, options);
         }
 

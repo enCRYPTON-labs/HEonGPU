@@ -8,6 +8,31 @@
 
 namespace heongpu
 {
+    std::uint64_t context_identity(int scheme, int ring_size,
+                                   const std::vector<Modulus64>& primes,
+                                   Data64 plain_modulus)
+    {
+        // 64-bit FNV-1a over the little-endian bytes of each parameter.
+        std::uint64_t hash = 0xcbf29ce484222325ULL;
+        auto add = [&](std::uint64_t value)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                hash ^= (value >> (8 * i)) & 0xFF;
+                hash *= 0x100000001b3ULL;
+            }
+        };
+        add(static_cast<std::uint64_t>(scheme));
+        add(static_cast<std::uint64_t>(ring_size));
+        add(primes.size());
+        for (const Modulus64& prime : primes)
+        {
+            add(prime.value);
+        }
+        add(plain_modulus);
+        return (hash == 0) ? 1 : hash;
+    }
+
     bool coefficient_validator(const std::vector<int>& log_Q_bases_bit_sizes,
                                const std::vector<int>& log_P_bases_bit_sizes)
     {

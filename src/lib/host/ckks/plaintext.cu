@@ -20,6 +20,7 @@ namespace heongpu
         }
 
         scheme_ = context->scheme_;
+        context_id_ = context->context_id_;
         plain_size_ = context->n;
         depth_ = 0;
         scale_ = 0;
@@ -196,6 +197,12 @@ namespace heongpu
         {
             throw std::runtime_error("Plaintext has been already exist!");
         }
+    }
+
+    void Plaintext<Scheme::CKKS>::validate_context(
+        const HEContext<Scheme::CKKS>& context) const
+    {
+        validate_context_identity(context_id_, context, "Plaintext");
     }
 
     int Plaintext<Scheme::CKKS>::memory_size()

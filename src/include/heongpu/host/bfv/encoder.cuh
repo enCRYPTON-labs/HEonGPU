@@ -68,6 +68,7 @@ namespace heongpu
 
                     plain.plain_size_ = context_->n;
                     plain.scheme_ = context_->scheme_;
+                    plain.context_id_ = context_->context_id_;
                     plain.in_ntt_domain_ = false;
                     plain.plaintext_generated_ = true;
                 },
@@ -101,6 +102,7 @@ namespace heongpu
 
                     plain.plain_size_ = context_->n;
                     plain.scheme_ = context_->scheme_;
+                    plain.context_id_ = context_->context_id_;
                     plain.in_ntt_domain_ = false;
                     plain.plaintext_generated_ = true;
                 },
@@ -134,6 +136,7 @@ namespace heongpu
 
                     plain.plain_size_ = context_->n;
                     plain.scheme_ = context_->scheme_;
+                    plain.context_id_ = context_->context_id_;
                     plain.in_ntt_domain_ = false;
                     plain.plaintext_generated_ = true;
                 },
@@ -167,6 +170,7 @@ namespace heongpu
 
                     plain.plain_size_ = context_->n;
                     plain.scheme_ = context_->scheme_;
+                    plain.context_id_ = context_->context_id_;
                     plain.in_ntt_domain_ = false;
                     plain.plaintext_generated_ = true;
                 },
@@ -183,6 +187,8 @@ namespace heongpu
         decode(std::vector<uint64_t>& message, Plaintext<Scheme::BFV>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
+            plain.validate_context(context_);
+
             input_storage_manager(
                 plain,
                 [&](Plaintext<Scheme::BFV>& plain_)
@@ -200,6 +206,8 @@ namespace heongpu
         decode(std::vector<int64_t>& message, Plaintext<Scheme::BFV>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
+            plain.validate_context(context_);
+
             input_storage_manager(
                 plain,
                 [&](Plaintext<Scheme::BFV>& plain_)
@@ -220,6 +228,8 @@ namespace heongpu
         decode(HostVector<uint64_t>& message, Plaintext<Scheme::BFV>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
+            plain.validate_context(context_);
+
             input_storage_manager(
                 plain,
                 [&](Plaintext<Scheme::BFV>& plain_)
@@ -238,6 +248,8 @@ namespace heongpu
         decode(HostVector<int64_t>& message, Plaintext<Scheme::BFV>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
+            plain.validate_context(context_);
+
             input_storage_manager(
                 plain,
                 [&](Plaintext<Scheme::BFV>& plain_)

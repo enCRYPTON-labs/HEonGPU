@@ -21,6 +21,7 @@ namespace heongpu
         }
 
         scheme_ = context->scheme_;
+        context_id_ = context->context_id_;
         coeff_modulus_count_ = context->Q_size;
         cipher_size_ = 2;
         ring_size_ = context->n;
@@ -281,6 +282,12 @@ namespace heongpu
         {
             throw std::runtime_error("Ciphertext has been already exist!");
         }
+    }
+
+    void Ciphertext<Scheme::BFV>::validate_context(
+        const HEContext<Scheme::BFV>& context) const
+    {
+        validate_context_identity(context_id_, context, "Ciphertext");
     }
 
     int Ciphertext<Scheme::BFV>::memory_size()

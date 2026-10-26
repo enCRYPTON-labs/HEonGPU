@@ -145,6 +145,7 @@ namespace heongpu
                                 HEONGPU_CUDA_CHECK(cudaGetLastError());
 
                                 output_.scheme_ = context_->scheme_;
+                                output_.context_id_ = context_->context_id_;
                                 output_.ring_size_ = context_->n;
                                 output_.coeff_modulus_count_ = context_->Q_size;
                                 output_.cipher_size_ = cipher_size;
@@ -246,6 +247,7 @@ namespace heongpu
                                 HEONGPU_CUDA_CHECK(cudaGetLastError());
 
                                 output_.scheme_ = context_->scheme_;
+                                output_.context_id_ = context_->context_id_;
                                 output_.ring_size_ = context_->n;
                                 output_.coeff_modulus_count_ = context_->Q_size;
                                 output_.cipher_size_ = cipher_size;
@@ -309,6 +311,7 @@ namespace heongpu
                         HEONGPU_CUDA_CHECK(cudaGetLastError());
 
                         output_.scheme_ = context_->scheme_;
+                        output_.context_id_ = context_->context_id_;
                         output_.ring_size_ = context_->n;
                         output_.coeff_modulus_count_ = context_->Q_size;
                         output_.cipher_size_ = cipher_size;
@@ -1651,6 +1654,7 @@ namespace heongpu
         output.memory_set(std::move(output_memory));
 
         output.scheme_ = context_->scheme_;
+        output.context_id_ = context_->context_id_;
         output.ring_size_ = context_->n;
         output.coeff_modulus_count_ = context_->Q_size;
         output.cipher_size_ = 2;
@@ -1812,6 +1816,7 @@ namespace heongpu
         output.memory_set(std::move(output_memory));
 
         output.scheme_ = context_->scheme_;
+        output.context_id_ = context_->context_id_;
         output.ring_size_ = context_->n;
         output.coeff_modulus_count_ = context_->Q_size;
         output.cipher_size_ = 2;
@@ -2419,6 +2424,7 @@ namespace heongpu
         Plaintext<Scheme::CKKS> plain;
 
         plain.scheme_ = context_->scheme_;
+        plain.context_id_ = context_->context_id_;
         plain.plain_size_ = context_->n * context_->Q_size; // context_->n
         plain.depth_ = 0;
         plain.scale_ = 0;
@@ -2438,6 +2444,7 @@ namespace heongpu
         Plaintext<Scheme::CKKS> plain;
 
         plain.scheme_ = input.scheme_;
+        plain.context_id_ = input.context_id_;
         plain.plain_size_ = input.plain_size_;
         plain.depth_ = input.depth_;
         plain.scale_ = input.scale_;
@@ -2463,6 +2470,7 @@ namespace heongpu
         cipher.depth_ = 0;
 
         cipher.scheme_ = context_->scheme_;
+        cipher.context_id_ = context_->context_id_;
         cipher.in_ntt_domain_ = true;
         cipher.encoding_ = encoding::SLOT;
         cipher.storage_type_ = storage_type::DEVICE;
@@ -2493,6 +2501,7 @@ namespace heongpu
         cipher.depth_ = input.depth_;
 
         cipher.scheme_ = input.scheme_;
+        cipher.context_id_ = input.context_id_;
         cipher.in_ntt_domain_ = input.in_ntt_domain_;
         cipher.encoding_ = input.encoding_;
 
@@ -3333,6 +3342,7 @@ namespace heongpu
             // Copy into result ciphertext
             result.device_locations_ = std::move(final_ct);
             result.scheme_ = context_->scheme_;
+            result.context_id_ = context_->context_id_;
             result.ring_size_ = n;
             result.coeff_modulus_count_ = Q_size;
             result.cipher_size_ = 2;
@@ -3858,6 +3868,7 @@ namespace heongpu
         HEONGPU_CUDA_CHECK(cudaGetLastError());
 
         result.scheme_ = context_->scheme_;
+        result.context_id_ = context_->context_id_;
         result.ring_size_ = context_->n;
         result.coeff_modulus_count_ = context_->Q_size;
         result.cipher_size_ = 2;

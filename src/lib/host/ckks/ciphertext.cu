@@ -25,6 +25,7 @@ namespace heongpu
         }
 
         scheme_ = context->scheme_;
+        context_id_ = context->context_id_;
         coeff_modulus_count_ = context->Q_size;
         cipher_size_ = 2;
         ring_size_ = context->n;
@@ -303,6 +304,7 @@ namespace heongpu
                 " moduli, the context has ring size ", context->n, " and ",
                 context->Q_size, " moduli."));
         }
+        validate_context_identity(context_id_, context, "Ciphertext");
         const size_t actual_size = storage_type_ == storage_type::DEVICE
                                        ? device_locations_.size()
                                        : host_locations_.size();

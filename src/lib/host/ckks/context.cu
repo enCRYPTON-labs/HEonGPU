@@ -542,6 +542,8 @@ namespace heongpu
                                       "KEYSWITCHING_METHOD_II (2)."));
                     break;
             }
+            context_id_ = context_identity(static_cast<int>(scheme_), n,
+                                           prime_vector_, 0);
             context_generated_ = true;
         }
         else

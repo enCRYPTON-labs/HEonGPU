@@ -81,6 +81,7 @@ namespace heongpu
                             plaintext.plain_size_ =
                                 context_->n * context_->Q_size;
                             plaintext.scheme_ = context_->scheme_;
+                            plaintext.context_id_ = context_->context_id_;
                             plaintext.depth_ = ciphertext.depth_;
                             plaintext.scale_ = ciphertext.scale_;
                             plaintext.in_ntt_domain_ = true;
