@@ -97,33 +97,21 @@ if(user_choice STREQUAL "yes" OR user_choice STREQUAL "y")
         endif()
     endforeach()
     
-    # Optional: Clean up empty files
-    message(STATUS "")
-    message(STATUS "Cleaning up empty files...")
-    set(empty_files_removed 0)
+    # Collect the directories of the removed files for the cleanup below.
     set(directories "")
     foreach(file ${files})
+        # Also collect the parent directories up to the standard install
+        # directories (include, lib, ...), which are kept.
         get_filename_component(dir "${file}" DIRECTORY)
-        list(APPEND directories "$ENV{DESTDIR}${dir}")
-    endforeach()
-    if(directories)
-        list(REMOVE_DUPLICATES directories)
-        foreach(dir ${directories})
-            if(IS_DIRECTORY "${dir}")
-                file(GLOB_RECURSE candidate_files "${dir}/*")
-                foreach(candidate ${candidate_files})
-                    if(EXISTS "${candidate}" AND NOT IS_DIRECTORY "${candidate}" AND NOT IS_SYMLINK "${candidate}")
-                        file(SIZE "${candidate}" candidate_size)
-                        if(candidate_size EQUAL 0)
-                            file(REMOVE "${candidate}")
-                            math(EXPR empty_files_removed "${empty_files_removed} + 1")
-                        endif()
-                    endif()
-                endforeach()
+        while(dir AND NOT dir STREQUAL "/")
+            get_filename_component(dir_name "${dir}" NAME)
+            if(dir_name MATCHES "^(include|lib|lib64|bin|share)$")
+                break()
             endif()
-        endforeach()
-    endif()
-    message(STATUS "Removed empty files: ${empty_files_removed}")
+            list(APPEND directories "$ENV{DESTDIR}${dir}")
+            get_filename_component(dir "${dir}" DIRECTORY)
+        endwhile()
+    endforeach()
 
     # Optional: Clean up empty directories
     message(STATUS "")
@@ -138,7 +126,9 @@ if(user_choice STREQUAL "yes" OR user_choice STREQUAL "y")
             if(IS_DIRECTORY "${dir}")
                 file(GLOB dir_children "${dir}/*")
                 if(NOT dir_children)
-                    file(REMOVE "${dir}")
+                    # rmdir only removes empty directories, including ones
+                    # that would still hold hidden files.
+                    execute_process(COMMAND rmdir "${dir}" ERROR_QUIET)
                     message(STATUS "Removed directory: ${dir}")
                 endif()
             endif()
@@ -149,23 +139,23 @@ if(user_choice STREQUAL "yes" OR user_choice STREQUAL "y")
     message(STATUS "")
     message(STATUS "Cleaning up empty directories under known install roots...")
     set(known_roots
-        "/usr/local/include/HEonGPU-@HEonGPU_INSTALL_VERSION@"
-        "/usr/local/include/GPUFFT-1.0"
-        "/usr/local/include/GPUNTT-1.0"
-        "/usr/local/include/RNGonGPU-1.0"
-        "/usr/local/include/rmm"
-        "/usr/local/include/fmt"
-        "/usr/local/include/spdlog"
-        "/usr/local/include/nvtx3"
-        "/usr/local/lib/cmake/HEonGPU-@HEonGPU_INSTALL_VERSION@"
-        "/usr/local/lib/cmake/GPUFFT-1.0"
-        "/usr/local/lib/cmake/GPUNTT-1.0"
-        "/usr/local/lib/cmake/RNGonGPU-1.0"
-        "/usr/local/lib/cmake/rmm"
-        "/usr/local/lib/cmake/fmt"
-        "/usr/local/lib/cmake/spdlog"
-        "/usr/local/lib/cmake/nvtx3"
-        "/usr/local/lib/pkgconfig"
+        "@CMAKE_INSTALL_FULL_INCLUDEDIR@/HEonGPU-@HEonGPU_INSTALL_VERSION@"
+        "@CMAKE_INSTALL_FULL_INCLUDEDIR@/GPUFFT-1.0"
+        "@CMAKE_INSTALL_FULL_INCLUDEDIR@/GPUNTT-1.0"
+        "@CMAKE_INSTALL_FULL_INCLUDEDIR@/RNGonGPU-1.0"
+        "@CMAKE_INSTALL_FULL_INCLUDEDIR@/rmm"
+        "@CMAKE_INSTALL_FULL_INCLUDEDIR@/fmt"
+        "@CMAKE_INSTALL_FULL_INCLUDEDIR@/spdlog"
+        "@CMAKE_INSTALL_FULL_INCLUDEDIR@/nvtx3"
+        "@CMAKE_INSTALL_FULL_LIBDIR@/cmake/HEonGPU-@HEonGPU_INSTALL_VERSION@"
+        "@CMAKE_INSTALL_FULL_LIBDIR@/cmake/GPUFFT-1.0"
+        "@CMAKE_INSTALL_FULL_LIBDIR@/cmake/GPUNTT-1.0"
+        "@CMAKE_INSTALL_FULL_LIBDIR@/cmake/RNGonGPU-1.0"
+        "@CMAKE_INSTALL_FULL_LIBDIR@/cmake/rmm"
+        "@CMAKE_INSTALL_FULL_LIBDIR@/cmake/fmt"
+        "@CMAKE_INSTALL_FULL_LIBDIR@/cmake/spdlog"
+        "@CMAKE_INSTALL_FULL_LIBDIR@/cmake/nvtx3"
+        "@CMAKE_INSTALL_FULL_LIBDIR@/pkgconfig"
     )
     foreach(root ${known_roots})
         if(IS_DIRECTORY "${root}")
@@ -177,7 +167,7 @@ if(user_choice STREQUAL "yes" OR user_choice STREQUAL "y")
                 if(IS_DIRECTORY "${dir}")
                     file(GLOB root_children "${dir}/*")
                     if(NOT root_children)
-                        file(REMOVE "${dir}")
+                        execute_process(COMMAND rmdir "${dir}" ERROR_QUIET)
                     endif()
                 endif()
             endforeach()
@@ -196,7 +186,7 @@ if(user_choice STREQUAL "yes" OR user_choice STREQUAL "y")
     endif()
     
     # Check if HEonGPU include directory still exists and is not empty (legacy files)
-    set(HEONGPU_INCLUDE_DIR "/usr/local/include/HEonGPU-@HEonGPU_INSTALL_VERSION@")
+    set(HEONGPU_INCLUDE_DIR "@CMAKE_INSTALL_FULL_INCLUDEDIR@/HEonGPU-@HEonGPU_INSTALL_VERSION@")
     if(IS_DIRECTORY "${HEONGPU_INCLUDE_DIR}")
         file(GLOB HEONGPU_LEFTOVERS "${HEONGPU_INCLUDE_DIR}/*")
         if(HEONGPU_LEFTOVERS)
@@ -205,7 +195,7 @@ if(user_choice STREQUAL "yes" OR user_choice STREQUAL "y")
             # Suppress legacy cleanup messages to keep uninstall output concise.
         else()
              # Directory exists but empty, try to remove it
-             execute_process(COMMAND ${CMAKE_COMMAND} -E rmdir "${HEONGPU_INCLUDE_DIR}")
+             execute_process(COMMAND rmdir "${HEONGPU_INCLUDE_DIR}" ERROR_QUIET)
         endif()
     endif()
 
