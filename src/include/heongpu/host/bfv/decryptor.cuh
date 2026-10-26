@@ -128,6 +128,22 @@ namespace heongpu
         HEDecryptor& operator=(const HEDecryptor& assign) = default;
         HEDecryptor& operator=(HEDecryptor&& assign) = default;
 
+        // Value-returning versions of the functions above. They give the
+        // same results.
+
+        /**
+         * @brief Returns ciphertext decrypted into a new plaintext; see
+         * decrypt(plaintext, ciphertext).
+         */
+        __host__ Plaintext<Scheme::BFV>
+        decrypt(Ciphertext<Scheme::BFV>& ciphertext,
+                const ExecutionOptions& options = ExecutionOptions())
+        {
+            Plaintext<Scheme::BFV> output(context_, options);
+            decrypt(output, ciphertext, options);
+            return output;
+        }
+
       private:
         __host__ void decrypt_bfv(Plaintext<Scheme::BFV>& plaintext,
                                   Ciphertext<Scheme::BFV>& ciphertext,

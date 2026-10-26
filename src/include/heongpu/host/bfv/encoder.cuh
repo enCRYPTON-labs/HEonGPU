@@ -273,6 +273,48 @@ namespace heongpu
         HEEncoder& operator=(const HEEncoder& assign) = default;
         HEEncoder& operator=(HEEncoder&& assign) = default;
 
+        // Value-returning versions of the functions above. They give the
+        // same results.
+
+        /**
+         * @brief Returns message encoded into a new plaintext; see
+         * encode(plain, message).
+         */
+        __host__ Plaintext<Scheme::BFV>
+        encode(const std::vector<uint64_t>& message,
+               const ExecutionOptions& options = ExecutionOptions())
+        {
+            Plaintext<Scheme::BFV> output(context_, options);
+            encode(output, message, options);
+            return output;
+        }
+
+        /**
+         * @brief Returns message encoded into a new plaintext; see
+         * encode(plain, message).
+         */
+        __host__ Plaintext<Scheme::BFV>
+        encode(const std::vector<int64_t>& message,
+               const ExecutionOptions& options = ExecutionOptions())
+        {
+            Plaintext<Scheme::BFV> output(context_, options);
+            encode(output, message, options);
+            return output;
+        }
+
+        /**
+         * @brief Returns the values decoded from plain; see decode(message,
+         * plain).
+         */
+        __host__ std::vector<uint64_t>
+        decode(Plaintext<Scheme::BFV>& plain,
+               const ExecutionOptions& options = ExecutionOptions())
+        {
+            std::vector<uint64_t> message;
+            decode(message, plain, options);
+            return message;
+        }
+
       private:
         __host__ void encode_bfv(Plaintext<Scheme::BFV>& plain,
                                  const std::vector<uint64_t>& message,

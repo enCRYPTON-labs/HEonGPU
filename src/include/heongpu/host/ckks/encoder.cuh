@@ -586,6 +586,78 @@ namespace heongpu
         HEEncoder& operator=(const HEEncoder& assign) = default;
         HEEncoder& operator=(HEEncoder&& assign) = default;
 
+        // Value-returning versions of the functions above. They give the
+        // same results.
+
+        /**
+         * @brief Returns message encoded into a new plaintext; see
+         * encode(plain, message, scale).
+         */
+        __host__ Plaintext<Scheme::CKKS>
+        encode(const std::vector<double>& message, double scale,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            Plaintext<Scheme::CKKS> output(context_, options);
+            encode(output, message, scale, options, type);
+            return output;
+        }
+
+        /**
+         * @brief Returns message encoded into a new plaintext at the given
+         * depth; see encode(plain, message, scale, depth).
+         */
+        __host__ Plaintext<Scheme::CKKS>
+        encode(const std::vector<double>& message, double scale, int depth,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            Plaintext<Scheme::CKKS> output(context_, options);
+            encode(output, message, scale, depth, options, type);
+            return output;
+        }
+
+        /**
+         * @brief Returns message encoded into a new plaintext; see
+         * encode(plain, message, scale).
+         */
+        __host__ Plaintext<Scheme::CKKS>
+        encode(const std::vector<Complex64>& message, double scale,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            Plaintext<Scheme::CKKS> output(context_, options);
+            encode(output, message, scale, options, type);
+            return output;
+        }
+
+        /**
+         * @brief Returns message encoded into a new plaintext at the given
+         * depth; see encode(plain, message, scale, depth).
+         */
+        __host__ Plaintext<Scheme::CKKS>
+        encode(const std::vector<Complex64>& message, double scale, int depth,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            Plaintext<Scheme::CKKS> output(context_, options);
+            encode(output, message, scale, depth, options, type);
+            return output;
+        }
+
+        /**
+         * @brief Returns the values decoded from plain; see decode(message,
+         * plain).
+         */
+        __host__ std::vector<double>
+        decode(Plaintext<Scheme::CKKS>& plain,
+               const ExecutionOptions& options = ExecutionOptions())
+        {
+            std::vector<double> message;
+            decode(message, plain, options);
+            return message;
+        }
+
       private:
         void validate_depth(int depth) const
         {

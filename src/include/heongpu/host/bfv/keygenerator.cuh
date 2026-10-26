@@ -197,6 +197,69 @@ namespace heongpu
         HEKeyGenerator& operator=(const HEKeyGenerator& assign) = delete;
         HEKeyGenerator& operator=(HEKeyGenerator&& assign) = delete;
 
+        // Value-returning versions of the functions above. They give the
+        // same results.
+
+        /**
+         * @brief Returns a new secret key; see generate_secret_key.
+         */
+        __host__ Secretkey<Scheme::BFV>
+        secret_key(const ExecutionOptions& options = ExecutionOptions())
+        {
+            Secretkey<Scheme::BFV> output(context_);
+            generate_secret_key(output, options);
+            return output;
+        }
+
+        /**
+         * @brief Returns a new Publickey of sk; see generate_public_key.
+         */
+        __host__ Publickey<Scheme::BFV>
+        public_key(Secretkey<Scheme::BFV>& sk,
+                   const ExecutionOptions& options = ExecutionOptions())
+        {
+            Publickey<Scheme::BFV> output(context_);
+            generate_public_key(output, sk, options);
+            return output;
+        }
+
+        /**
+         * @brief Returns a new Relinkey of sk; see generate_relin_key.
+         */
+        __host__ Relinkey<Scheme::BFV>
+        relin_key(Secretkey<Scheme::BFV>& sk,
+                  const ExecutionOptions& options = ExecutionOptions())
+        {
+            Relinkey<Scheme::BFV> output(context_);
+            generate_relin_key(output, sk, options);
+            return output;
+        }
+
+        /**
+         * @brief Returns a new Galoiskey of sk; see generate_galois_key.
+         */
+        __host__ Galoiskey<Scheme::BFV>
+        galois_key(Secretkey<Scheme::BFV>& sk,
+                   const ExecutionOptions& options = ExecutionOptions())
+        {
+            Galoiskey<Scheme::BFV> output(context_);
+            generate_galois_key(output, sk, options);
+            return output;
+        }
+
+        /**
+         * @brief Returns a new Galoiskey of sk for the given shifts; see
+         * generate_galois_key.
+         */
+        __host__ Galoiskey<Scheme::BFV>
+        galois_key(Secretkey<Scheme::BFV>& sk, std::vector<int>& shifts,
+                   const ExecutionOptions& options = ExecutionOptions())
+        {
+            Galoiskey<Scheme::BFV> output(context_, shifts);
+            generate_galois_key(output, sk, options);
+            return output;
+        }
+
       private:
         __host__ void
         generate_relin_key_method_I(Relinkey<Scheme::BFV>& rk,

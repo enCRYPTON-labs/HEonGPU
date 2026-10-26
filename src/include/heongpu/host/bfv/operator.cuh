@@ -1305,6 +1305,125 @@ namespace heongpu
         HEOperator& operator=(const HEOperator& assign) = default;
         HEOperator& operator=(HEOperator&& assign) = default;
 
+        // Value-returning versions of the functions above. They give the
+        // same results.
+
+        /**
+         * @brief Returns input1 + input2; see add(input1, input2, output).
+         */
+        __host__ Ciphertext<Scheme::BFV>
+        add(Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& input2,
+            const ExecutionOptions& options = ExecutionOptions())
+        {
+            Ciphertext<Scheme::BFV> output(context_, options);
+            add(input1, input2, output, options);
+            return output;
+        }
+
+        /**
+         * @brief Returns input1 - input2; see sub(input1, input2, output).
+         */
+        __host__ Ciphertext<Scheme::BFV>
+        sub(Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& input2,
+            const ExecutionOptions& options = ExecutionOptions())
+        {
+            Ciphertext<Scheme::BFV> output(context_, options);
+            sub(input1, input2, output, options);
+            return output;
+        }
+
+        /**
+         * @brief Returns input1 * input2; see multiply(input1, input2, output).
+         */
+        __host__ Ciphertext<Scheme::BFV>
+        multiply(Ciphertext<Scheme::BFV>& input1,
+                 Ciphertext<Scheme::BFV>& input2,
+                 const ExecutionOptions& options = ExecutionOptions())
+        {
+            Ciphertext<Scheme::BFV> output(context_, options);
+            multiply(input1, input2, output, options);
+            return output;
+        }
+
+        /**
+         * @brief Returns -input1; see negate(input1, output).
+         */
+        __host__ Ciphertext<Scheme::BFV>
+        negate(Ciphertext<Scheme::BFV>& input1,
+               const ExecutionOptions& options = ExecutionOptions())
+        {
+            Ciphertext<Scheme::BFV> output(context_, options);
+            negate(input1, output, options);
+            return output;
+        }
+
+        /**
+         * @brief Returns the result of add_plain(input1, input2, output).
+         */
+        __host__ Ciphertext<Scheme::BFV>
+        add_plain(Ciphertext<Scheme::BFV>& input1,
+                  Plaintext<Scheme::BFV>& input2,
+                  const ExecutionOptions& options = ExecutionOptions())
+        {
+            Ciphertext<Scheme::BFV> output(context_, options);
+            add_plain(input1, input2, output, options);
+            return output;
+        }
+
+        /**
+         * @brief Returns the result of sub_plain(input1, input2, output).
+         */
+        __host__ Ciphertext<Scheme::BFV>
+        sub_plain(Ciphertext<Scheme::BFV>& input1,
+                  Plaintext<Scheme::BFV>& input2,
+                  const ExecutionOptions& options = ExecutionOptions())
+        {
+            Ciphertext<Scheme::BFV> output(context_, options);
+            sub_plain(input1, input2, output, options);
+            return output;
+        }
+
+        /**
+         * @brief Returns the result of multiply_plain(input1, input2, output).
+         */
+        __host__ Ciphertext<Scheme::BFV>
+        multiply_plain(Ciphertext<Scheme::BFV>& input1,
+                       Plaintext<Scheme::BFV>& input2,
+                       const ExecutionOptions& options = ExecutionOptions())
+        {
+            Ciphertext<Scheme::BFV> output(context_, options);
+            multiply_plain(input1, input2, output, options);
+            return output;
+        }
+
+        /**
+         * @brief Returns input1 rotated by shift; see rotate_rows(input1,
+         * output, galois_key, shift).
+         */
+        __host__ Ciphertext<Scheme::BFV>
+        rotate_rows(Ciphertext<Scheme::BFV>& input1,
+                    Galoiskey<Scheme::BFV>& galois_key, int shift,
+                    const ExecutionOptions& options = ExecutionOptions())
+        {
+            Ciphertext<Scheme::BFV> output(context_, options);
+            rotate_rows(input1, output, galois_key, shift, options);
+            return output;
+        }
+
+        /**
+         * @brief Returns input1 with its rows swapped; see
+         * rotate_columns(input1, output, galois_key).
+         */
+        __host__ Ciphertext<Scheme::BFV>
+        rotate_columns(Ciphertext<Scheme::BFV>& input1,
+                       Galoiskey<Scheme::BFV>& galois_key,
+                       const ExecutionOptions& options = ExecutionOptions())
+        {
+            Ciphertext<Scheme::BFV> output(context_, options);
+            rotate_columns(input1, output, galois_key, options);
+            return output;
+        }
+
         // private:
       protected:
         __host__ void add_plain_bfv(Ciphertext<Scheme::BFV>& input1,
