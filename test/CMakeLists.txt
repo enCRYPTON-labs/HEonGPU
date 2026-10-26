@@ -61,6 +61,7 @@ set(EXECUTABLES
     lifecycle_testcases test_lifecycle.cpp
     ckks_encode_depth_testcases test_ckks_encode_depth.cpp
     shortcuts_testcases test_shortcuts.cpp
+    linear_helpers_testcases test_linear_helpers.cpp
     ckks_decrypt_depth_testcases test_ckks_decrypt_depth.cpp
 )
 

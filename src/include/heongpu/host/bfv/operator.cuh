@@ -1305,6 +1305,65 @@ namespace heongpu
         HEOperator& operator=(const HEOperator& assign) = default;
         HEOperator& operator=(HEOperator&& assign) = default;
 
+        /**
+         * @brief Returns a ciphertext whose slots all hold the sum of the slots
+         * of input1, over both rows. Uses log2(row size) rotations by the
+         * steps 1, 2, 4, ..., row size / 2 and one column rotation, so
+         * galois_key needs a key for each of these steps, as
+         * Galoiskey(context, log2(row size) - 1) has.
+         */
+        __host__ Ciphertext<Scheme::BFV>
+        sum_slots(Ciphertext<Scheme::BFV>& input1,
+                  Galoiskey<Scheme::BFV>& galois_key,
+                  const ExecutionOptions& options = ExecutionOptions())
+        {
+            Ciphertext<Scheme::BFV> result = input1;
+            for (int step = 1; step < (context_->n >> 1); step <<= 1)
+            {
+                Ciphertext<Scheme::BFV> rotated(context_, options);
+                rotate_rows(result, rotated, galois_key, step, options);
+                add_inplace(result, rotated, options);
+            }
+            Ciphertext<Scheme::BFV> swapped(context_, options);
+            rotate_columns(result, swapped, galois_key, options);
+            add_inplace(result, swapped, options);
+            return result;
+        }
+
+        /**
+         * @brief Returns a ciphertext whose slots all hold the inner product
+         * of the slots of input1 and input2. Multiplies, relinearizes and then
+         * calls sum_slots.
+         */
+        __host__ Ciphertext<Scheme::BFV>
+        inner_product(Ciphertext<Scheme::BFV>& input1,
+                      Ciphertext<Scheme::BFV>& input2,
+                      Relinkey<Scheme::BFV>& relin_key,
+                      Galoiskey<Scheme::BFV>& galois_key,
+                      const ExecutionOptions& options = ExecutionOptions())
+        {
+            Ciphertext<Scheme::BFV> product(context_, options);
+            multiply(input1, input2, product, options);
+            relinearize_inplace(product, relin_key, options);
+            return sum_slots(product, galois_key, options);
+        }
+
+        /**
+         * @brief Returns a ciphertext whose slots all hold the inner product
+         * of the slots of input1 and input2. Multiplies and then calls
+         * sum_slots.
+         */
+        __host__ Ciphertext<Scheme::BFV>
+        inner_product(Ciphertext<Scheme::BFV>& input1,
+                      Plaintext<Scheme::BFV>& input2,
+                      Galoiskey<Scheme::BFV>& galois_key,
+                      const ExecutionOptions& options = ExecutionOptions())
+        {
+            Ciphertext<Scheme::BFV> product(context_, options);
+            multiply_plain(input1, input2, product, options);
+            return sum_slots(product, galois_key, options);
+        }
+
         // Value-returning versions of the functions above. They give the
         // same results.
 

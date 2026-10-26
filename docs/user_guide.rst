@@ -31,6 +31,8 @@ Most functions write their result into an object passed by the caller, which can
 
 The inputs are taken by non-const reference, so they have to be named objects; the result of one call cannot be passed directly to the next.
 
+For vectors packed into the slots, ``sum_slots(ciphertext, galois_key)`` puts the sum of all slots into every slot, and ``inner_product(x, y, relin_key, galois_key)`` the inner product of two ciphertexts (or of a ciphertext and a plaintext). They need the Galois keys for the steps 1, 2, 4, ... up to half the slot count, as ``Galoiskey(context, log2(slot count) - 1)`` has; for CKKS, the default ``Galoiskey`` also works, with more rotations.
+
 Parameter Selection Guide
 -------------------------
 

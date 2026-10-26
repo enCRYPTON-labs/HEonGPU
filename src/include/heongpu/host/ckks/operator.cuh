@@ -1805,6 +1805,65 @@ namespace heongpu
         HEOperator& operator=(const HEOperator& assign) = default;
         HEOperator& operator=(HEOperator&& assign) = default;
 
+        /**
+         * @brief Returns a ciphertext whose slots all hold the sum of the slots
+         * of input1. Uses log2(slot count) rotations by the steps 1, 2, 4, ...,
+         * slot count / 2. A Galoiskey(context, log2(slot count) - 1) has a key
+         * for each of them; the default Galoiskey also works, with more
+         * rotations for the larger steps.
+         */
+        __host__ Ciphertext<Scheme::CKKS>
+        sum_slots(Ciphertext<Scheme::CKKS>& input1,
+                  Galoiskey<Scheme::CKKS>& galois_key,
+                  const ExecutionOptions& options = ExecutionOptions())
+        {
+            Ciphertext<Scheme::CKKS> result = input1;
+            for (int step = 1; step < (context_->n >> 1); step <<= 1)
+            {
+                Ciphertext<Scheme::CKKS> rotated(context_, options);
+                rotate_rows(result, rotated, galois_key, step, options);
+                add_inplace(result, rotated, options);
+            }
+            return result;
+        }
+
+        /**
+         * @brief Returns a ciphertext whose slots all hold the inner product
+         * of the slots of input1 and input2. Multiplies, relinearizes and
+         * rescales, so the result is one level lower than the inputs, and
+         * then calls sum_slots.
+         */
+        __host__ Ciphertext<Scheme::CKKS>
+        inner_product(Ciphertext<Scheme::CKKS>& input1,
+                      Ciphertext<Scheme::CKKS>& input2,
+                      Relinkey<Scheme::CKKS>& relin_key,
+                      Galoiskey<Scheme::CKKS>& galois_key,
+                      const ExecutionOptions& options = ExecutionOptions())
+        {
+            Ciphertext<Scheme::CKKS> product(context_, options);
+            multiply(input1, input2, product, options);
+            relinearize_inplace(product, relin_key, options);
+            rescale_inplace(product, options);
+            return sum_slots(product, galois_key, options);
+        }
+
+        /**
+         * @brief Returns a ciphertext whose slots all hold the inner product
+         * of the slots of input1 and input2. Multiplies and rescales, so the
+         * result is one level lower than input1, and then calls sum_slots.
+         */
+        __host__ Ciphertext<Scheme::CKKS>
+        inner_product(Ciphertext<Scheme::CKKS>& input1,
+                      Plaintext<Scheme::CKKS>& input2,
+                      Galoiskey<Scheme::CKKS>& galois_key,
+                      const ExecutionOptions& options = ExecutionOptions())
+        {
+            Ciphertext<Scheme::CKKS> product(context_, options);
+            multiply_plain(input1, input2, product, options);
+            rescale_inplace(product, options);
+            return sum_slots(product, galois_key, options);
+        }
+
         // Value-returning versions of the functions above. They give the
         // same results.
 
