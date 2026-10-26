@@ -58,6 +58,7 @@ set(EXECUTABLES
     galoiskey_range_testcases test_galoiskey_range.cpp
     rmm_default_testcases test_rmm_default.cpp
     kernel_stack_testcases test_kernel_stack.cpp
+    lifecycle_testcases test_lifecycle.cpp
 )
 
 function(add_test exe source)

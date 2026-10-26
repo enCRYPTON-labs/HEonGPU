@@ -77,6 +77,7 @@ set(HEONGPU_UTIL_SOURCES
     lib/util/defaultmodulus.cpp
     lib/util/memorypool.cu
     lib/util/random.cu
+    lib/util/runtime.cu
     lib/util/serializer.cpp
     lib/util/serialization_header.cpp
     lib/util/util.cu

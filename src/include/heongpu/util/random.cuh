@@ -65,6 +65,10 @@ namespace heongpu
                    rngongpu::SecurityLevel security_level,
                    bool prediction_resistance_enabled);
 
+        // Releases the generator; the next initialize() creates a new one.
+        // Used by heongpu::shutdown().
+        void release();
+
         ~RandomNumberGenerator();
 
         void set(const std::vector<unsigned char>& entropy_input,

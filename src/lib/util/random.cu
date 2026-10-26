@@ -46,6 +46,13 @@ namespace heongpu
         generator_->set(entropy_input, nonce, personalization_string, stream);
     }
 
+    void RandomNumberGenerator::release()
+    {
+        std::lock_guard<std::mutex> guard(mutex_);
+        generator_.reset();
+        initialized_ = false;
+    }
+
     RandomNumberGenerator::RandomNumberGenerator() = default;
 
     RandomNumberGenerator::~RandomNumberGenerator()

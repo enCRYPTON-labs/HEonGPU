@@ -299,6 +299,47 @@ namespace heongpu
         }
     }
 
+    void MemoryPool::release()
+    {
+        std::lock_guard<std::mutex> guard(mutex_);
+        const size_t device_used =
+            device_stats_adaptor_
+                ? static_cast<size_t>(
+                      device_stats_adaptor_->get_bytes_counter().value)
+                : 0;
+        const size_t host_used =
+            host_stats_adaptor_
+                ? static_cast<size_t>(
+                      host_stats_adaptor_->get_bytes_counter().value)
+                : 0;
+        if (device_used != 0 || host_used != 0)
+        {
+            throw StateError(error_message(
+                "HEonGPU can not be shut down while its memory pool is in "
+                "use (",
+                device_used, " bytes of device memory and ", host_used,
+                " bytes of host memory). Destroy all HEonGPU objects "
+                "(contexts, keys, plaintexts, ciphertexts, encoders, "
+                "encryptors, decryptors and operators) first."));
+        }
+        if (previous_rmm_default_)
+        {
+            rmm::mr::set_current_device_resource(
+                std::move(*previous_rmm_default_));
+            previous_rmm_default_.reset();
+        }
+        // The base resources are kept: memory that was allocated without the
+        // pool can still be returned to them.
+        device_stats_adaptor_.reset();
+        device_pool_.reset();
+        host_stats_adaptor_.reset();
+        host_pool_.reset();
+        pooled_device_allocations_.clear();
+        pooled_host_allocations_.clear();
+        initialized_ = false;
+        use_pool_ = true;
+    }
+
     rmm::device_async_resource_ref MemoryPool::device_resource()
     {
         if (use_pool_ && device_stats_adaptor_)

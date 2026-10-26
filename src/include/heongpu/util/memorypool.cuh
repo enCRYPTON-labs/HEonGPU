@@ -89,6 +89,11 @@ namespace heongpu
         void use_memory_pool(bool use);
         // See MemoryPoolConfig::set_as_rmm_default.
         void set_as_rmm_default(bool enable);
+        // Destroys the pools, so that the next initialize() creates new ones
+        // with a new configuration, and restores the RMM default. Throws
+        // StateError, without changing anything, while pool memory is in use.
+        // Used by heongpu::shutdown().
+        void release();
 
         // for device
         void* allocate(size_t size, cudaStream_t stream = cudaStreamDefault);

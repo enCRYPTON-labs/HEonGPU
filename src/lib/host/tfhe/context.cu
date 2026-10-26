@@ -5,6 +5,7 @@
 // Developer: Alişah Özcan
 
 #include <heongpu/host/tfhe/context.cuh>
+#include <heongpu/util/runtime.cuh>
 
 namespace heongpu
 {
@@ -17,11 +18,7 @@ namespace heongpu
         const MemoryPoolConfig& pool_config)
     {
         // Memory pool initialization
-        MemoryPool::instance().initialize(pool_config);
-        MemoryPool::instance().use_memory_pool(pool_config.use_memory_pool);
-        MemoryPool::instance().set_as_rmm_default(
-            pool_config.set_as_rmm_default);
-        cudaDeviceSynchronize();
+        detail::initialize_memory_pool(pool_config);
 
         prime_ = Modulus64(1152921504606877697ULL);
         Data64 psi = 1689264667710614ULL;

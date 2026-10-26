@@ -44,6 +44,7 @@
 #include <heongpu/host/tfhe/operator.cuh>
 
 #include <heongpu/util/serializer.h>
+#include <heongpu/util/runtime.cuh>
 
 namespace heongpu
 {

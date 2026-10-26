@@ -121,13 +121,10 @@ TEST(HEonGPU, MemoryPool_Respects_Use_Memory_Pool_Flag)
 
 TEST(HEonGPU, MemoryPool_Can_Be_Enabled_After_Unpooled_Context)
 {
-    // The first context of the process disables the pool; ctest runs each
-    // test in its own process.
+    // The first context after shutdown() disables the pool.
     auto& pool = heongpu::MemoryPool::instance();
-    if (pool.get_free_device_pool_memory() != 0)
-    {
-        GTEST_SKIP() << "The memory pool was already created in this process.";
-    }
+    // Start from a process without a memory pool.
+    heongpu::shutdown();
     auto unpooled_context = make_context(false);
     EXPECT_EQ(pool.get_free_device_pool_memory(), 0u);
 
@@ -148,10 +145,8 @@ TEST(HEonGPU, MemoryPool_Context_Generation_With_Little_Free_Device_Memory)
     // Simulates another process holding most of the GPU before the first
     // context of this process is generated with the default pool settings.
     auto& pool = heongpu::MemoryPool::instance();
-    if (pool.get_free_device_pool_memory() != 0)
-    {
-        GTEST_SKIP() << "The memory pool was already created in this process.";
-    }
+    // Start from a process without a memory pool.
+    heongpu::shutdown();
     size_t free_memory = 0;
     size_t total_memory = 0;
     ASSERT_EQ(cudaMemGetInfo(&free_memory, &total_memory), cudaSuccess);
@@ -182,10 +177,8 @@ TEST(HEonGPU, MemoryPool_Context_Generation_With_Little_Free_Device_Memory)
 TEST(HEonGPU, MemoryPool_Shrinks_Initial_Size_That_Does_Not_Fit)
 {
     auto& pool = heongpu::MemoryPool::instance();
-    if (pool.get_free_device_pool_memory() != 0)
-    {
-        GTEST_SKIP() << "The memory pool was already created in this process.";
-    }
+    // Start from a process without a memory pool.
+    heongpu::shutdown();
     heongpu::HEContext<heongpu::Scheme::CKKS> context =
         heongpu::GenHEContext<heongpu::Scheme::CKKS>(
             heongpu::sec_level_type::none);
@@ -218,10 +211,8 @@ TEST(HEonGPU, MemoryPool_Shrinks_Initial_Size_That_Does_Not_Fit)
 TEST(HEonGPU, MemoryPool_Initial_Device_Fraction_Can_Be_Chosen_By_User)
 {
     auto& pool = heongpu::MemoryPool::instance();
-    if (pool.get_free_device_pool_memory() != 0)
-    {
-        GTEST_SKIP() << "The memory pool was already created in this process.";
-    }
+    // Start from a process without a memory pool.
+    heongpu::shutdown();
     size_t free_before = 0;
     size_t total_memory = 0;
     ASSERT_EQ(cudaMemGetInfo(&free_before, &total_memory), cudaSuccess);

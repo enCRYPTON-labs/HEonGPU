@@ -33,6 +33,17 @@ HEonGPU writes no output on its own. Only ``print_parameters()`` and ``MemoryPoo
 
 With the static library, every shared library or plugin that embeds HEonGPU has its own copy of this state. With the shared library (``HEonGPU_BUILD_SHARED=ON``), the whole process shares one.
 
+The first ``generate()`` sets this state up. An application can also control it explicitly:
+
+.. code-block:: cpp
+
+    heongpu::initialize(config);   // optional; generate() does it otherwise
+    // ... use HEonGPU ...
+    heongpu::shutdown();           // releases the memory pool and the generator
+    heongpu::initialize(other);    // sets it up again, with another configuration
+
+``shutdown()`` requires all HEonGPU objects (contexts, keys, plaintexts, ciphertexts, encoders, encryptors, decryptors and operators) to be destroyed; otherwise it throws ``StateError`` and releases nothing. It also restores the RMM default resource if ``set_as_rmm_default`` replaced it.
+
 Multiparty Computation (MPC)
 ----------------------------
 
