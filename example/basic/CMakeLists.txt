@@ -31,7 +31,7 @@ function(add_example exe source)
     set_target_properties(${exe} PROPERTIES
         CUDA_SEPARABLE_COMPILATION ON
         POSITION_INDEPENDENT_CODE ON
-        CUDA_RUNTIME_LIBRARY Static
+        CUDA_RUNTIME_LIBRARY Shared
         CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
     )
 endfunction()
