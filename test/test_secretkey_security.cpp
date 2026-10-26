@@ -51,7 +51,8 @@ namespace
     template <heongpu::Scheme S> std::string save(heongpu::Secretkey<S>& key)
     {
         std::stringstream stream;
-        key.save(stream);
+        // The checks below parse the field layout of the format v1.
+        key.save(stream, heongpu::serialization_format::v1);
         return stream.str();
     }
     template <typename T> std::vector<T> read(T* data, size_t size, bool device)

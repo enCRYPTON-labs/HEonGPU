@@ -131,5 +131,17 @@ namespace heongpu
         COEFFICIENT = 0x1
     };
 
+    enum class serialization_format : std::uint8_t
+    {
+        // The fields only, as written by HEonGPU 1.2 and earlier. Readable by
+        // every HEonGPU version.
+        v1 = 0x1,
+
+        // A header with a magic number, the format version, the object type,
+        // the scheme and the context identity before the fields. Readable by
+        // HEonGPU 1.3 and later.
+        v2 = 0x2
+    };
+
 } // namespace heongpu
 #endif // HEONGPU_SCHEMES_H

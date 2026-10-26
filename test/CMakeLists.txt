@@ -49,6 +49,8 @@ set(EXECUTABLES
     errors_testcases test_errors.cpp
     context_identity_testcases test_context_identity.cpp
     context_randomness_testcases test_context_randomness.cpp
+    serialization_context_testcases test_serialization_context.cpp
+    serialization_format_testcases test_serialization_format.cpp
 )
 
 function(add_test exe source)

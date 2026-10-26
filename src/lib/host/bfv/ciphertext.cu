@@ -168,10 +168,15 @@ namespace heongpu
         }
     }
 
-    void Ciphertext<Scheme::BFV>::save(std::ostream& os) const
+    void Ciphertext<Scheme::BFV>::save(std::ostream& os,
+                                       serialization_format format) const
     {
         if (ciphertext_generated_)
         {
+            detail::write_serialization_header(
+                os, format, detail::serialized_object::ciphertext, scheme_,
+                context_id_);
+
             os.write((char*) &scheme_, sizeof(scheme_));
 
             if (scheme_ != scheme_type::bfv)
@@ -235,6 +240,17 @@ namespace heongpu
     {
         if ((!ciphertext_generated_))
         {
+            const std::uint64_t loaded_context_id =
+                detail::read_serialization_header(
+                    is, detail::serialized_object::ciphertext,
+                    scheme_type::bfv);
+            detail::validate_loaded_context_identity(
+                context_id_, loaded_context_id, "Ciphertext");
+            if (loaded_context_id != 0)
+            {
+                context_id_ = loaded_context_id;
+            }
+
             is.read((char*) &scheme_, sizeof(scheme_));
 
             is.read((char*) &ring_size_, sizeof(ring_size_));

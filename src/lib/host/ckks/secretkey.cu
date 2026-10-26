@@ -271,12 +271,17 @@ namespace heongpu
         }
     }
 
-    void Secretkey<Scheme::CKKS>::save(std::ostream& os) const
+    void Secretkey<Scheme::CKKS>::save(std::ostream& os,
+                                       serialization_format format) const
     {
         if (secret_key_generated_)
         {
             HEONGPU_CUDA_CHECK(
                 cudaStreamSynchronize(device_locations_.stream()));
+            detail::write_serialization_header(
+                os, format, detail::serialized_object::secret_key, scheme_,
+                serialized_context_id());
+
             os.write((char*) &scheme_, sizeof(scheme_));
 
             os.write((char*) &ring_size_, sizeof(ring_size_));
@@ -343,6 +348,14 @@ namespace heongpu
             if (!is)
                 throw std::runtime_error("Truncated Secretkey binary!");
         };
+        const std::uint64_t loaded_context_id =
+            detail::read_serialization_header(
+                is, detail::serialized_object::secret_key, scheme_type::ckks);
+        detail::validate_loaded_context_identity(
+            serialized_context_id(), loaded_context_id, "Secretkey");
+        temporary.context_id_ =
+            loaded_context_id != 0 ? loaded_context_id : context_id_;
+
         read(temporary.scheme_);
         read(temporary.ring_size_);
         read(temporary.coeff_modulus_count_);
@@ -418,6 +431,8 @@ namespace heongpu
             throw StateError("HEContext is not generated! Create the context "
                              "with GenHEContext and call generate() before "
                              "using it.");
+        if (!context_)
+            validate_context_identity(context_id_, context, "Secretkey");
         if (ring_size_ != context->n ||
             coeff_modulus_count_ != context->Q_prime_size ||
             n_power_ != context->n_power)

@@ -222,7 +222,7 @@ TEST_F(CKKSErrors, SerializationError_Reports_The_Scheme)
     heongpu::Plaintext<scheme> plaintext(context);
     encoder.encode(plaintext, std::vector<double>(degree / 2, 0.5), scale);
     std::stringstream stream;
-    plaintext.save(stream);
+    plaintext.save(stream, heongpu::serialization_format::v1);
     std::string binary = stream.str();
     binary[0] = static_cast<char>(heongpu::scheme_type::bfv);
 

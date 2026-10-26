@@ -586,10 +586,15 @@ namespace heongpu
         }
     }
 
-    void HEContextImpl<Scheme::CKKS>::save(std::ostream& os) const
+    void HEContextImpl<Scheme::CKKS>::save(std::ostream& os,
+                                           serialization_format format) const
     {
         if ((poly_modulus_degree_specified_) && (coeff_modulus_specified_))
         {
+            detail::write_serialization_header(
+                os, format, detail::serialized_object::context, scheme_,
+                context_id_);
+
             os.write((char*) &scheme_, sizeof(scheme_));
 
             os.write((char*) &sec_level_, sizeof(sec_level_));
@@ -649,6 +654,12 @@ namespace heongpu
     {
         if ((!context_generated_))
         {
+            const std::uint64_t loaded_context_id =
+                detail::read_serialization_header(
+                    is, detail::serialized_object::context, scheme_type::ckks);
+            detail::validate_loaded_context_identity(
+                context_id_, loaded_context_id, "HEContext");
+
             is.read((char*) &scheme_, sizeof(scheme_));
 
             is.read((char*) &sec_level_, sizeof(sec_level_));
@@ -707,6 +718,14 @@ namespace heongpu
             context_generated_ = false;
 
             this->generate();
+
+            if (loaded_context_id != 0 && loaded_context_id != context_id_)
+            {
+                throw SerializationError(
+                    "Corrupted HEContext binary! The parameters "
+                    "do not match the context identity stored "
+                    "with them.");
+            }
         }
         else
         {

@@ -93,10 +93,15 @@ namespace heongpu
         }
     }
 
-    void Publickey<Scheme::BFV>::save(std::ostream& os) const
+    void Publickey<Scheme::BFV>::save(std::ostream& os,
+                                      serialization_format format) const
     {
         if (public_key_generated_)
         {
+            detail::write_serialization_header(
+                os, format, detail::serialized_object::public_key, scheme_,
+                serialized_context_id());
+
             os.write((char*) &scheme_, sizeof(scheme_));
 
             os.write((char*) &ring_size_, sizeof(ring_size_));
@@ -148,6 +153,17 @@ namespace heongpu
     {
         if ((!public_key_generated_))
         {
+            const std::uint64_t loaded_context_id =
+                detail::read_serialization_header(
+                    is, detail::serialized_object::public_key,
+                    scheme_type::bfv);
+            detail::validate_loaded_context_identity(
+                serialized_context_id(), loaded_context_id, "Publickey");
+            if (loaded_context_id != 0)
+            {
+                context_id_ = loaded_context_id;
+            }
+
             is.read((char*) &scheme_, sizeof(scheme_));
 
             if (scheme_ != scheme_type::bfv)

@@ -92,10 +92,15 @@ namespace heongpu
         }
     }
 
-    void Relinkey<Scheme::BFV>::save(std::ostream& os) const
+    void Relinkey<Scheme::BFV>::save(std::ostream& os,
+                                     serialization_format format) const
     {
         if (relin_key_generated_)
         {
+            detail::write_serialization_header(
+                os, format, detail::serialized_object::relin_key, scheme_,
+                serialized_context_id());
+
             os.write((char*) &scheme_, sizeof(scheme_));
 
             os.write((char*) &key_type, sizeof(key_type));
@@ -148,6 +153,16 @@ namespace heongpu
     {
         if ((!relin_key_generated_))
         {
+            const std::uint64_t loaded_context_id =
+                detail::read_serialization_header(
+                    is, detail::serialized_object::relin_key, scheme_type::bfv);
+            detail::validate_loaded_context_identity(
+                serialized_context_id(), loaded_context_id, "Relinkey");
+            if (loaded_context_id != 0)
+            {
+                context_id_ = loaded_context_id;
+            }
+
             is.read((char*) &scheme_, sizeof(scheme_));
 
             if (scheme_ != scheme_type::bfv)
@@ -565,10 +580,15 @@ namespace heongpu
         }
     }
 
-    void Galoiskey<Scheme::BFV>::save(std::ostream& os) const
+    void Galoiskey<Scheme::BFV>::save(std::ostream& os,
+                                      serialization_format format) const
     {
         if (galois_key_generated_)
         {
+            detail::write_serialization_header(
+                os, format, detail::serialized_object::galois_key, scheme_,
+                serialized_context_id());
+
             os.write((char*) &scheme_, sizeof(scheme_));
 
             os.write((char*) &key_type, sizeof(key_type));
@@ -672,6 +692,17 @@ namespace heongpu
     {
         if ((!galois_key_generated_))
         {
+            const std::uint64_t loaded_context_id =
+                detail::read_serialization_header(
+                    is, detail::serialized_object::galois_key,
+                    scheme_type::bfv);
+            detail::validate_loaded_context_identity(
+                serialized_context_id(), loaded_context_id, "Galoiskey");
+            if (loaded_context_id != 0)
+            {
+                context_id_ = loaded_context_id;
+            }
+
             is.read((char*) &scheme_, sizeof(scheme_));
 
             if (scheme_ != scheme_type::bfv)
@@ -870,10 +901,15 @@ namespace heongpu
         }
     }
 
-    void Switchkey<Scheme::BFV>::save(std::ostream& os) const
+    void Switchkey<Scheme::BFV>::save(std::ostream& os,
+                                      serialization_format format) const
     {
         if (switch_key_generated_)
         {
+            detail::write_serialization_header(
+                os, format, detail::serialized_object::switch_key, scheme_,
+                serialized_context_id());
+
             os.write((char*) &scheme_, sizeof(scheme_));
 
             os.write((char*) &key_type, sizeof(key_type));
@@ -922,6 +958,17 @@ namespace heongpu
     {
         if ((!switch_key_generated_))
         {
+            const std::uint64_t loaded_context_id =
+                detail::read_serialization_header(
+                    is, detail::serialized_object::switch_key,
+                    scheme_type::bfv);
+            detail::validate_loaded_context_identity(
+                serialized_context_id(), loaded_context_id, "Switchkey");
+            if (loaded_context_id != 0)
+            {
+                context_id_ = loaded_context_id;
+            }
+
             is.read((char*) &scheme_, sizeof(scheme_));
 
             is.read((char*) &key_type, sizeof(key_type));

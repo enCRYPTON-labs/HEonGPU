@@ -274,7 +274,8 @@ namespace heongpu
             return *this;
         }
 
-        void save(std::ostream& os) const;
+        void save(std::ostream& os,
+                  serialization_format format = serialization_format::v2) const;
 
         void load(std::istream& is);
 

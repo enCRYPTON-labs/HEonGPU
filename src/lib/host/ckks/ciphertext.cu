@@ -179,7 +179,8 @@ namespace heongpu
         }
     }
 
-    void Ciphertext<Scheme::CKKS>::save(std::ostream& os) const
+    void Ciphertext<Scheme::CKKS>::save(std::ostream& os,
+                                        serialization_format format) const
     {
         if (ciphertext_generated_)
         {
@@ -192,6 +193,10 @@ namespace heongpu
             }
             HEONGPU_CUDA_CHECK(
                 cudaStreamSynchronize(device_locations_.stream()));
+            detail::write_serialization_header(
+                os, format, detail::serialized_object::ciphertext, scheme_,
+                context_id_);
+
             os.write((char*) &scheme_, sizeof(scheme_));
 
             os.write((char*) &ring_size_, sizeof(ring_size_));
@@ -340,6 +345,14 @@ namespace heongpu
             }
             value = byte != 0;
         };
+        const std::uint64_t loaded_context_id =
+            detail::read_serialization_header(
+                is, detail::serialized_object::ciphertext, scheme_type::ckks);
+        detail::validate_loaded_context_identity(context_id_, loaded_context_id,
+                                                 "Ciphertext");
+        temporary.context_id_ =
+            loaded_context_id != 0 ? loaded_context_id : context_id_;
+
         read(temporary.scheme_);
         read(temporary.ring_size_);
         read(temporary.coeff_modulus_count_);

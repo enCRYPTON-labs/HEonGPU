@@ -92,7 +92,8 @@ namespace heongpu
          */
         inline std::uint64_t context_id() const noexcept { return context_id_; }
 
-        void save(std::ostream& os) const;
+        void save(std::ostream& os,
+                  serialization_format format = serialization_format::v2) const;
 
         void load(std::istream& is);
 

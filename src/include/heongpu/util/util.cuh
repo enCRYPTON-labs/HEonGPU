@@ -18,6 +18,7 @@
 #include <stdexcept>
 #include <set>
 #include <heongpu/util/error.h>
+#include <heongpu/util/serialization_header.h>
 #include <heongpu/util/storagemanager.cuh>
 #include <gmp.h>
 

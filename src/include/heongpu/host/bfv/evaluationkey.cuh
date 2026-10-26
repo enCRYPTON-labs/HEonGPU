@@ -99,11 +99,11 @@ namespace heongpu
          * @param copy The source Relinkey object to copy from.
          */
         Relinkey(const Relinkey& copy)
-            : context_(copy.context_), scheme_(copy.scheme_),
-              key_type(copy.key_type), ring_size(copy.ring_size),
-              Q_prime_size_(copy.Q_prime_size_), Q_size_(copy.Q_size_),
-              d_(copy.d_), d_tilda_(copy.d_tilda_), r_prime_(copy.r_prime_),
-              storage_type_(copy.storage_type_),
+            : context_(copy.context_), context_id_(copy.context_id_),
+              scheme_(copy.scheme_), key_type(copy.key_type),
+              ring_size(copy.ring_size), Q_prime_size_(copy.Q_prime_size_),
+              Q_size_(copy.Q_size_), d_(copy.d_), d_tilda_(copy.d_tilda_),
+              r_prime_(copy.r_prime_), storage_type_(copy.storage_type_),
               relinkey_size_(copy.relinkey_size_),
               relin_key_generated_(copy.relin_key_generated_)
         {
@@ -136,6 +136,7 @@ namespace heongpu
          */
         Relinkey(Relinkey&& assign) noexcept
             : context_(std::move(assign.context_)),
+              context_id_(assign.context_id_),
               scheme_(std::move(assign.scheme_)),
               key_type(std::move(assign.key_type)),
               ring_size(std::move(assign.ring_size)),
@@ -173,6 +174,7 @@ namespace heongpu
             if (this != &copy)
             {
                 context_ = copy.context_;
+                context_id_ = copy.context_id_;
                 scheme_ = copy.scheme_;
                 key_type = copy.key_type;
                 ring_size = copy.ring_size;
@@ -220,6 +222,7 @@ namespace heongpu
             if (this != &assign)
             {
                 context_ = std::move(assign.context_);
+                context_id_ = assign.context_id_;
                 scheme_ = std::move(assign.scheme_);
                 key_type = std::move(assign.key_type);
                 ring_size = std::move(assign.ring_size);
@@ -250,7 +253,8 @@ namespace heongpu
          */
         Relinkey() = default;
 
-        void save(std::ostream& os) const;
+        void save(std::ostream& os,
+                  serialization_format format = serialization_format::v2) const;
 
         void load(std::istream& is);
 
@@ -261,11 +265,18 @@ namespace heongpu
 
       private:
         HEContext<Scheme::BFV> context_;
+        // Context identity read by load(); used when context_ is not set.
+        std::uint64_t context_id_ = 0;
+
+        std::uint64_t serialized_context_id() const
+        {
+            return context_ ? context_->context_id() : context_id_;
+        }
 
         void validate_context(const HEContext<Scheme::BFV>& context) const
         {
-            validate_context_identity(context_ ? context_->context_id() : 0,
-                                      context, "Relinkey");
+            validate_context_identity(serialized_context_id(), context,
+                                      "Relinkey");
         }
 
         scheme_type scheme_;
@@ -443,10 +454,10 @@ namespace heongpu
          * @param copy The source Galoiskey object to copy from.
          */
         Galoiskey(const Galoiskey& copy)
-            : context_(copy.context_), scheme_(copy.scheme_),
-              key_type(copy.key_type), ring_size(copy.ring_size),
-              Q_prime_size_(copy.Q_prime_size_), Q_size_(copy.Q_size_),
-              d_(copy.d_), customized(copy.customized),
+            : context_(copy.context_), context_id_(copy.context_id_),
+              scheme_(copy.scheme_), key_type(copy.key_type),
+              ring_size(copy.ring_size), Q_prime_size_(copy.Q_prime_size_),
+              Q_size_(copy.Q_size_), d_(copy.d_), customized(copy.customized),
               group_order_(copy.group_order_),
               storage_type_(copy.storage_type_),
               galoiskey_size_(copy.galoiskey_size_),
@@ -501,6 +512,7 @@ namespace heongpu
          */
         Galoiskey(Galoiskey&& assign) noexcept
             : context_(std::move(assign.context_)),
+              context_id_(assign.context_id_),
               scheme_(std::move(assign.scheme_)),
               key_type(std::move(assign.key_type)),
               ring_size(std::move(assign.ring_size)),
@@ -555,6 +567,7 @@ namespace heongpu
             if (this != &copy)
             {
                 context_ = copy.context_;
+                context_id_ = copy.context_id_;
                 scheme_ = copy.scheme_;
                 key_type = copy.key_type;
                 ring_size = copy.ring_size;
@@ -624,6 +637,7 @@ namespace heongpu
             if (this != &assign)
             {
                 context_ = std::move(assign.context_);
+                context_id_ = assign.context_id_;
                 scheme_ = std::move(assign.scheme_);
                 key_type = std::move(assign.key_type);
                 ring_size = std::move(assign.ring_size);
@@ -674,7 +688,8 @@ namespace heongpu
          */
         Galoiskey() = default;
 
-        void save(std::ostream& os) const;
+        void save(std::ostream& os,
+                  serialization_format format = serialization_format::v2) const;
 
         void load(std::istream& is);
 
@@ -685,11 +700,18 @@ namespace heongpu
 
       private:
         HEContext<Scheme::BFV> context_;
+        // Context identity read by load(); used when context_ is not set.
+        std::uint64_t context_id_ = 0;
+
+        std::uint64_t serialized_context_id() const
+        {
+            return context_ ? context_->context_id() : context_id_;
+        }
 
         void validate_context(const HEContext<Scheme::BFV>& context) const
         {
-            validate_context_identity(context_ ? context_->context_id() : 0,
-                                      context, "Galoiskey");
+            validate_context_identity(serialized_context_id(), context,
+                                      "Galoiskey");
         }
 
         scheme_type scheme_;
@@ -828,7 +850,8 @@ namespace heongpu
         Switchkey& operator=(const Switchkey& assign) = default;
         Switchkey& operator=(Switchkey&& assign) = default;
 
-        void save(std::ostream& os) const;
+        void save(std::ostream& os,
+                  serialization_format format = serialization_format::v2) const;
 
         void load(std::istream& is);
 
@@ -839,11 +862,18 @@ namespace heongpu
 
       private:
         HEContext<Scheme::BFV> context_;
+        // Context identity read by load(); used when context_ is not set.
+        std::uint64_t context_id_ = 0;
+
+        std::uint64_t serialized_context_id() const
+        {
+            return context_ ? context_->context_id() : context_id_;
+        }
 
         void validate_context(const HEContext<Scheme::BFV>& context) const
         {
-            validate_context_identity(context_ ? context_->context_id() : 0,
-                                      context, "Switchkey");
+            validate_context_identity(serialized_context_id(), context,
+                                      "Switchkey");
         }
 
         scheme_type scheme_;

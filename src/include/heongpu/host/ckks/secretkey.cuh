@@ -163,8 +163,8 @@ namespace heongpu
          * @param copy The source Secretkey object to copy from.
          */
         Secretkey(const Secretkey& copy)
-            : context_(copy.context_), scheme_(copy.scheme_),
-              ring_size_(copy.ring_size_),
+            : context_(copy.context_), context_id_(copy.context_id_),
+              scheme_(copy.scheme_), ring_size_(copy.ring_size_),
               coeff_modulus_count_(copy.coeff_modulus_count_),
               n_power_(copy.n_power_), hamming_weight_(copy.hamming_weight_),
               in_ntt_domain_(copy.in_ntt_domain_),
@@ -202,6 +202,7 @@ namespace heongpu
          */
         Secretkey(Secretkey&& assign) noexcept
             : context_(std::move(assign.context_)),
+              context_id_(assign.context_id_),
               scheme_(std::move(assign.scheme_)),
               ring_size_(std::move(assign.ring_size_)),
               coeff_modulus_count_(std::move(assign.coeff_modulus_count_)),
@@ -254,6 +255,7 @@ namespace heongpu
             if (this != &assign)
             {
                 context_ = std::move(assign.context_);
+                context_id_ = assign.context_id_;
                 scheme_ = std::move(assign.scheme_);
                 ring_size_ = std::move(assign.ring_size_);
                 coeff_modulus_count_ = std::move(assign.coeff_modulus_count_);
@@ -280,7 +282,8 @@ namespace heongpu
          */
         Secretkey() = default;
 
-        void save(std::ostream& os) const;
+        void save(std::ostream& os,
+                  serialization_format format = serialization_format::v2) const;
 
         void load(std::istream& is);
 
@@ -295,6 +298,14 @@ namespace heongpu
 
       private:
         HEContext<Scheme::CKKS> context_;
+        // Context identity read by load(); used when context_ is not set.
+        std::uint64_t context_id_ = 0;
+
+        std::uint64_t serialized_context_id() const
+        {
+            return context_ ? context_->context_id() : context_id_;
+        }
+
         scheme_type scheme_ = scheme_type::ckks;
         int ring_size_ = 0;
         int coeff_modulus_count_ = 0;

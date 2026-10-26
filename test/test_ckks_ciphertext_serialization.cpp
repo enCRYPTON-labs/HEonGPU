@@ -99,7 +99,8 @@ namespace
     std::string save(const heongpu::Ciphertext<scheme>& ciphertext)
     {
         std::stringstream stream;
-        ciphertext.save(stream);
+        // BinaryCiphertext parses the field layout of the format v1.
+        ciphertext.save(stream, heongpu::serialization_format::v1);
         return stream.str();
     }
 

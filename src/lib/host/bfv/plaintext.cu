@@ -90,10 +90,15 @@ namespace heongpu
         }
     }
 
-    void Plaintext<Scheme::BFV>::save(std::ostream& os) const
+    void Plaintext<Scheme::BFV>::save(std::ostream& os,
+                                      serialization_format format) const
     {
         if (plaintext_generated_)
         {
+            detail::write_serialization_header(
+                os, format, detail::serialized_object::plaintext, scheme_,
+                context_id_);
+
             os.write((char*) &scheme_, sizeof(scheme_));
 
             os.write((char*) &plain_size_, sizeof(plain_size_));
@@ -136,6 +141,16 @@ namespace heongpu
     {
         if ((!plaintext_generated_))
         {
+            const std::uint64_t loaded_context_id =
+                detail::read_serialization_header(
+                    is, detail::serialized_object::plaintext, scheme_type::bfv);
+            detail::validate_loaded_context_identity(
+                context_id_, loaded_context_id, "Plaintext");
+            if (loaded_context_id != 0)
+            {
+                context_id_ = loaded_context_id;
+            }
+
             is.read((char*) &scheme_, sizeof(scheme_));
 
             if (scheme_ != scheme_type::bfv)
