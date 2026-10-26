@@ -5,7 +5,7 @@
 # Developer: Alişah Özcan
 
 cmake_minimum_required(VERSION 4.0 FATAL_ERROR)
-project(HEonGPU VERSION 1.3.0 LANGUAGES C CXX CUDA ASM)
+project(HEonGPU VERSION 1.4.0 LANGUAGES C CXX CUDA ASM)
 
 # The CCCL version that RMM 26.08 needs makes older nvcc versions crash
 # (tested: 12.4 and 12.6 fail, 12.8 and 13.x work).
