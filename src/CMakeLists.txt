@@ -206,6 +206,7 @@ set_target_properties(heongpu_host_bfv PROPERTIES
 )
 
 set(HEONGPU_HOST_CKKS_SOURCES
+    lib/host/ckks/bootstrapping.cu
     lib/host/ckks/chebyshev_interpolation.cu
     lib/host/ckks/ciphertext.cu
     lib/host/ckks/context.cu

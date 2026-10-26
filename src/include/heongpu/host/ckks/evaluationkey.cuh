@@ -7,6 +7,7 @@
 #ifndef HEONGPU_CKKS_EVALUATIONKEY_H
 #define HEONGPU_CKKS_EVALUATIONKEY_H
 
+#include <optional>
 #include <heongpu/host/ckks/context.cuh>
 #include <heongpu/kernel/keygeneration.cuh>
 
@@ -1068,6 +1069,19 @@ namespace heongpu
         void copy_to_device(cudaStream_t stream);
         void remove_from_device(cudaStream_t stream);
         void remove_from_host();
+    };
+
+    /**
+     * @brief The keys CKKS bootstrapping uses, as HEKeyGenerator::
+     * bootstrapping_keys generates them. The switch keys between the secret
+     * key and a sparse secret key are present when bootstrapping uses one.
+     */
+    struct CKKSBootstrappingKeys
+    {
+        Relinkey<Scheme::CKKS> relin_key;
+        Galoiskey<Scheme::CKKS> galois_key;
+        std::optional<Switchkey<Scheme::CKKS>> dense_to_sparse;
+        std::optional<Switchkey<Scheme::CKKS>> sparse_to_dense;
     };
 
 } // namespace heongpu

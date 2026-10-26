@@ -46,6 +46,27 @@ CKKS ciphertexts can be put through polynomials, and through functions approxima
 
 A polynomial of degree :math:`d` uses :math:`\lceil \log_2(d + 1) \rceil` levels, and a Chebyshev series on an interval other than :math:`[-1, 1]` one more; ``HEArithmeticOperator<Scheme::CKKS>::polynomial_depth`` returns this number. The slots must lie in the interval of the approximation. ``chebyshev_coefficients(function, a, b, degree)`` returns the coefficients of the interpolant, so that its error can be checked on the CPU, and ``evaluate_chebyshev(x, coefficients, a, b, relin_key)`` evaluates given coefficients.
 
+CKKS bootstrapping needs a context, keys and a configuration that fit together. ``CKKSBootstrappingPreset::regular()``, ``slim()``, ``bit()`` and ``gate()`` hold the parameters of the bootstrapping examples (:math:`N = 2^{16}`, 128-bit security), and ``HEKeyGenerator::bootstrapping_keys`` generates all keys of a bootstrapping in one call:
+
+.. code-block:: cpp
+
+    auto preset = heongpu::CKKSBootstrappingPreset::regular();
+    auto context = heongpu::GenHEContext<heongpu::Scheme::CKKS>(heongpu::sec_level_type::sec128);
+    preset.apply(context);
+    context->generate();
+
+    heongpu::HEKeyGenerator<heongpu::Scheme::CKKS> keygen(context);
+    heongpu::Secretkey<heongpu::Scheme::CKKS> secret_key(context, preset.secret_key_hamming_weight);
+    keygen.generate_secret_key(secret_key);
+    // ... public key, encoder, encryptor, decryptor and operators
+
+    operators.generate_bootstrapping_params(preset);
+    auto boot_keys = keygen.bootstrapping_keys(secret_key, operators.bootstrapping_key_indices(),
+                                               preset.sparse_secret_key_hamming_weight);
+    auto refreshed = operators.regular_bootstrapping(ciphertext, boot_keys);
+
+Bootstrapping brings a ciphertext above the level it starts from down to that level. ``preset.levels()``, or ``bootstrapping_levels(config, type)`` for another configuration, returns the levels it uses: ``input_level`` and ``output_level``, and ``usable_levels()`` for the computation between two bootstrappings (9 for regular and slim, 8 for bit and 7 for gate bootstrapping with the presets).
+
 Parameter Selection Guide
 -------------------------
 

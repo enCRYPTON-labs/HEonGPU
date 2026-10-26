@@ -260,6 +260,36 @@ namespace heongpu
             return output;
         }
 
+        /**
+         * @brief Returns the keys CKKS bootstrapping uses: a Relinkey of sk,
+         * a Galoiskey of sk for galois_shifts (the bootstrapping_key_indices()
+         * of the operator) and, unless sparse_secret_key_hamming_weight is 0,
+         * the switch keys between sk and a new sparse secret key with that
+         * Hamming weight.
+         */
+        __host__ CKKSBootstrappingKeys bootstrapping_keys(
+            Secretkey<Scheme::CKKS>& sk, std::vector<int> galois_shifts,
+            int sparse_secret_key_hamming_weight = 0,
+            const ExecutionOptions& options = ExecutionOptions())
+        {
+            CKKSBootstrappingKeys keys{relin_key(sk, options),
+                                       galois_key(sk, galois_shifts, options),
+                                       std::nullopt, std::nullopt};
+            if (sparse_secret_key_hamming_weight > 0)
+            {
+                Secretkey<Scheme::CKKS> sparse_sk(
+                    context_, sparse_secret_key_hamming_weight);
+                generate_secret_key(sparse_sk, options);
+                keys.dense_to_sparse.emplace(context_);
+                generate_switch_key(*keys.dense_to_sparse, sparse_sk, sk,
+                                    options);
+                keys.sparse_to_dense.emplace(context_);
+                generate_switch_key(*keys.sparse_to_dense, sk, sparse_sk,
+                                    options);
+            }
+            return keys;
+        }
+
       private:
         __host__ void
         generate_relin_key_method_I(Relinkey<Scheme::CKKS>& rk,

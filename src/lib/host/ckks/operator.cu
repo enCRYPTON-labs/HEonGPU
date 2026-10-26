@@ -5290,6 +5290,19 @@ namespace heongpu
      * @return Bootstrapped ciphertext with refreshed noise and full modulus
      * chain
      */
+    __host__ void
+    HEArithmeticOperator<Scheme::CKKS>::generate_bootstrapping_params(
+        const CKKSBootstrappingPreset& preset)
+    {
+        if (preset.arithmetic_type == arithmetic_bootstrapping_type::NONE)
+        {
+            throw ParameterError(
+                "The preset is not a regular or slim bootstrapping preset!");
+        }
+        generate_bootstrapping_params(preset.scale, preset.config,
+                                      preset.arithmetic_type);
+    }
+
     __host__ Ciphertext<Scheme::CKKS>
     HEArithmeticOperator<Scheme::CKKS>::regular_bootstrapping(
         Ciphertext<Scheme::CKKS>& input1, Galoiskey<Scheme::CKKS>& galois_key,
@@ -5305,6 +5318,19 @@ namespace heongpu
             throw std::invalid_argument(
                 "Bootstrapping operation can not be performed before "
                 "generating Bootstrapping parameters!");
+        }
+
+        // An input above level 0 is brought down to it.
+        if (input1.level() > 0)
+        {
+            Ciphertext<Scheme::CKKS> dropped = input1;
+            while (dropped.level() > 0)
+            {
+                mod_drop_inplace(dropped, options);
+            }
+            return regular_bootstrapping(dropped, galois_key, relin_key,
+                                         swk_dense_to_sparse,
+                                         swk_sparse_to_dense, options);
         }
 
         // Raise modulus
@@ -5390,6 +5416,19 @@ namespace heongpu
                 "generating Bootstrapping parameters!");
         }
 
+        // An input above the SlotToCoeff start level is brought down to it.
+        if (input1.level() > stc_config_.level_start_)
+        {
+            Ciphertext<Scheme::CKKS> dropped = input1;
+            while (dropped.level() > stc_config_.level_start_)
+            {
+                mod_drop_inplace(dropped, options);
+            }
+            return slim_bootstrapping(dropped, galois_key, relin_key,
+                                      swk_dense_to_sparse, swk_sparse_to_dense,
+                                      options);
+        }
+
         int current_decomp_count = context_->Q_size - input1.depth_;
         if (current_decomp_count != (stc_config_.level_start_ + 1))
         {
@@ -5470,6 +5509,18 @@ namespace heongpu
         quick_ckks_encoder_constant_double(constant_1,
                                            encoded_constant_one_.data(), scale);
         HEONGPU_CUDA_CHECK(cudaGetLastError());
+    }
+
+    __host__ void HELogicOperator<Scheme::CKKS>::generate_bootstrapping_params(
+        const CKKSBootstrappingPreset& preset)
+    {
+        if (preset.logic_type == logic_bootstrapping_type::NONE)
+        {
+            throw ParameterError(
+                "The preset is not a bit or gate bootstrapping preset!");
+        }
+        generate_bootstrapping_params(preset.scale, preset.config,
+                                      preset.logic_type);
     }
 
     __host__ void HELogicOperator<Scheme::CKKS>::generate_bootstrapping_params(
@@ -5634,13 +5685,35 @@ namespace heongpu
                 "Gate bootstrapping parameters are not generated!");
         }
 
-        int current_decomp_count = context_->Q_size - input2.depth_;
-        if (current_decomp_count != (stc_config_.level_start_ + 1))
+        // Inputs above the SlotToCoeff start level are brought down to it.
+        int level = stc_config_.level_start_;
+        if (input1.level() > level || input2.level() > level)
         {
-            throw LevelMismatchError(error_message(
-                "Ciphertexts leveled should be at max! The ciphertext has ",
-                current_decomp_count, " moduli, expected ",
-                stc_config_.level_start_ + 1, "."));
+            Ciphertext<Scheme::CKKS> dropped1 = input1;
+            Ciphertext<Scheme::CKKS> dropped2 = input2;
+            while (dropped1.level() > level)
+            {
+                mod_drop_inplace(dropped1, options);
+            }
+            while (dropped2.level() > level)
+            {
+                mod_drop_inplace(dropped2, options);
+            }
+            return gate_bootstrapping(gate_type, dropped1, dropped2, galois_key,
+                                      relin_key, swk_dense_to_sparse,
+                                      swk_sparse_to_dense, options);
+        }
+
+        for (Ciphertext<Scheme::CKKS>* input : {&input1, &input2})
+        {
+            int current_decomp_count = context_->Q_size - input->depth_;
+            if (current_decomp_count != (level + 1))
+            {
+                throw LevelMismatchError(error_message(
+                    "Ciphertexts leveled should be at max! The ciphertext has ",
+                    current_decomp_count, " moduli, expected ", level + 1,
+                    "."));
+            }
         }
 
         Ciphertext<Scheme::CKKS> input_ =
@@ -5665,6 +5738,19 @@ namespace heongpu
             throw std::invalid_argument(
                 "Bootstrapping operation can not be performed before "
                 "generating Bootstrapping parameters!");
+        }
+
+        // An input above the SlotToCoeff start level is brought down to it.
+        if (input1.level() > stc_config_.level_start_)
+        {
+            Ciphertext<Scheme::CKKS> dropped = input1;
+            while (dropped.level() > stc_config_.level_start_)
+            {
+                mod_drop_inplace(dropped, options);
+            }
+            return logic_bootstrapping(dropped, function_index, galois_key,
+                                       relin_key, swk_dense_to_sparse,
+                                       swk_sparse_to_dense, options);
         }
 
         int current_decomp_count = context_->Q_size - input1.depth_;

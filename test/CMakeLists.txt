@@ -63,6 +63,7 @@ set(EXECUTABLES
     shortcuts_testcases test_shortcuts.cpp
     linear_helpers_testcases test_linear_helpers.cpp
     polynomial_testcases test_polynomial.cpp
+    bootstrapping_presets_testcases test_bootstrapping_presets.cpp
     ckks_decrypt_depth_testcases test_ckks_decrypt_depth.cpp
 )
 

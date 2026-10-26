@@ -75,6 +75,17 @@ All logic gate can be applied with CKKS `Gate` Bootstrapping:
 - OR_bootstrapping - NOR_bootstrapping
 - XOR_bootstrapping - XNOR_bootstrapping
 
+### Presets
+
+The examples take their parameters from `heongpu::CKKSBootstrappingPreset::regular()`, `slim()`, `bit()` and `gate()`: the ring size and moduli of the context, the scale, the Hamming weights of the secret keys (h=192 and h=32 for the sparse key) and the bootstrapping configuration. `HEKeyGenerator::bootstrapping_keys` generates the relinearization key, the Galois keys and the switch keys in one call, and the bootstrapping functions bring their input down to the level they start from. `preset.levels()` returns the levels a bootstrapping uses:
+
+| Preset | Input level | Output level | Levels for computation |
+|---|---|---|---|
+| `regular()` | 0 | 9 | 9 |
+| `slim()` | 3 | 12 | 9 |
+| `bit()` | 3 | 11 | 8 |
+| `gate()` | 3 | 10 | 7 |
+
 ### Implementation Details
 
 `CKKS` bootstrapping primarily consists of four main stages: `Mod Raise`, `Coeff to Slot`, `Approximate Modular Reduction`, and `Slot to Coeff`. Among these, `Coeff to Slot` is the most time-consuming part of the bootstrapping. `Coeff to Slot` and `Slot to Coeff` stages primarily involve matrix multiplication, which can be accelerated using the BSGS method. However, HEonGPU employs the most optimized approach described in the [Faster Homomorphic Discrete Fourier Transforms and Improved FHE Bootstrapping](https://eprint.iacr.org/2018/1073.pdf) paper, significantly minimizing both the number of multiplications and rotations. Moreover, HEonGPU does not use sparse packing as described in the [Bootstrapping for Approximate Homomorphic Encryption](https://eprint.iacr.org/2018/153.pdf) paper; instead, it utilizes all slots of CKKS.

@@ -26,6 +26,7 @@
 #include <heongpu/host/ckks/ciphertext.cuh>
 #include <heongpu/host/ckks/evaluationkey.cuh>
 #include <heongpu/host/ckks/chebyshev_interpolation.cuh>
+#include <heongpu/host/ckks/bootstrapping.cuh>
 
 namespace heongpu
 {
@@ -2559,6 +2560,12 @@ namespace heongpu
                   int power, PolyType type, Relinkey<Scheme::CKKS>& relin_key,
                   const ExecutionOptions& options = ExecutionOptions());
 
+        static Switchkey<Scheme::CKKS>*
+        key_or_null(std::optional<Switchkey<Scheme::CKKS>>& key)
+        {
+            return key ? &*key : nullptr;
+        }
+
         // Evaluates the polynomial in the given basis on input1 for
         // evaluate_polynomial and evaluate_chebyshev.
         __host__ Ciphertext<Scheme::CKKS>
@@ -2647,8 +2654,8 @@ namespace heongpu
          * "Efficient Bootstrapping for Approximate Homomorphic Encryption with
          * Non-Sparse Keys" (https://eprint.iacr.org/2020/1203.pdf)
          *
-         * @param input1 Input ciphertext at maximum depth (must have
-         * current_decomp_count == 1).
+         * @param input1 Input ciphertext; one above level 0 is brought down
+         * to it.
          * @param galois_key Galois key for rotation operations.
          * @param relin_key Relinearization key for EvalMod polynomial
          * evaluation.
@@ -2662,7 +2669,6 @@ namespace heongpu
          *
          * @throws std::invalid_argument if bootstrapping context not
          * initialized.
-         * @throws std::logic_error if input ciphertext not at maximum depth.
          */
         __host__ Ciphertext<Scheme::CKKS> regular_bootstrapping(
             Ciphertext<Scheme::CKKS>& input1,
@@ -2675,7 +2681,9 @@ namespace heongpu
         /**
          * @brief Performs slim bootstrapping (supports only real numbers).
          *
-         * @param input1 Input ciphertext at the SlotToCoeff start level.
+         * @param input1 Input ciphertext at the SlotToCoeff start level or
+         * above; one above it is brought down to it. A lower one is reported
+         * with LevelMismatchError.
          * @param galois_key Galois key.
          * @param relin_key Relinearization key.
          * @param swk_dense_to_sparse Optional dense to sparse switch key.
@@ -2690,6 +2698,42 @@ namespace heongpu
             Switchkey<Scheme::CKKS>* swk_dense_to_sparse = nullptr,
             Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
             const ExecutionOptions& options = ExecutionOptions());
+
+        /**
+         * @brief Generates the bootstrapping parameters of preset, which must
+         * be a regular or slim preset.
+         */
+        __host__ void
+        generate_bootstrapping_params(const CKKSBootstrappingPreset& preset);
+
+        /**
+         * @brief Performs regular bootstrapping with the keys of
+         * HEKeyGenerator::bootstrapping_keys; see regular_bootstrapping.
+         */
+        __host__ Ciphertext<Scheme::CKKS> regular_bootstrapping(
+            Ciphertext<Scheme::CKKS>& input1, CKKSBootstrappingKeys& keys,
+            const ExecutionOptions& options = ExecutionOptions())
+        {
+            return regular_bootstrapping(
+                input1, keys.galois_key, keys.relin_key,
+                key_or_null(keys.dense_to_sparse),
+                key_or_null(keys.sparse_to_dense), options);
+        }
+
+        /**
+         * @brief Performs slim bootstrapping with the keys of
+         * HEKeyGenerator::bootstrapping_keys; see slim_bootstrapping.
+         */
+        __host__ Ciphertext<Scheme::CKKS>
+        slim_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
+                           CKKSBootstrappingKeys& keys,
+                           const ExecutionOptions& options = ExecutionOptions())
+        {
+            return slim_bootstrapping(input1, keys.galois_key, keys.relin_key,
+                                      key_or_null(keys.dense_to_sparse),
+                                      key_or_null(keys.sparse_to_dense),
+                                      options);
+        }
 
         using HEOperator<Scheme::CKKS>::coeff_to_slot;
         using HEOperator<Scheme::CKKS>::slot_to_coeff;
@@ -3766,7 +3810,9 @@ namespace heongpu
          * @brief Performs bit-level bootstrapping on a ciphertext.(For more
          * detail please check README.md)
          *
-         * @param input1 Input ciphertext at the SlotToCoeff start level.
+         * @param input1 Input ciphertext at the SlotToCoeff start level or
+         * above; one above it is brought down to it. A lower one is reported
+         * with LevelMismatchError.
          * @param galois_key Galois key for rotations.
          * @param relin_key Relinearization key.
          * @param swk_dense_to_sparse Optional dense to sparse switch key.
@@ -3973,6 +4019,124 @@ namespace heongpu
             return gate_bootstrapping(
                 logic_gate::XNOR, input1, input2, galois_key, relin_key,
                 swk_dense_to_sparse, swk_sparse_to_dense, options);
+        }
+
+        /**
+         * @brief Generates the bootstrapping parameters of preset, which must
+         * be a bit or gate preset.
+         */
+        __host__ void
+        generate_bootstrapping_params(const CKKSBootstrappingPreset& preset);
+
+        /**
+         * @brief Performs bit-level bootstrapping with the keys of
+         * HEKeyGenerator::bootstrapping_keys; see bit_bootstrapping.
+         */
+        __host__ Ciphertext<Scheme::CKKS>
+        bit_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
+                          CKKSBootstrappingKeys& keys,
+                          const ExecutionOptions& options = ExecutionOptions())
+        {
+            return bit_bootstrapping(input1, keys.galois_key, keys.relin_key,
+                                     key_or_null(keys.dense_to_sparse),
+                                     key_or_null(keys.sparse_to_dense),
+                                     options);
+        }
+
+        /**
+         * @brief Bootstrapped logical AND gate with the keys of
+         * HEKeyGenerator::bootstrapping_keys; see AND_bootstrapping.
+         */
+        __host__ Ciphertext<Scheme::CKKS>
+        AND_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
+                          Ciphertext<Scheme::CKKS>& input2,
+                          CKKSBootstrappingKeys& keys,
+                          const ExecutionOptions& options = ExecutionOptions())
+        {
+            return AND_bootstrapping(
+                input1, input2, keys.galois_key, keys.relin_key,
+                key_or_null(keys.dense_to_sparse),
+                key_or_null(keys.sparse_to_dense), options);
+        }
+
+        /**
+         * @brief Bootstrapped logical OR gate with the keys of
+         * HEKeyGenerator::bootstrapping_keys; see OR_bootstrapping.
+         */
+        __host__ Ciphertext<Scheme::CKKS>
+        OR_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
+                         Ciphertext<Scheme::CKKS>& input2,
+                         CKKSBootstrappingKeys& keys,
+                         const ExecutionOptions& options = ExecutionOptions())
+        {
+            return OR_bootstrapping(input1, input2, keys.galois_key,
+                                    keys.relin_key,
+                                    key_or_null(keys.dense_to_sparse),
+                                    key_or_null(keys.sparse_to_dense), options);
+        }
+
+        /**
+         * @brief Bootstrapped logical XOR gate with the keys of
+         * HEKeyGenerator::bootstrapping_keys; see XOR_bootstrapping.
+         */
+        __host__ Ciphertext<Scheme::CKKS>
+        XOR_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
+                          Ciphertext<Scheme::CKKS>& input2,
+                          CKKSBootstrappingKeys& keys,
+                          const ExecutionOptions& options = ExecutionOptions())
+        {
+            return XOR_bootstrapping(
+                input1, input2, keys.galois_key, keys.relin_key,
+                key_or_null(keys.dense_to_sparse),
+                key_or_null(keys.sparse_to_dense), options);
+        }
+
+        /**
+         * @brief Bootstrapped logical NAND gate with the keys of
+         * HEKeyGenerator::bootstrapping_keys; see NAND_bootstrapping.
+         */
+        __host__ Ciphertext<Scheme::CKKS>
+        NAND_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
+                           Ciphertext<Scheme::CKKS>& input2,
+                           CKKSBootstrappingKeys& keys,
+                           const ExecutionOptions& options = ExecutionOptions())
+        {
+            return NAND_bootstrapping(
+                input1, input2, keys.galois_key, keys.relin_key,
+                key_or_null(keys.dense_to_sparse),
+                key_or_null(keys.sparse_to_dense), options);
+        }
+
+        /**
+         * @brief Bootstrapped logical NOR gate with the keys of
+         * HEKeyGenerator::bootstrapping_keys; see NOR_bootstrapping.
+         */
+        __host__ Ciphertext<Scheme::CKKS>
+        NOR_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
+                          Ciphertext<Scheme::CKKS>& input2,
+                          CKKSBootstrappingKeys& keys,
+                          const ExecutionOptions& options = ExecutionOptions())
+        {
+            return NOR_bootstrapping(
+                input1, input2, keys.galois_key, keys.relin_key,
+                key_or_null(keys.dense_to_sparse),
+                key_or_null(keys.sparse_to_dense), options);
+        }
+
+        /**
+         * @brief Bootstrapped logical XNOR gate with the keys of
+         * HEKeyGenerator::bootstrapping_keys; see XNOR_bootstrapping.
+         */
+        __host__ Ciphertext<Scheme::CKKS>
+        XNOR_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
+                           Ciphertext<Scheme::CKKS>& input2,
+                           CKKSBootstrappingKeys& keys,
+                           const ExecutionOptions& options = ExecutionOptions())
+        {
+            return XNOR_bootstrapping(
+                input1, input2, keys.galois_key, keys.relin_key,
+                key_or_null(keys.dense_to_sparse),
+                key_or_null(keys.sparse_to_dense), options);
         }
 
         using HEOperator<Scheme::CKKS>::apply_galois;
