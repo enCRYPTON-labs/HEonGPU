@@ -297,7 +297,7 @@ On Ubuntu: `sudo apt install libgmp-dev libntl-dev libssl-dev zlib1g-dev`.
 - [RMM](https://github.com/rapidsai/rmm)
 - [GoogleTest](https://github.com/google/googletest)
 
-HEonGPU builds GPU-NTT, GPU-FFT and RNGonGPU from its git submodules, and uses an installed RMM and GoogleTest when it finds them, or downloads them otherwise.
+HEonGPU builds GPU-NTT, GPU-FFT and RNGonGPU from its git submodules. It downloads RMM unless `HEonGPU_USE_SYSTEM_RMM` is set, and GoogleTest unless an installed one is found.
 Default CUDA architectures: `80;86;89;90`. Override with `-D CMAKE_CUDA_ARCHITECTURES=<...>` if needed.
 
 ### Build & Install
@@ -326,7 +326,7 @@ $ sudo cmake --install build
 ```
 GPU-NTT, GPU-FFT and RNGonGPU are git submodules. If the repository was cloned without `--recursive`, fetch them with `git submodule update --init --recursive`.
 
-Configuring downloads RMM, and GoogleTest when the tests are enabled, unless they are already installed. To build without network access, install RMM 26.08 (and GoogleTest for the tests) and pass their location with `-D CMAKE_PREFIX_PATH=<dir>`; the installed versions are then used instead.
+Configuring downloads RMM, and GoogleTest when the tests are enabled and no installed GoogleTest is found. To build without network access, install RMM 26.08 (and GoogleTest for the tests), pass their location with `-D CMAKE_PREFIX_PATH=<dir>` and set `-D HEonGPU_USE_SYSTEM_RMM=ON`.
 
 When HEonGPU builds RMM from source, installing HEonGPU also installs this RMM (with CCCL, rapids_logger and nvtx3), because the installed HEonGPU needs it. If another RMM version is installed at the same prefix, configuring warns that it would be replaced. Two options control this:
 - `-D HEonGPU_USE_SYSTEM_RMM=ON`: use an installed RMM 26.08 and fail if there is none, never download RMM.

@@ -46,7 +46,7 @@ The library uses a standard CMake build process. The most critical configuration
 
     Replace ``XX`` with the appropriate value from the table below. For example, for an NVIDIA RTX 4090 (Ada Lovelace architecture), you would use ``89``.
 
-    Configuring downloads RMM, and GoogleTest when the tests are enabled, unless they are already installed. To build without network access, install RMM 26.08 (and GoogleTest for the tests) and pass their location with ``-D CMAKE_PREFIX_PATH=<dir>``; the installed versions are then used instead.
+    Configuring downloads RMM, and GoogleTest when the tests are enabled and no installed GoogleTest is found. To build without network access, install RMM 26.08 (and GoogleTest for the tests), pass their location with ``-D CMAKE_PREFIX_PATH=<dir>`` and set ``-D HEonGPU_USE_SYSTEM_RMM=ON``.
 
     When HEonGPU builds RMM from source, installing HEonGPU also installs this RMM, because the installed HEonGPU needs it. If another RMM version is installed at the same prefix, configuring warns that it would be replaced. ``-D HEonGPU_USE_SYSTEM_RMM=ON`` uses an installed RMM 26.08 and never downloads RMM; ``-D HEonGPU_INSTALL_RMM=OFF`` does not install the RMM built from source, so projects that use the installed HEonGPU have to provide RMM 26.08 themselves.
 

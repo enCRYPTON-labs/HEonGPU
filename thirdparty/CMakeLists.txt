@@ -35,8 +35,10 @@ if(HEonGPU_USE_SYSTEM_RMM)
             "HEonGPU_USE_SYSTEM_RMM=OFF to download and build RMM.")
     endif()
 else()
-    # An installed RMM 26.08 is used when find_package finds one; otherwise
-    # RMM is downloaded and built.
+    # RMM is downloaded and built. It is not looked up first: an RMM that an
+    # earlier HEonGPU install put into the install prefix would be found when
+    # reconfiguring, and HEonGPU would then silently stop building and
+    # installing its own. Use HEonGPU_USE_SYSTEM_RMM for an installed RMM.
     set(_heongpu_rmm_options "")
     if(NOT HEonGPU_INSTALL_RMM)
         # Also leaves out the install rules of RMM and of its dependencies.
@@ -48,7 +50,6 @@ else()
         GIT_TAG        v26.08.00
         SOURCE_SUBDIR  cpp
         ${_heongpu_rmm_options}
-        FIND_PACKAGE_ARGS 26.08
     )
 
     set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -66,6 +67,15 @@ else()
             unset(${_cccl_pkg}_DIR CACHE)
         endforeach()
     endif()
+
+    # RMM looks up its other dependencies with CPM, which prefers installed
+    # packages. When reconfiguring, it would find the copies that an earlier
+    # HEonGPU install put into the install prefix, and HEonGPU would stop
+    # building and installing its own. Build them from source as well.
+    foreach(_rmm_pkg IN ITEMS rapids_logger spdlog nvtx3)
+        set(CPM_DOWNLOAD_${_rmm_pkg} ON)
+        unset(${_rmm_pkg}_DIR CACHE)
+    endforeach()
 
     FetchContent_MakeAvailable(rmm)
 endif()
