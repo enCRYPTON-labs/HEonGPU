@@ -328,6 +328,10 @@ GPU-NTT, GPU-FFT and RNGonGPU are git submodules. If the repository was cloned w
 
 Configuring downloads RMM, and GoogleTest when the tests are enabled, unless they are already installed. To build without network access, install RMM 26.08 (and GoogleTest for the tests) and pass their location with `-D CMAKE_PREFIX_PATH=<dir>`; the installed versions are then used instead.
 
+When HEonGPU builds RMM from source, installing HEonGPU also installs this RMM (with CCCL, rapids_logger and nvtx3), because the installed HEonGPU needs it. If another RMM version is installed at the same prefix, configuring warns that it would be replaced. Two options control this:
+- `-D HEonGPU_USE_SYSTEM_RMM=ON`: use an installed RMM 26.08 and fail if there is none, never download RMM.
+- `-D HEonGPU_INSTALL_RMM=OFF`: do not install the RMM built from source. Projects that use the installed HEonGPU then need to provide RMM 26.08 themselves.
+
 Available build types: `Debug`, `Release` (default), `RelWithDebInfo`, `MinSizeRel`. Override with `-D CMAKE_BUILD_TYPE=<type>`. These propagate to all bundled libraries (GPU-FFT, GPU-NTT, RNGonGPU).
 
 The default install prefix is `/usr/local`. To install somewhere else, for example without `sudo`, set it when configuring (`-D CMAKE_INSTALL_PREFIX=<dir>`) or when installing (`cmake --install build --prefix <dir>`), and pass the same directory to your project with `-D CMAKE_PREFIX_PATH=<dir>`. The installed package can be moved to another directory afterwards.
