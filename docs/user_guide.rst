@@ -17,6 +17,20 @@ The HEonGPU API is designed to be stable, intuitive, and to abstract away the un
 * ``HEArithmeticOperator``: The workhorse of the library. This class performs all homomorphic evaluations (e.g., addition, multiplication, relinearization, rotation) on ciphertexts. All operations within this class are executed entirely on the GPU for maximum performance.
 * ``ExecutionOptions``: A utility struct that gives the user fine-grained control over data locality (i.e., whether data resides on the host CPU or the device GPU) during and after an operation.
 
+Most functions write their result into an object passed by the caller, which can be reused. The main ones also have versions that return the result, which give the same results:
+
+.. code-block:: cpp
+
+    auto secret_key = keygen.secret_key();
+    auto public_key = keygen.public_key(secret_key);
+    auto plaintext = encoder.encode(message, scale);
+    auto x = encryptor.encrypt(plaintext);
+    auto sum = operators.add(x, x);
+    auto decrypted = decryptor.decrypt(sum);
+    auto values = encoder.decode(decrypted);
+
+The inputs are taken by non-const reference, so they have to be named objects; the result of one call cannot be passed directly to the next.
+
 Parameter Selection Guide
 -------------------------
 
