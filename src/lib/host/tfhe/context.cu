@@ -19,6 +19,8 @@ namespace heongpu
         // Memory pool initialization
         MemoryPool::instance().initialize(pool_config);
         MemoryPool::instance().use_memory_pool(pool_config.use_memory_pool);
+        MemoryPool::instance().set_as_rmm_default(
+            pool_config.set_as_rmm_default);
         cudaDeviceSynchronize();
 
         prime_ = Modulus64(1152921504606877697ULL);

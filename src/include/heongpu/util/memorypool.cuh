@@ -53,6 +53,13 @@ namespace heongpu
 
         bool use_memory_pool = true;
 
+        // Also make HEonGPU's device memory resource the process-wide RMM
+        // default (rmm::mr::set_current_device_resource), so that the other
+        // RMM allocations of the process use HEonGPU's pool. HEonGPU does not
+        // need this itself. The previous default is restored when a later
+        // context turns it off and at exit.
+        bool set_as_rmm_default = false;
+
         static MemoryPoolConfig Defaults();
     };
 
@@ -73,6 +80,8 @@ namespace heongpu
         void initialize(const MemoryPoolConfig& config);
         // for device
         void use_memory_pool(bool use);
+        // See MemoryPoolConfig::set_as_rmm_default.
+        void set_as_rmm_default(bool enable);
 
         // for device
         void* allocate(size_t size, cudaStream_t stream = cudaStreamDefault);
@@ -101,6 +110,7 @@ namespace heongpu
 
         void clean_pool();
         void ensure_base_resources();
+        rmm::device_async_resource_ref device_resource();
         size_t get_host_avaliable_memory() const;
         size_t get_decive_avaliable_memory() const;
         size_t roundup_256(size_t size) const;
@@ -119,6 +129,11 @@ namespace heongpu
         // returned to them even after use_memory_pool(false).
         static std::unordered_set<void*> pooled_device_allocations_;
         static std::unordered_set<void*> pooled_host_allocations_;
+        // The RMM default that set_as_rmm_default(true) replaced, restored by
+        // set_as_rmm_default(false) and at exit.
+        static std::optional<
+            cuda::mr::any_resource<cuda::mr::device_accessible>>
+            previous_rmm_default_;
         static std::mutex mutex_;
     };
 

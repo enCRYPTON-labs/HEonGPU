@@ -24,6 +24,8 @@ namespace heongpu
     bool MemoryPool::use_pool_ = true;
     std::unordered_set<void*> MemoryPool::pooled_device_allocations_;
     std::unordered_set<void*> MemoryPool::pooled_host_allocations_;
+    std::optional<cuda::mr::any_resource<cuda::mr::device_accessible>>
+        MemoryPool::previous_rmm_default_;
     std::mutex MemoryPool::mutex_;
 
     MemoryPoolConfig MemoryPoolConfig::Defaults()
@@ -268,26 +270,43 @@ namespace heongpu
     {
         std::lock_guard<std::mutex> guard(mutex_);
         use_pool_ = use;
-        if (use)
+        const rmm::device_async_resource_ref resource = device_resource();
+        if (previous_rmm_default_)
         {
-            if (device_stats_adaptor_)
+            // Keep the RMM default on the resource HEonGPU now uses.
+            rmm::mr::set_current_device_resource(resource);
+        }
+    }
+
+    void MemoryPool::set_as_rmm_default(bool enable)
+    {
+        std::lock_guard<std::mutex> guard(mutex_);
+        if (enable)
+        {
+            auto previous =
+                rmm::mr::set_current_device_resource(device_resource());
+            // Keep the default from before HEonGPU first replaced it.
+            if (!previous_rmm_default_)
             {
-                rmm::mr::set_current_device_resource(
-                    rmm::device_async_resource_ref{*device_stats_adaptor_});
-            }
-            else
-            {
-                ensure_base_resources();
-                rmm::mr::set_current_device_resource(
-                    rmm::device_async_resource_ref{*device_base_});
+                previous_rmm_default_ = std::move(previous);
             }
         }
-        else
+        else if (previous_rmm_default_)
         {
-            ensure_base_resources();
             rmm::mr::set_current_device_resource(
-                rmm::device_async_resource_ref{*device_base_});
+                std::move(*previous_rmm_default_));
+            previous_rmm_default_.reset();
         }
+    }
+
+    rmm::device_async_resource_ref MemoryPool::device_resource()
+    {
+        if (use_pool_ && device_stats_adaptor_)
+        {
+            return rmm::device_async_resource_ref{*device_stats_adaptor_};
+        }
+        ensure_base_resources();
+        return rmm::device_async_resource_ref{*device_base_};
     }
 
     void* MemoryPool::allocate(size_t size, cudaStream_t stream)
@@ -322,12 +341,7 @@ namespace heongpu
     rmm::device_async_resource_ref MemoryPool::get_device_resource() const
     {
         std::lock_guard<std::mutex> guard(mutex_);
-        if (use_pool_ && device_stats_adaptor_)
-        {
-            return rmm::device_async_resource_ref{*device_stats_adaptor_};
-        }
-        const_cast<MemoryPool*>(this)->ensure_base_resources();
-        return rmm::device_async_resource_ref{*device_base_};
+        return const_cast<MemoryPool*>(this)->device_resource();
     }
 
     MemoryPool::HostStatsAdaptor* MemoryPool::get_host_resource() const
@@ -464,7 +478,14 @@ namespace heongpu
         if (initialized_ || host_base_ || device_base_ || host_pool_ ||
             device_pool_)
         {
-            rmm::mr::reset_current_device_resource();
+            // Restore the RMM default before destroying the resources it may
+            // refer to; a default set by the application stays as it is.
+            if (previous_rmm_default_)
+            {
+                rmm::mr::set_current_device_resource(
+                    std::move(*previous_rmm_default_));
+                previous_rmm_default_.reset();
+            }
             host_stats_adaptor_.reset();
             host_pool_.reset();
             host_base_.reset();

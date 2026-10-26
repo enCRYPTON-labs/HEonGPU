@@ -491,6 +491,8 @@ context->generate(pool_config);
 > generated context decides whether new allocations use the pool, and buffers
 > are always returned to the resource they were allocated from.
 
+HEonGPU allocates from its own memory resource and does not change the process-wide RMM default, so other code in the process that uses RMM (for example RAPIDS libraries) keeps its own allocations. Set `pool_config.set_as_rmm_default = true` to make HEonGPU's pool the RMM default as well; the previous default is restored when a later context turns it off, and at exit.
+
 
 ## Storage Management
 
