@@ -28,8 +28,8 @@ namespace
       protected:
         void SetUp() override
         {
-            // One P prime selects KEYSWITCHING_METHOD_I, two select
-            // KEYSWITCHING_METHOD_II.
+            // One P prime gives key switching digits of one prime, two give
+            // digits of two primes.
             context =
                 heongpu::GenHEContext<scheme>(heongpu::sec_level_type::none);
             context->set_poly_modulus_degree(degree);

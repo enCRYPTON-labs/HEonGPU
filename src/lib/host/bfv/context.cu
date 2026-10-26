@@ -66,10 +66,9 @@ namespace heongpu
                     "log_P_bases_bit_sizes cannot be empty!");
             }
 
-            keyswitching_type_ =
-                (log_P_bases_bit_sizes.size() == 1)
-                    ? keyswitching_type::KEYSWITCHING_METHOD_I
-                    : keyswitching_type::KEYSWITCHING_METHOD_II;
+            // Digits of up to two primes; with one P prime they are single
+            // primes, which earlier versions called KEYSWITCHING_METHOD_I.
+            keyswitching_type_ = keyswitching_type::KEYSWITCHING_METHOD_II;
 
             if (!coefficient_validator(log_Q_bases_bit_sizes,
                                        log_P_bases_bit_sizes))
@@ -177,10 +176,9 @@ namespace heongpu
                     "log_P_bases_bit_sizes cannot be empty!");
             }
 
-            keyswitching_type_ =
-                (log_P_bases_bit_sizes.size() == 1)
-                    ? keyswitching_type::KEYSWITCHING_METHOD_I
-                    : keyswitching_type::KEYSWITCHING_METHOD_II;
+            // Digits of up to two primes; with one P prime they are single
+            // primes, which earlier versions called KEYSWITCHING_METHOD_I.
+            keyswitching_type_ = keyswitching_type::KEYSWITCHING_METHOD_II;
 
             if (!coefficient_validator(log_Q_bases_bit_sizes,
                                        log_P_bases_bit_sizes))
@@ -282,10 +280,9 @@ namespace heongpu
                     "P_modulus_size cannot be lower than 1!");
             }
 
-            keyswitching_type_ =
-                (P_modulus_size == 1)
-                    ? keyswitching_type::KEYSWITCHING_METHOD_I
-                    : keyswitching_type::KEYSWITCHING_METHOD_II;
+            // Digits of up to two primes; with one P prime they are single
+            // primes, which earlier versions called KEYSWITCHING_METHOD_I.
+            keyswitching_type_ = keyswitching_type::KEYSWITCHING_METHOD_II;
 
             total_coeff_bit_count = 0;
             switch (sec_level_)
@@ -876,6 +873,9 @@ namespace heongpu
             is.read((char*) &sec_level_, sizeof(sec_level_));
 
             is.read((char*) &keyswitching_type_, sizeof(keyswitching_type_));
+            // KEYSWITCHING_METHOD_I of earlier versions is method II with
+            // single prime digits.
+            keyswitching_type_ = keyswitching_type::KEYSWITCHING_METHOD_II;
 
             is.read((char*) &n, sizeof(n));
 

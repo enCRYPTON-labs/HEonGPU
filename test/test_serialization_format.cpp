@@ -327,3 +327,54 @@ TYPED_TEST(SerializationFormat, Loaded_Keys_Give_The_Same_Results)
                 { a.operators.keyswitch(ciphertext, output, key); },
                 a.switch_key);
 }
+
+// Earlier versions wrote KEYSWITCHING_METHOD_I for contexts with one P prime
+// and for their keys; such data loads and gives the same results.
+TYPED_TEST(SerializationFormat, Method_I_Data_Of_Earlier_Versions_Loads)
+{
+    constexpr auto S = TestFixture::S;
+    using Ciphertext = heongpu::Ciphertext<S>;
+    auto& a = this->a;
+    auto ciphertext = a.encrypt();
+    constexpr char method_I = 1, method_II = 2;
+
+    std::string context_binary = save(*a.context);
+    ASSERT_EQ(context_binary[header_size + 2], method_II);
+    context_binary[header_size + 2] = method_I;
+    auto context = heongpu::GenHEContext<S>();
+    load(*context, context_binary);
+    EXPECT_EQ(context->to_string(), a.context->to_string());
+
+    auto data = [](Ciphertext& c)
+    {
+        std::vector<Data64> values;
+        c.get_data(values);
+        return values;
+    };
+    auto expect_same = [&](auto operation, auto& key)
+    {
+        std::string binary = save(key);
+        ASSERT_EQ(binary[header_size + 1], method_II);
+        binary[header_size + 1] = method_I;
+        std::decay_t<decltype(key)> loaded;
+        load(loaded, binary);
+        Ciphertext expected(a.context), result(a.context);
+        operation(key, expected);
+        operation(loaded, result);
+        EXPECT_EQ(data(result), data(expected));
+    };
+
+    expect_same(
+        [&](heongpu::Relinkey<S>& key, Ciphertext& output)
+        {
+            a.operators.multiply(ciphertext, ciphertext, output);
+            a.operators.relinearize_inplace(output, key);
+        },
+        a.relin_key);
+    expect_same([&](heongpu::Galoiskey<S>& key, Ciphertext& output)
+                { a.operators.rotate_rows(ciphertext, output, key, 1); },
+                a.galois_key);
+    expect_same([&](heongpu::Switchkey<S>& key, Ciphertext& output)
+                { a.operators.keyswitch(ciphertext, output, key); },
+                a.switch_key);
+}

@@ -174,6 +174,9 @@ namespace heongpu
             }
 
             is.read((char*) &key_type, sizeof(key_type));
+            // Keys of KEYSWITCHING_METHOD_I, from earlier versions, have the
+            // layout of method II with single prime digits.
+            key_type = keyswitching_type::KEYSWITCHING_METHOD_II;
 
             is.read((char*) &ring_size, sizeof(ring_size));
 
@@ -726,6 +729,9 @@ namespace heongpu
             }
 
             is.read((char*) &key_type, sizeof(key_type));
+            // Keys of KEYSWITCHING_METHOD_I, from earlier versions, have the
+            // layout of method II with single prime digits.
+            key_type = keyswitching_type::KEYSWITCHING_METHOD_II;
 
             is.read((char*) &ring_size, sizeof(ring_size));
 
@@ -984,6 +990,9 @@ namespace heongpu
             is.read((char*) &scheme_, sizeof(scheme_));
 
             is.read((char*) &key_type, sizeof(key_type));
+            // Keys of KEYSWITCHING_METHOD_I, from earlier versions, have the
+            // layout of method II with single prime digits.
+            key_type = keyswitching_type::KEYSWITCHING_METHOD_II;
 
             is.read((char*) &ring_size, sizeof(ring_size));
 
