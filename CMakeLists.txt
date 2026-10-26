@@ -5,7 +5,7 @@
 # Developer: Alişah Özcan
 
 cmake_minimum_required(VERSION 4.0 FATAL_ERROR)
-project(HEonGPU VERSION 1.2.1 LANGUAGES C CXX CUDA ASM)
+project(HEonGPU VERSION 1.3.0 LANGUAGES C CXX CUDA ASM)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(STATUS "Setting build type to 'Release' as none was specified.")
