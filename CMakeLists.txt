@@ -7,6 +7,16 @@
 cmake_minimum_required(VERSION 4.0 FATAL_ERROR)
 project(HEonGPU VERSION 1.3.0 LANGUAGES C CXX CUDA ASM)
 
+# The CCCL version that RMM 26.08 needs makes older nvcc versions crash
+# (tested: 12.4 and 12.6 fail, 12.8 and 13.x work).
+if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 12.8)
+    message(FATAL_ERROR
+        "HEonGPU needs CUDA 12.8 or newer, found CUDA "
+        "${CMAKE_CUDA_COMPILER_VERSION} (${CMAKE_CUDA_COMPILER}). Select a "
+        "newer CUDA Toolkit, for example with -D CMAKE_CUDA_COMPILER=<path to "
+        "nvcc>.")
+endif()
+
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(STATUS "Setting build type to 'Release' as none was specified.")
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)

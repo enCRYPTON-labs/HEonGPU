@@ -284,7 +284,7 @@ HEonGPU now includes support for **Multiparty Computation (MPC)** protocols, pro
 - [GCC](https://gcc.gnu.org/) with C++20 support (tested with GCC 11.4)
 - [GMP](https://gmplib.org/)
 - [NTL](https://libntl.org/)
-- [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) >=12.2
+- [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) >=12.8
 - [OpenSSL](https://www.openssl.org/) >= 1.1.1
 - [ZLIB](https://zlib.net/)
 
