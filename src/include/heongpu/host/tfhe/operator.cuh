@@ -65,7 +65,9 @@ namespace heongpu
 
             if (!(input1.ciphertext_generated_ && input2.ciphertext_generated_))
             {
-                throw std::runtime_error("One or the inputs are generated!");
+                throw std::runtime_error(
+                    "One or both inputs are not generated! Encrypt both "
+                    "ciphertexts before using them.");
             }
 
             input_storage_manager(
@@ -163,7 +165,9 @@ namespace heongpu
 
             if (!(input1.ciphertext_generated_ && input2.ciphertext_generated_))
             {
-                throw std::runtime_error("One or the inputs are generated!");
+                throw std::runtime_error(
+                    "One or both inputs are not generated! Encrypt both "
+                    "ciphertexts before using them.");
             }
 
             input_storage_manager(
@@ -261,7 +265,9 @@ namespace heongpu
 
             if (!(input1.ciphertext_generated_ && input2.ciphertext_generated_))
             {
-                throw std::runtime_error("One or the inputs are generated!");
+                throw std::runtime_error(
+                    "One or both inputs are not generated! Encrypt both "
+                    "ciphertexts before using them.");
             }
 
             input_storage_manager(
@@ -359,7 +365,9 @@ namespace heongpu
 
             if (!(input1.ciphertext_generated_ && input2.ciphertext_generated_))
             {
-                throw std::runtime_error("One or the inputs are generated!");
+                throw std::runtime_error(
+                    "One or both inputs are not generated! Encrypt both "
+                    "ciphertexts before using them.");
             }
 
             input_storage_manager(
@@ -457,7 +465,9 @@ namespace heongpu
 
             if (!(input1.ciphertext_generated_ && input2.ciphertext_generated_))
             {
-                throw std::runtime_error("One or the inputs are generated!");
+                throw std::runtime_error(
+                    "One or both inputs are not generated! Encrypt both "
+                    "ciphertexts before using them.");
             }
 
             input_storage_manager(
@@ -555,7 +565,9 @@ namespace heongpu
 
             if (!(input1.ciphertext_generated_ && input2.ciphertext_generated_))
             {
-                throw std::runtime_error("One or the inputs are generated!");
+                throw std::runtime_error(
+                    "One or both inputs are not generated! Encrypt both "
+                    "ciphertexts before using them.");
             }
 
             input_storage_manager(
@@ -644,7 +656,9 @@ namespace heongpu
         {
             if (!(input1.ciphertext_generated_))
             {
-                throw std::runtime_error("One or the inputs are generated!");
+                throw std::runtime_error(
+                    "One or both inputs are not generated! Encrypt both "
+                    "ciphertexts before using them.");
             }
 
             input_storage_manager(
@@ -701,7 +715,9 @@ namespace heongpu
 
             if (!(input1.ciphertext_generated_ && input2.ciphertext_generated_))
             {
-                throw std::runtime_error("One or the inputs are generated!");
+                throw std::runtime_error(
+                    "One or both inputs are not generated! Encrypt both "
+                    "ciphertexts before using them.");
             }
 
             input_storage_manager(

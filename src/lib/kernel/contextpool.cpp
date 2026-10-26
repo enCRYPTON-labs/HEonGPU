@@ -92,7 +92,10 @@ namespace heongpu
                 }
                 else
                 {
-                    throw std::invalid_argument("Invalid Key Switching Type");
+                    throw ParameterError(error_message(
+                        "Invalid Key Switching Type ", static_cast<int>(method),
+                        "! The key switching context pool needs "
+                        "KEYSWITCHING_METHOD_II (2)."));
                 }
                 break;
             case 2: // CKKS
@@ -133,7 +136,10 @@ namespace heongpu
                 }
                 else
                 {
-                    throw std::invalid_argument("Invalid Key Switching Type");
+                    throw ParameterError(error_message(
+                        "Invalid Key Switching Type ", static_cast<int>(method),
+                        "! The key switching context pool needs "
+                        "KEYSWITCHING_METHOD_II (2)."));
                 }
 
                 break;

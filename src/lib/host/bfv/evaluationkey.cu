@@ -12,7 +12,10 @@ namespace heongpu
     {
         if (!context || !context->context_generated_)
         {
-            throw std::invalid_argument("HEContext is not generated!");
+            throw StateError(
+                "HEContext is not generated! Create the "
+                "context with GenHEContext and call generate() before "
+                "using it.");
         }
 
         context_ = context;
@@ -149,7 +152,10 @@ namespace heongpu
 
             if (scheme_ != scheme_type::bfv)
             {
-                throw std::runtime_error("Invalid scheme binary!");
+                throw SerializationError(
+                    error_message("Invalid scheme binary! Expected BFV data, "
+                                  "found scheme id ",
+                                  static_cast<int>(scheme_), "."));
             }
 
             is.read((char*) &key_type, sizeof(key_type));
@@ -293,7 +299,10 @@ namespace heongpu
     {
         if (!context || !context->context_generated_)
         {
-            throw std::invalid_argument("HEContext is not generated!");
+            throw StateError(
+                "HEContext is not generated! Create the "
+                "context with GenHEContext and call generate() before "
+                "using it.");
         }
 
         context_ = context;
@@ -346,7 +355,11 @@ namespace heongpu
             }
             break;
             default:
-                throw std::invalid_argument("Invalid Key Switching Type");
+                throw ParameterError(
+                    error_message("Invalid Key Switching Type ",
+                                  static_cast<int>(context->keyswitching_type_),
+                                  "! Expected KEYSWITCHING_METHOD_I (1) or "
+                                  "KEYSWITCHING_METHOD_II (2)."));
                 break;
         }
     }
@@ -356,7 +369,10 @@ namespace heongpu
     {
         if (!context || !context->context_generated_)
         {
-            throw std::invalid_argument("HEContext is not generated!");
+            throw StateError(
+                "HEContext is not generated! Create the "
+                "context with GenHEContext and call generate() before "
+                "using it.");
         }
 
         context_ = context;
@@ -403,7 +419,11 @@ namespace heongpu
             }
             break;
             default:
-                throw std::invalid_argument("Invalid Key Switching Type");
+                throw ParameterError(
+                    error_message("Invalid Key Switching Type ",
+                                  static_cast<int>(context->keyswitching_type_),
+                                  "! Expected KEYSWITCHING_METHOD_I (1) or "
+                                  "KEYSWITCHING_METHOD_II (2)."));
                 break;
         }
     }
@@ -414,7 +434,10 @@ namespace heongpu
     {
         if (!context || !context->context_generated_)
         {
-            throw std::invalid_argument("HEContext is not generated!");
+            throw StateError(
+                "HEContext is not generated! Create the "
+                "context with GenHEContext and call generate() before "
+                "using it.");
         }
 
         context_ = context;
@@ -449,7 +472,11 @@ namespace heongpu
             }
             break;
             default:
-                throw std::invalid_argument("Invalid Key Switching Type");
+                throw ParameterError(
+                    error_message("Invalid Key Switching Type ",
+                                  static_cast<int>(context->keyswitching_type_),
+                                  "! Expected KEYSWITCHING_METHOD_I (1) or "
+                                  "KEYSWITCHING_METHOD_II (2)."));
                 break;
         }
     }
@@ -649,7 +676,10 @@ namespace heongpu
 
             if (scheme_ != scheme_type::bfv)
             {
-                throw std::runtime_error("Invalid scheme binary!");
+                throw SerializationError(
+                    error_message("Invalid scheme binary! Expected BFV data, "
+                                  "found scheme id ",
+                                  static_cast<int>(scheme_), "."));
             }
 
             is.read((char*) &key_type, sizeof(key_type));
@@ -757,7 +787,10 @@ namespace heongpu
     {
         if (!context || !context->context_generated_)
         {
-            throw std::invalid_argument("HEContext is not generated!");
+            throw StateError(
+                "HEContext is not generated! Create the "
+                "context with GenHEContext and call generate() before "
+                "using it.");
         }
 
         context_ = context;
@@ -780,7 +813,11 @@ namespace heongpu
             }
             break;
             default:
-                throw std::invalid_argument("Invalid Key Switching Type");
+                throw ParameterError(
+                    error_message("Invalid Key Switching Type ",
+                                  static_cast<int>(context->keyswitching_type_),
+                                  "! Expected KEYSWITCHING_METHOD_I (1) or "
+                                  "KEYSWITCHING_METHOD_II (2)."));
                 break;
         }
     }

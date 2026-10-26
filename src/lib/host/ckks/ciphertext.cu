@@ -18,7 +18,10 @@ namespace heongpu
     {
         if (!context || !context->context_generated_)
         {
-            throw std::invalid_argument("HEContext is not generated!");
+            throw StateError(
+                "HEContext is not generated! Create the "
+                "context with GenHEContext and call generate() before "
+                "using it.");
         }
 
         scheme_ = context->scheme_;
@@ -282,13 +285,23 @@ namespace heongpu
     {
         if (!ciphertext_generated_)
         {
-            throw std::logic_error("Ciphertext is not generated!");
+            throw StateError("Ciphertext is not generated! Encrypt into it "
+                             "or load it before using it.");
         }
         const size_t expected_size = checked_memory_size();
-        if (!context || !context->context_generated_ ||
-            ring_size_ != context->n || coeff_modulus_count_ != context->Q_size)
+        if (!context || !context->context_generated_)
         {
-            throw std::invalid_argument("Ciphertext context mismatch!");
+            throw StateError("HEContext is not generated! Create the context "
+                             "with GenHEContext and call generate() before "
+                             "using it.");
+        }
+        if (ring_size_ != context->n || coeff_modulus_count_ != context->Q_size)
+        {
+            throw ContextMismatchError(error_message(
+                "Ciphertext context mismatch! The ciphertext has ring size ",
+                ring_size_, " and ", coeff_modulus_count_,
+                " moduli, the context has ring size ", context->n, " and ",
+                context->Q_size, " moduli."));
         }
         const size_t actual_size = storage_type_ == storage_type::DEVICE
                                        ? device_locations_.size()
@@ -350,7 +363,12 @@ namespace heongpu
             (coeff_modulus_count_ != 0 &&
              coeff_modulus_count_ != temporary.coeff_modulus_count_))
         {
-            throw std::invalid_argument("Ciphertext context mismatch!");
+            throw ContextMismatchError(error_message(
+                "Ciphertext context mismatch! The serialized ciphertext has "
+                "ring size ",
+                temporary.ring_size_, " and ", temporary.coeff_modulus_count_,
+                " moduli, this ciphertext has ring size ", ring_size_, " and ",
+                coeff_modulus_count_, " moduli."));
         }
 
         // Do not allocate the claimed payload size before verifying the input.

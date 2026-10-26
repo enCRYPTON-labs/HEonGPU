@@ -15,7 +15,8 @@ namespace heongpu
     {
         if (!context)
         {
-            throw std::invalid_argument("HEContext is not set!");
+            throw ParameterError("HEContext is not set! Pass a context "
+                                 "created with GenHEContext.");
         }
 
         context_ = std::move(context);

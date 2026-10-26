@@ -11,6 +11,7 @@
 #include <memory>
 #include <vector>
 #include <sys/sysinfo.h>
+#include <heongpu/util/error.h>
 #include "gpuntt/common/common.cuh"
 #include "gpufft/complex.cuh"
 #include "rngongpu/rand_aes/aes_rng.cuh"
@@ -31,10 +32,12 @@ namespace heongpu
         {
             key_ = std::vector<unsigned char>(16); // for 128 bit
             if (1 != RAND_bytes(key_.data(), key_.size()))
-                throw std::runtime_error("RAND_bytes failed");
+                throw SystemError("RAND_bytes failed! OpenSSL could not "
+                                  "generate random bytes.");
             nonce_ = std::vector<unsigned char>(8); // for 128 bit
             if (1 != RAND_bytes(nonce_.data(), nonce_.size()))
-                throw std::runtime_error("RAND_bytes failed");
+                throw SystemError("RAND_bytes failed! OpenSSL could not "
+                                  "generate random bytes.");
         }
 
         RNGSeed(const std::vector<unsigned char>& key,

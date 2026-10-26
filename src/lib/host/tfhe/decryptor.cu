@@ -14,14 +14,16 @@ namespace heongpu
     {
         if (!context)
         {
-            throw std::invalid_argument("HEContext is not set!");
+            throw ParameterError("HEContext is not set! Pass a context "
+                                 "created with GenHEContext.");
         }
 
         context_ = std::move(context);
 
         secret_key.validate_context(context_);
         if (!secret_key.secret_key_generated_)
-            throw std::logic_error("Secretkey is not generated!");
+            throw StateError("Secretkey is not generated! Call "
+                             "HEKeyGenerator::generate_secret_key first.");
         if (secret_key.is_on_device())
             lwe_key_device_location_ = secret_key.lwe_key_device_location_;
         else

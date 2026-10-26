@@ -96,7 +96,8 @@ namespace heongpu
         void set_context(HEContext<Scheme::TFHE> context)
         {
             if (!context)
-                throw std::invalid_argument("HEContext is not set!");
+                throw ParameterError("HEContext is not set! Pass a context "
+                                     "created with GenHEContext.");
             if (boot_key_generated_)
             {
                 if (bk_k_ != context->k_ ||

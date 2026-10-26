@@ -13,7 +13,10 @@ namespace heongpu
     {
         if (!context || !context->context_generated_)
         {
-            throw std::invalid_argument("HEContext is not generated!");
+            throw StateError(
+                "HEContext is not generated! Create the "
+                "context with GenHEContext and call generate() before "
+                "using it.");
         }
 
         scheme_ = context->scheme_;
@@ -145,7 +148,10 @@ namespace heongpu
 
             if (scheme_ != scheme_type::ckks)
             {
-                throw std::runtime_error("Invalid scheme binary!");
+                throw SerializationError(
+                    error_message("Invalid scheme binary! Expected CKKS data, "
+                                  "found scheme id ",
+                                  static_cast<int>(scheme_), "."));
             }
 
             is.read((char*) &plain_size_, sizeof(plain_size_));

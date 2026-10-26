@@ -95,7 +95,11 @@ namespace heongpu
                     generate_bfv_relin_key_method_II(rk, sk, options);
                     break;
                 default:
-                    throw std::invalid_argument("Invalid Key Switching Type");
+                    throw ParameterError(
+                        error_message("Invalid Key Switching Type ",
+                                      static_cast<int>(rk.key_type),
+                                      "! Expected KEYSWITCHING_METHOD_I (1) or "
+                                      "KEYSWITCHING_METHOD_II (2)."));
                     break;
             }
         }
@@ -121,7 +125,11 @@ namespace heongpu
                     generate_bfv_galois_key_method_II(gk, sk, options);
                     break;
                 default:
-                    throw std::invalid_argument("Invalid Key Switching Type");
+                    throw ParameterError(
+                        error_message("Invalid Key Switching Type ",
+                                      static_cast<int>(gk.key_type),
+                                      "! Expected KEYSWITCHING_METHOD_I (1) or "
+                                      "KEYSWITCHING_METHOD_II (2)."));
                     break;
             }
         }
@@ -150,7 +158,11 @@ namespace heongpu
                                                       options);
                     break;
                 default:
-                    throw std::invalid_argument("Invalid Key Switching Type");
+                    throw ParameterError(
+                        error_message("Invalid Key Switching Type ",
+                                      static_cast<int>(swk.key_type),
+                                      "! Expected KEYSWITCHING_METHOD_I (1) or "
+                                      "KEYSWITCHING_METHOD_II (2)."));
                     break;
             }
         }

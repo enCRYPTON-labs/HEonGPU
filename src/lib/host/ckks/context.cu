@@ -107,7 +107,9 @@ namespace heongpu
                     max_coeff_bit_count = heongpu_256bit_std_parms(n);
                     break;
                 default:
-                    throw std::runtime_error("Invalid security level");
+                    throw std::runtime_error(error_message(
+                        "Invalid security level ", static_cast<int>(sec_level_),
+                        "! Expected sec128, sec192 or sec256."));
                     break;
             }
 
@@ -217,7 +219,9 @@ namespace heongpu
                     max_coeff_bit_count = heongpu_256bit_std_parms(n);
                     break;
                 default:
-                    throw std::runtime_error("Invalid security level");
+                    throw std::runtime_error(error_message(
+                        "Invalid security level ", static_cast<int>(sec_level_),
+                        "! Expected sec128, sec192 or sec256."));
                     break;
             }
 
@@ -289,11 +293,13 @@ namespace heongpu
             std::vector<unsigned char> generated_entropy(16); // for 128 bit
             if (1 !=
                 RAND_bytes(generated_entropy.data(), generated_entropy.size()))
-                throw std::runtime_error("RAND_bytes failed");
+                throw SystemError("RAND_bytes failed! OpenSSL could not "
+                                  "generate random bytes.");
             std::vector<unsigned char> generated_nonce(8); // for 128 bit
             if (1 !=
                 RAND_bytes(generated_entropy.data(), generated_entropy.size()))
-                throw std::runtime_error("RAND_bytes failed");
+                throw SystemError("RAND_bytes failed! OpenSSL could not "
+                                  "generate random bytes.");
             std::vector<unsigned char> personalization_string = {};
             RandomNumberGenerator::instance().initialize(
                 generated_entropy, generated_nonce, personalization_string,
@@ -529,7 +535,11 @@ namespace heongpu
                 }
                 break;
                 default:
-                    throw std::invalid_argument("Invalid Key Switching Type");
+                    throw ParameterError(
+                        error_message("Invalid Key Switching Type ",
+                                      static_cast<int>(keyswitching_type_),
+                                      "! Expected KEYSWITCHING_METHOD_I (1) or "
+                                      "KEYSWITCHING_METHOD_II (2)."));
                     break;
             }
             context_generated_ = true;

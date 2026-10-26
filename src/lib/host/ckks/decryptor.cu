@@ -15,13 +15,17 @@ namespace heongpu
     {
         if (!context || !context->context_generated_)
         {
-            throw std::invalid_argument("HEContext is not generated!");
+            throw StateError(
+                "HEContext is not generated! Create the "
+                "context with GenHEContext and call generate() before "
+                "using it.");
         }
 
         context_ = std::move(context);
         secret_key.validate_context(context_);
         if (!secret_key.secret_key_generated_)
-            throw std::logic_error("Secretkey is not generated!");
+            throw StateError("Secretkey is not generated! Call "
+                             "HEKeyGenerator::generate_secret_key first.");
 
         std::random_device rd;
         std::mt19937 gen(rd());

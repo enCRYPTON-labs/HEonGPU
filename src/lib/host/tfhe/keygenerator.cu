@@ -14,7 +14,8 @@ namespace heongpu
     {
         if (!context)
         {
-            throw std::invalid_argument("HEContext is not set!");
+            throw ParameterError("HEContext is not set! Pass a context "
+                                 "created with GenHEContext.");
         }
 
         context_ = std::move(context);
@@ -30,7 +31,9 @@ namespace heongpu
 
         if (options.storage_ != storage_type::DEVICE &&
             options.storage_ != storage_type::HOST)
-            throw std::invalid_argument("Invalid storage type!");
+            throw ParameterError(error_message(
+                "Invalid storage type ", static_cast<int>(options.storage_),
+                "! Expected storage_type::DEVICE or storage_type::HOST."));
         sk.validate_context(context_);
         detail::PrivateRandomBuffer<int32_t> lwe(context_->n_);
         detail::PrivateRandomBuffer<int32_t> tlwe(context_->k_ * context_->N_);
@@ -57,7 +60,8 @@ namespace heongpu
         sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
-            throw std::logic_error("Secretkey is not generated!");
+            throw StateError("Secretkey is not generated! Call "
+                             "HEKeyGenerator::generate_secret_key first.");
         }
 
         if (!bk.context_ || bk.bk_k_ != context_->k_ ||

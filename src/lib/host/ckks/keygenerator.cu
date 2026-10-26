@@ -14,7 +14,10 @@ namespace heongpu
     {
         if (!context || !context->context_generated_)
         {
-            throw std::invalid_argument("HEContext is not generated!");
+            throw StateError(
+                "HEContext is not generated! Create the "
+                "context with GenHEContext and call generate() before "
+                "using it.");
         }
 
         context_ = std::move(context);
@@ -32,7 +35,9 @@ namespace heongpu
     {
         if (options.storage_ != storage_type::DEVICE &&
             options.storage_ != storage_type::HOST)
-            throw std::invalid_argument("Invalid storage type!");
+            throw ParameterError(error_message(
+                "Invalid storage type ", static_cast<int>(options.storage_),
+                "! Expected storage_type::DEVICE or storage_type::HOST."));
         sk.validate_context(context_);
         if (sk.secret_key_generated_)
         {
@@ -104,12 +109,14 @@ namespace heongpu
         sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
-            throw std::logic_error("Secretkey is not generated!");
+            throw StateError("Secretkey is not generated! Call "
+                             "HEKeyGenerator::generate_secret_key first.");
         }
 
         if (pk.public_key_generated_)
         {
-            throw std::logic_error("Publickey is already generated!");
+            throw StateError("Publickey is already generated! "
+                             "Use a new Publickey object.");
         }
 
         input_storage_manager(
@@ -183,12 +190,14 @@ namespace heongpu
         sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
-            throw std::logic_error("Secretkey is not generated!");
+            throw StateError("Secretkey is not generated! Call "
+                             "HEKeyGenerator::generate_secret_key first.");
         }
 
         if (rk.relin_key_generated_)
         {
-            throw std::logic_error("Relinkey is already generated!");
+            throw StateError("Relinkey is already generated! "
+                             "Use a new Relinkey object.");
         }
 
         input_storage_manager(
@@ -266,12 +275,14 @@ namespace heongpu
         sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
-            throw std::logic_error("Secretkey is not generated!");
+            throw StateError("Secretkey is not generated! Call "
+                             "HEKeyGenerator::generate_secret_key first.");
         }
 
         if (rk.relin_key_generated_)
         {
-            throw std::logic_error("Relinkey is already generated!");
+            throw StateError("Relinkey is already generated! "
+                             "Use a new Relinkey object.");
         }
 
         input_storage_manager(
@@ -356,12 +367,14 @@ namespace heongpu
         sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
-            throw std::logic_error("Secretkey is not generated!");
+            throw StateError("Secretkey is not generated! Call "
+                             "HEKeyGenerator::generate_secret_key first.");
         }
 
         if (gk.galois_key_generated_)
         {
-            throw std::logic_error("Galoiskey is already generated!");
+            throw StateError("Galoiskey is already generated! "
+                             "Use a new Galoiskey object.");
         }
 
         input_storage_manager(
@@ -630,12 +643,14 @@ namespace heongpu
         sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
-            throw std::logic_error("Secretkey is not generated!");
+            throw StateError("Secretkey is not generated! Call "
+                             "HEKeyGenerator::generate_secret_key first.");
         }
 
         if (gk.galois_key_generated_)
         {
-            throw std::logic_error("Galoiskey is already generated!");
+            throw StateError("Galoiskey is already generated! "
+                             "Use a new Galoiskey object.");
         }
 
         input_storage_manager(
@@ -930,7 +945,8 @@ namespace heongpu
         old_sk.validate_context(context_);
         if (!old_sk.secret_key_generated_)
         {
-            throw std::logic_error("Secretkey is not generated!");
+            throw StateError("Secretkey is not generated! Call "
+                             "HEKeyGenerator::generate_secret_key first.");
         }
 
         new_sk.validate_context(context_);
@@ -941,7 +957,8 @@ namespace heongpu
 
         if (swk.switch_key_generated_)
         {
-            throw std::logic_error("Switchkey is already generated!");
+            throw StateError("Switchkey is already generated! "
+                             "Use a new Switchkey object.");
         }
 
         input_storage_manager(
@@ -1030,7 +1047,8 @@ namespace heongpu
         old_sk.validate_context(context_);
         if (!old_sk.secret_key_generated_)
         {
-            throw std::logic_error("Secretkey is not generated!");
+            throw StateError("Secretkey is not generated! Call "
+                             "HEKeyGenerator::generate_secret_key first.");
         }
 
         new_sk.validate_context(context_);
@@ -1041,7 +1059,8 @@ namespace heongpu
 
         if (swk.switch_key_generated_)
         {
-            throw std::logic_error("Switchkey is already generated!");
+            throw StateError("Switchkey is already generated! "
+                             "Use a new Switchkey object.");
         }
 
         input_storage_manager(

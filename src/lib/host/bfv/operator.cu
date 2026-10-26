@@ -14,7 +14,10 @@ namespace heongpu
     {
         if (!context || !context->context_generated_)
         {
-            throw std::invalid_argument("HEContext is not generated!");
+            throw StateError(
+                "HEContext is not generated! Create the "
+                "context with GenHEContext and call generate() before "
+                "using it.");
         }
 
         context_ = std::move(context);
@@ -46,7 +49,11 @@ namespace heongpu
             input2.memory_size() <
                 (cipher_size * context_->n * context_->Q_size))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * context_->Q_size),
+                " coefficients per ciphertext, got ", input1.memory_size(),
+                " and ", input2.memory_size(), "."));
         }
 
         input_storage_manager(
@@ -118,7 +125,11 @@ namespace heongpu
             input2.memory_size() <
                 (cipher_size * context_->n * context_->Q_size))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * context_->Q_size),
+                " coefficients per ciphertext, got ", input1.memory_size(),
+                " and ", input2.memory_size(), "."));
         }
 
         input_storage_manager(
@@ -176,7 +187,10 @@ namespace heongpu
         if (input1.memory_size() <
             (cipher_size * context_->n * context_->Q_size))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * context_->Q_size),
+                " coefficients, got ", input1.memory_size(), "."));
         }
 
         input_storage_manager(
@@ -223,12 +237,17 @@ namespace heongpu
         if (input1.memory_size() <
             (cipher_size * context_->n * context_->Q_size))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * context_->Q_size),
+                " coefficients, got ", input1.memory_size(), "."));
         }
 
         if (input2.size() < context_->n)
         {
-            throw std::invalid_argument("Invalid Plaintext size!");
+            throw ParameterError(error_message(
+                "Invalid Plaintext size! Expected at least ", context_->n,
+                " coefficients, got ", input2.size(), "."));
         }
 
         DeviceVector<Data64> output_memory(
@@ -257,12 +276,17 @@ namespace heongpu
         if (input1.memory_size() <
             (cipher_size * context_->n * context_->Q_size))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * context_->Q_size),
+                " coefficients, got ", input1.memory_size(), "."));
         }
 
         if (input2.size() < context_->n)
         {
-            throw std::invalid_argument("Invalid Plaintext size!");
+            throw ParameterError(error_message(
+                "Invalid Plaintext size! Expected at least ", context_->n,
+                " coefficients, got ", input2.size(), "."));
         }
 
         addition_plain_bfv_poly_inplace<<<
@@ -283,12 +307,17 @@ namespace heongpu
         if (input1.memory_size() <
             (cipher_size * context_->n * context_->Q_size))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * context_->Q_size),
+                " coefficients, got ", input1.memory_size(), "."));
         }
 
         if (input2.size() < context_->n)
         {
-            throw std::invalid_argument("Invalid Plaintext size!");
+            throw ParameterError(error_message(
+                "Invalid Plaintext size! Expected at least ", context_->n,
+                " coefficients, got ", input2.size(), "."));
         }
 
         DeviceVector<Data64> output_memory(
@@ -317,12 +346,17 @@ namespace heongpu
         if (input1.memory_size() <
             (cipher_size * context_->n * context_->Q_size))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * context_->Q_size),
+                " coefficients, got ", input1.memory_size(), "."));
         }
 
         if (input2.size() < context_->n)
         {
-            throw std::invalid_argument("Invalid Plaintext size!");
+            throw ParameterError(error_message(
+                "Invalid Plaintext size! Expected at least ", context_->n,
+                " coefficients, got ", input2.size(), "."));
         }
 
         substraction_plain_bfv_poly_inplace<<<
@@ -347,7 +381,11 @@ namespace heongpu
         if (input1.memory_size() < (2 * context_->n * context_->Q_size) ||
             input2.memory_size() < (2 * context_->n * context_->Q_size))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (2 * context_->n * context_->Q_size),
+                " coefficients per ciphertext, got ", input1.memory_size(),
+                " and ", input2.memory_size(), "."));
         }
 
         DeviceVector<Data64> output_memory((3 * context_->n * context_->Q_size),
@@ -704,7 +742,10 @@ namespace heongpu
                 if (!(galois_key.galois_elt.find(index_in) !=
                       galois_key.galois_elt.end()))
                 {
-                    throw std::logic_error("Galois key not present!");
+                    throw KeyNotFoundError(error_message(
+                        "Galois key not present for rotation step ", index_in,
+                        " (needed for shift ", shift,
+                        ")! Generate the Galoiskey with this shift."));
                 }
                 galoiselt = galois_key.galois_elt[index_in];
                 required_galoiselt.push_back(galoiselt);
@@ -753,7 +794,10 @@ namespace heongpu
                 if (!(galois_key.galois_elt.find(index_in) !=
                       galois_key.galois_elt.end()))
                 {
-                    throw std::logic_error("Galois key not present!");
+                    throw KeyNotFoundError(error_message(
+                        "Galois key not present for rotation step ", index_in,
+                        " (needed for shift ", shift,
+                        ")! Generate the Galoiskey with this shift."));
                 }
                 galoiselt = galois_key.galois_elt[index_in];
                 required_galoiselt.push_back(galoiselt);

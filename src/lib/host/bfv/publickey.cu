@@ -12,7 +12,10 @@ namespace heongpu
     {
         if (!context || !context->context_generated_)
         {
-            throw std::invalid_argument("HEContext is not generated!");
+            throw StateError(
+                "HEContext is not generated! Create the "
+                "context with GenHEContext and call generate() before "
+                "using it.");
         }
 
         context_ = context;
@@ -149,7 +152,10 @@ namespace heongpu
 
             if (scheme_ != scheme_type::bfv)
             {
-                throw std::runtime_error("Invalid scheme binary!");
+                throw SerializationError(
+                    error_message("Invalid scheme binary! Expected BFV data, "
+                                  "found scheme id ",
+                                  static_cast<int>(scheme_), "."));
             }
 
             is.read((char*) &ring_size_, sizeof(ring_size_));

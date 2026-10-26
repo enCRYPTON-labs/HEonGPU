@@ -204,7 +204,11 @@ namespace heongpu
 
             if (input1.depth_ != input2.depth_)
             {
-                throw std::logic_error("Ciphertexts leveled are not equal");
+                throw LevelMismatchError(
+                    error_message("Ciphertexts leveled are not equal (depth ",
+                                  input1.depth_, " and ", input2.depth_,
+                                  ")! Use mod_drop to bring both operands to "
+                                  "the same depth."));
             }
 
             if (input1.encoding_ != input2.encoding_)
@@ -273,7 +277,11 @@ namespace heongpu
 
             if (input1.depth_ != input2.depth_)
             {
-                throw std::logic_error("Ciphertexts leveled are not equal");
+                throw LevelMismatchError(
+                    error_message("Ciphertexts leveled are not equal (depth ",
+                                  input1.depth_, " and ", input2.depth_,
+                                  ")! Use mod_drop to bring both operands to "
+                                  "the same depth."));
             }
 
             if (input1.encoding_ != input2.encoding_)
@@ -408,7 +416,11 @@ namespace heongpu
 
             if (input1.depth_ != input2.depth_)
             {
-                throw std::logic_error("Ciphertexts leveled are not equal");
+                throw LevelMismatchError(
+                    error_message("Ciphertexts leveled are not equal (depth ",
+                                  input1.depth_, " and ", input2.depth_,
+                                  ")! Use mod_drop to bring both operands to "
+                                  "the same depth."));
             }
 
             if (input1.encoding_ != input2.encoding_)
@@ -477,7 +489,11 @@ namespace heongpu
 
             if (input1.depth_ != input2.depth_)
             {
-                throw std::logic_error("Ciphertexts leveled are not equal");
+                throw LevelMismatchError(
+                    error_message("Ciphertexts leveled are not equal (depth ",
+                                  input1.depth_, " and ", input2.depth_,
+                                  ")! Use mod_drop to bring both operands to "
+                                  "the same depth."));
             }
 
             if (input1.encoding_ != input2.encoding_)
@@ -766,7 +782,10 @@ namespace heongpu
 
             if (input1.memory_size() < (2 * context_->n * current_decomp_count))
             {
-                throw std::invalid_argument("Invalid Ciphertexts size!");
+                throw ParameterError(error_message(
+                    "Invalid Ciphertexts size! Expected at least ",
+                    (2 * context_->n * current_decomp_count),
+                    " coefficients, got ", input1.memory_size(), "."));
             }
 
             input_storage_manager(
@@ -784,8 +803,13 @@ namespace heongpu
                                     if (input2_.size() <
                                         (context_->n * current_decomp_count))
                                     {
-                                        throw std::invalid_argument(
-                                            "Invalid Plaintext size!");
+                                        throw ParameterError(error_message(
+                                            "Invalid Plaintext size! Expected "
+                                            "at least ",
+                                            (context_->n *
+                                             current_decomp_count),
+                                            " coefficients, got ",
+                                            input2_.size(), "."));
                                     }
 
                                     multiply_plain_ckks(input1_, input2_,
@@ -857,7 +881,10 @@ namespace heongpu
 
             if (input1.memory_size() < (2 * context_->n * current_decomp_count))
             {
-                throw std::invalid_argument("Invalid Ciphertexts size!");
+                throw ParameterError(error_message(
+                    "Invalid Ciphertexts size! Expected at least ",
+                    (2 * context_->n * current_decomp_count),
+                    " coefficients, got ", input1.memory_size(), "."));
             }
 
             input_storage_manager(
@@ -1108,7 +1135,10 @@ namespace heongpu
 
             if (input1.memory_size() < (3 * context_->n * current_decomp_count))
             {
-                throw std::invalid_argument("Invalid Ciphertexts size!");
+                throw ParameterError(error_message(
+                    "Invalid Ciphertexts size! Expected at least ",
+                    (3 * context_->n * current_decomp_count),
+                    " coefficients, got ", input1.memory_size(), "."));
             }
 
             input_storage_manager(
@@ -1126,8 +1156,11 @@ namespace heongpu
                                 input1_, relin_key, options.stream_);
                             break;
                         default:
-                            throw std::invalid_argument(
-                                "Invalid Key Switching Type");
+                            throw ParameterError(error_message(
+                                "Invalid Key Switching Type ",
+                                static_cast<int>(relin_key.key_type),
+                                "! Expected KEYSWITCHING_METHOD_I (1) or "
+                                "KEYSWITCHING_METHOD_II (2)."));
                             break;
                     }
 
@@ -1156,14 +1189,20 @@ namespace heongpu
 
             if (input1.rescale_required_ || input1.relinearization_required_)
             {
-                throw std::invalid_argument("Ciphertext can not be rotated!");
+                throw StateError(error_message(
+                    "Ciphertext can not be rotated! ",
+                    input1.relinearization_required_ ? "Relinearize it first."
+                                                     : "Rescale it first."));
             }
 
             int current_decomp_count = context_->Q_size - input1.depth_;
 
             if (input1.memory_size() < (2 * context_->n * current_decomp_count))
             {
-                throw std::invalid_argument("Invalid Ciphertexts size!");
+                throw ParameterError(error_message(
+                    "Invalid Ciphertexts size! Expected at least ",
+                    (2 * context_->n * current_decomp_count),
+                    " coefficients, got ", input1.memory_size(), "."));
             }
 
             if (shift == 0)
@@ -1193,8 +1232,12 @@ namespace heongpu
                                                           options.stream_);
                                     break;
                                 default:
-                                    throw std::invalid_argument(
-                                        "Invalid Key Switching Type");
+                                    throw ParameterError(error_message(
+                                        "Invalid Key Switching Type ",
+                                        static_cast<int>(galois_key.key_type),
+                                        "! Expected KEYSWITCHING_METHOD_I (1) "
+                                        "or "
+                                        "KEYSWITCHING_METHOD_II (2)."));
                                     break;
                             }
                         },
@@ -1247,14 +1290,20 @@ namespace heongpu
 
             if (input1.rescale_required_ || input1.relinearization_required_)
             {
-                throw std::invalid_argument("Ciphertext can not be rotated!");
+                throw StateError(error_message(
+                    "Ciphertext can not be rotated! ",
+                    input1.relinearization_required_ ? "Relinearize it first."
+                                                     : "Rescale it first."));
             }
 
             int current_decomp_count = context_->Q_size - input1.depth_;
 
             if (input1.memory_size() < (2 * context_->n * current_decomp_count))
             {
-                throw std::invalid_argument("Invalid Ciphertexts size!");
+                throw ParameterError(error_message(
+                    "Invalid Ciphertexts size! Expected at least ",
+                    (2 * context_->n * current_decomp_count),
+                    " coefficients, got ", input1.memory_size(), "."));
             }
 
             input_storage_manager(
@@ -1278,8 +1327,12 @@ namespace heongpu
                                         galois_elt, options.stream_);
                                     break;
                                 default:
-                                    throw std::invalid_argument(
-                                        "Invalid Key Switching Type");
+                                    throw ParameterError(error_message(
+                                        "Invalid Key Switching Type ",
+                                        static_cast<int>(galois_key.key_type),
+                                        "! Expected KEYSWITCHING_METHOD_I (1) "
+                                        "or "
+                                        "KEYSWITCHING_METHOD_II (2)."));
                                     break;
                             }
 
@@ -1340,14 +1393,20 @@ namespace heongpu
 
             if (input1.rescale_required_ || input1.relinearization_required_)
             {
-                throw std::invalid_argument("Ciphertext can not be rotated!");
+                throw StateError(error_message(
+                    "Ciphertext can not be rotated! ",
+                    input1.relinearization_required_ ? "Relinearize it first."
+                                                     : "Rescale it first."));
             }
 
             int current_decomp_count = context_->Q_size - input1.depth_;
 
             if (input1.memory_size() < (2 * context_->n * current_decomp_count))
             {
-                throw std::invalid_argument("Invalid Ciphertexts size!");
+                throw ParameterError(error_message(
+                    "Invalid Ciphertexts size! Expected at least ",
+                    (2 * context_->n * current_decomp_count),
+                    " coefficients, got ", input1.memory_size(), "."));
             }
 
             input_storage_manager(
@@ -1371,8 +1430,12 @@ namespace heongpu
                                                              options.stream_);
                                     break;
                                 default:
-                                    throw std::invalid_argument(
-                                        "Invalid Key Switching Type");
+                                    throw ParameterError(error_message(
+                                        "Invalid Key Switching Type ",
+                                        static_cast<int>(switch_key.key_type),
+                                        "! Expected KEYSWITCHING_METHOD_I (1) "
+                                        "or "
+                                        "KEYSWITCHING_METHOD_II (2)."));
                                     break;
                             }
 
@@ -1414,14 +1477,20 @@ namespace heongpu
 
             if (input1.rescale_required_ || input1.relinearization_required_)
             {
-                throw std::invalid_argument("Ciphertext can not be rotated!");
+                throw StateError(error_message(
+                    "Ciphertext can not be rotated! ",
+                    input1.relinearization_required_ ? "Relinearize it first."
+                                                     : "Rescale it first."));
             }
 
             int current_decomp_count = context_->Q_size - input1.depth_;
 
             if (input1.memory_size() < (2 * context_->n * current_decomp_count))
             {
-                throw std::invalid_argument("Invalid Ciphertexts size!");
+                throw ParameterError(error_message(
+                    "Invalid Ciphertexts size! Expected at least ",
+                    (2 * context_->n * current_decomp_count),
+                    " coefficients, got ", input1.memory_size(), "."));
             }
 
             input_storage_manager(
@@ -1445,8 +1514,13 @@ namespace heongpu
                                                              options.stream_);
                                     break;
                                 default:
-                                    throw std::invalid_argument(
-                                        "Invalid Key Switching Type");
+                                    throw ParameterError(error_message(
+                                        "Invalid Key Switching Type ",
+                                        static_cast<int>(
+                                            conjugate_key.key_type),
+                                        "! Expected KEYSWITCHING_METHOD_I (1) "
+                                        "or "
+                                        "KEYSWITCHING_METHOD_II (2)."));
                                     break;
                             }
 
@@ -1496,7 +1570,10 @@ namespace heongpu
 
             if (input1.memory_size() < (2 * context_->n * current_decomp_count))
             {
-                throw std::invalid_argument("Invalid Ciphertexts size!");
+                throw ParameterError(error_message(
+                    "Invalid Ciphertexts size! Expected at least ",
+                    (2 * context_->n * current_decomp_count),
+                    " coefficients, got ", input1.memory_size(), "."));
             }
 
             input_storage_manager(
@@ -1534,7 +1611,10 @@ namespace heongpu
 
             if (input1.memory_size() < (2 * context_->n * current_decomp_count))
             {
-                throw std::invalid_argument("Invalid Ciphertexts size!");
+                throw ParameterError(error_message(
+                    "Invalid Ciphertexts size! Expected at least ",
+                    (2 * context_->n * current_decomp_count),
+                    " coefficients, got ", input1.memory_size(), "."));
             }
 
             input_storage_manager(
@@ -1583,7 +1663,10 @@ namespace heongpu
 
             if (input1.size() < (context_->n * current_decomp_count))
             {
-                throw std::invalid_argument("Invalid Plaintext size!");
+                throw ParameterError(
+                    error_message("Invalid Plaintext size! Expected at least ",
+                                  (context_->n * current_decomp_count),
+                                  " coefficients, got ", input1.size(), "."));
             }
 
             input_storage_manager(
@@ -1625,7 +1708,10 @@ namespace heongpu
 
             if (input1.size() < (context_->n * current_decomp_count))
             {
-                throw std::invalid_argument("Invalid Plaintext size!");
+                throw ParameterError(
+                    error_message("Invalid Plaintext size! Expected at least ",
+                                  (context_->n * current_decomp_count),
+                                  " coefficients, got ", input1.size(), "."));
             }
 
             input_storage_manager(
@@ -1651,7 +1737,10 @@ namespace heongpu
 
             if (input1.memory_size() < (2 * context_->n * current_decomp_count))
             {
-                throw std::invalid_argument("Invalid Ciphertexts size!");
+                throw ParameterError(error_message(
+                    "Invalid Ciphertexts size! Expected at least ",
+                    (2 * context_->n * current_decomp_count),
+                    " coefficients, got ", input1.memory_size(), "."));
             }
 
             input_storage_manager(

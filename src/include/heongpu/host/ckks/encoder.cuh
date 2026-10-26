@@ -61,7 +61,10 @@ namespace heongpu
             if ((scale <= 0) || (static_cast<int>(log2(scale)) >=
                                  context_->total_coeff_bit_count))
             {
-                throw std::invalid_argument("Scale out of bounds");
+                throw ParameterError(error_message(
+                    "Scale out of bounds! The scale is ", scale,
+                    " but it must be positive and smaller than 2^",
+                    context_->total_coeff_bit_count, "."));
             }
 
             if (type == encoding::SLOT)
@@ -127,7 +130,10 @@ namespace heongpu
             if ((scale <= 0) || (static_cast<int>(log2(scale)) >=
                                  context_->total_coeff_bit_count))
             {
-                throw std::invalid_argument("Scale out of bounds");
+                throw ParameterError(error_message(
+                    "Scale out of bounds! The scale is ", scale,
+                    " but it must be positive and smaller than 2^",
+                    context_->total_coeff_bit_count, "."));
             }
 
             if (type == encoding::SLOT)
@@ -193,7 +199,10 @@ namespace heongpu
             if ((scale <= 0) || (static_cast<int>(log2(scale)) >=
                                  context_->total_coeff_bit_count))
             {
-                throw std::invalid_argument("Scale out of bounds");
+                throw ParameterError(error_message(
+                    "Scale out of bounds! The scale is ", scale,
+                    " but it must be positive and smaller than 2^",
+                    context_->total_coeff_bit_count, "."));
             }
 
             if (type == encoding::COEFFICIENT)
@@ -244,7 +253,10 @@ namespace heongpu
             if ((scale <= 0) || (static_cast<int>(log2(scale)) >=
                                  context_->total_coeff_bit_count))
             {
-                throw std::invalid_argument("Scale out of bounds");
+                throw ParameterError(error_message(
+                    "Scale out of bounds! The scale is ", scale,
+                    " but it must be positive and smaller than 2^",
+                    context_->total_coeff_bit_count, "."));
             }
 
             if (type == encoding::COEFFICIENT)
@@ -295,7 +307,10 @@ namespace heongpu
             if ((scale <= 0) || (static_cast<int>(log2(scale)) >=
                                  context_->total_coeff_bit_count))
             {
-                throw std::invalid_argument("Scale out of bounds");
+                throw ParameterError(error_message(
+                    "Scale out of bounds! The scale is ", scale,
+                    " but it must be positive and smaller than 2^",
+                    context_->total_coeff_bit_count, "."));
             }
 
             if ((static_cast<int>(log2(fabs(message))) + 2) >=
@@ -340,7 +355,10 @@ namespace heongpu
             if ((scale <= 0) || (static_cast<int>(log2(scale)) >=
                                  context_->total_coeff_bit_count))
             {
-                throw std::invalid_argument("Scale out of bounds");
+                throw ParameterError(error_message(
+                    "Scale out of bounds! The scale is ", scale,
+                    " but it must be positive and smaller than 2^",
+                    context_->total_coeff_bit_count, "."));
             }
 
             if ((static_cast<int>(log2(fabs(message))) + 2) >=

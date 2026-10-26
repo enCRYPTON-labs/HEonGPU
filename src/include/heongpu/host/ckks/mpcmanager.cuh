@@ -66,12 +66,14 @@ namespace heongpu
             sk.validate_context(context_);
             if (!sk.secret_key_generated_)
             {
-                throw std::logic_error("Secretkey is not generated!");
+                throw StateError("Secretkey is not generated! Call "
+                                 "HEKeyGenerator::generate_secret_key first.");
             }
 
             if (pk.public_key_generated_)
             {
-                throw std::logic_error("Publickey is already generated!");
+                throw StateError("Publickey is already generated! "
+                                 "Use a new Publickey object.");
             }
 
             input_storage_manager(
@@ -172,7 +174,11 @@ namespace heongpu
                     generate_ckks_relin_key_method_II_stage_1(rk, sk, options);
                     break;
                 default:
-                    throw std::invalid_argument("Invalid Key Switching Type");
+                    throw ParameterError(
+                        error_message("Invalid Key Switching Type ",
+                                      static_cast<int>(rk.key_type),
+                                      "! Expected KEYSWITCHING_METHOD_I (1) or "
+                                      "KEYSWITCHING_METHOD_II (2)."));
                     break;
             }
         }
@@ -215,7 +221,11 @@ namespace heongpu
                         rk_s1_common, rk_new, sk, options);
                     break;
                 default:
-                    throw std::invalid_argument("Invalid Key Switching Type");
+                    throw ParameterError(
+                        error_message("Invalid Key Switching Type ",
+                                      static_cast<int>(rk_s1_common.key_type),
+                                      "! Expected KEYSWITCHING_METHOD_I (1) or "
+                                      "KEYSWITCHING_METHOD_II (2)."));
                     break;
             }
         }
@@ -286,7 +296,11 @@ namespace heongpu
                     generate_galois_key_method_II_stage_1(gk, sk, options);
                     break;
                 default:
-                    throw std::invalid_argument("Invalid Key Switching Type");
+                    throw ParameterError(
+                        error_message("Invalid Key Switching Type ",
+                                      static_cast<int>(gk.key_type),
+                                      "! Expected KEYSWITCHING_METHOD_I (1) or "
+                                      "KEYSWITCHING_METHOD_II (2)."));
                     break;
             }
         }

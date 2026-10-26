@@ -13,7 +13,10 @@ namespace heongpu
     {
         if (!context || !context->context_generated_)
         {
-            throw std::invalid_argument("HEContext is not generated!");
+            throw StateError(
+                "HEContext is not generated! Create the "
+                "context with GenHEContext and call generate() before "
+                "using it.");
         }
 
         context_ = context;
@@ -33,7 +36,10 @@ namespace heongpu
     {
         if (!context || !context->context_generated_)
         {
-            throw std::invalid_argument("HEContext is not generated!");
+            throw StateError(
+                "HEContext is not generated! Create the "
+                "context with GenHEContext and call generate() before "
+                "using it.");
         }
 
         context_ = context;
@@ -61,7 +67,10 @@ namespace heongpu
     {
         if (!context || !context->context_generated_)
         {
-            throw std::invalid_argument("HEContext is not generated!");
+            throw StateError(
+                "HEContext is not generated! Create the "
+                "context with GenHEContext and call generate() before "
+                "using it.");
         }
 
         context_ = context;
@@ -130,7 +139,10 @@ namespace heongpu
     {
         if (!context || !context->context_generated_)
         {
-            throw std::invalid_argument("HEContext is not generated!");
+            throw StateError(
+                "HEContext is not generated! Create the "
+                "context with GenHEContext and call generate() before "
+                "using it.");
         }
 
         context_ = context;
@@ -364,7 +376,11 @@ namespace heongpu
             (temporary.ring_size_ != context_->n ||
              temporary.coeff_modulus_count_ != context_->Q_prime_size ||
              temporary.n_power_ != context_->n_power))
-            throw std::invalid_argument("Secretkey context mismatch!");
+            throw ContextMismatchError(error_message(
+                "Secretkey context mismatch! The serialized key has ring size ",
+                temporary.ring_size_, " and ", temporary.coeff_modulus_count_,
+                " key moduli, the context has ring size ", context_->n, " and ",
+                context_->Q_prime_size, " key moduli."));
 
         // Grow only after successful reads, avoiding a claimed-size allocation
         // on truncated input. The unbound deserialize API remains supported.
@@ -398,21 +414,37 @@ namespace heongpu
     void Secretkey<Scheme::BFV>::validate_context(
         const HEContext<Scheme::BFV>& context)
     {
-        if (!context || !context->context_generated_ ||
-            ring_size_ != context->n ||
+        if (!context || !context->context_generated_)
+            throw StateError("HEContext is not generated! Create the context "
+                             "with GenHEContext and call generate() before "
+                             "using it.");
+        if (ring_size_ != context->n ||
             coeff_modulus_count_ != context->Q_prime_size ||
-            n_power_ != context->n_power || hamming_weight_ <= 0 ||
-            hamming_weight_ > ring_size_)
-            throw std::invalid_argument("Secretkey context mismatch!");
+            n_power_ != context->n_power)
+            throw ContextMismatchError(error_message(
+                "Secretkey context mismatch! The key has ring size ",
+                ring_size_, " and ", coeff_modulus_count_,
+                " key moduli, the context has ring size ", context->n, " and ",
+                context->Q_prime_size, " key moduli."));
+        if (hamming_weight_ <= 0 || hamming_weight_ > ring_size_)
+            throw ParameterError(error_message(
+                "Invalid Secretkey Hamming weight ", hamming_weight_,
+                "! It must be between 1 and the ring size ", ring_size_, "."));
         if (context_)
         {
             const auto actual = context_->get_key_modulus();
             const auto expected = context->get_key_modulus();
             if (actual.size() != expected.size())
-                throw std::invalid_argument("Secretkey context mismatch!");
+                throw ContextMismatchError(error_message(
+                    "Secretkey context mismatch! The key was created with ",
+                    actual.size(), " key moduli, the context has ",
+                    expected.size(), "."));
             for (size_t i = 0; i < actual.size(); ++i)
                 if (actual[i].value != expected[i].value)
-                    throw std::invalid_argument("Secretkey context mismatch!");
+                    throw ContextMismatchError(error_message(
+                        "Secretkey context mismatch! Key modulus ", i, " is ",
+                        actual[i].value, " in the key's context and ",
+                        expected[i].value, " in this context."));
         }
         else
         {

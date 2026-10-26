@@ -44,6 +44,8 @@ set(EXECUTABLES
     tfhe_gate_boot_testcases test_tfhe_gate_boot.cpp
 
     memory_pool_testcases test_memory_pool.cpp
+
+    errors_testcases test_errors.cpp
 )
 
 function(add_test exe source)

@@ -14,7 +14,10 @@ namespace heongpu
     {
         if (!context || !context->context_generated_)
         {
-            throw std::invalid_argument("HEContext is not generated!");
+            throw StateError(
+                "HEContext is not generated! Create the "
+                "context with GenHEContext and call generate() before "
+                "using it.");
         }
 
         context_ = std::move(context);
@@ -126,12 +129,14 @@ namespace heongpu
         sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
-            throw std::logic_error("Secretkey is not generated!");
+            throw StateError("Secretkey is not generated! Call "
+                             "HEKeyGenerator::generate_secret_key first.");
         }
 
         if (rk.relin_key_generated_)
         {
-            throw std::logic_error("Relinkey is already generated!");
+            throw StateError("Relinkey is already generated! "
+                             "Use a new Relinkey object.");
         }
 
         input_storage_manager(
@@ -238,17 +243,20 @@ namespace heongpu
         sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
-            throw std::logic_error("Secretkey is not generated!");
+            throw StateError("Secretkey is not generated! Call "
+                             "HEKeyGenerator::generate_secret_key first.");
         }
 
         if (!rk_stage_1.relin_key_generated_)
         {
-            throw std::logic_error("Relinkey1 is not generated!");
+            throw StateError("Relinkey1 is not generated! "
+                             "Generate the stage 1 relinearization key first.");
         }
 
         if (rk_stage_2.relin_key_generated_)
         {
-            throw std::logic_error("Relinkey2 is already generated!");
+            throw StateError("Relinkey2 is already generated! "
+                             "Use a new Relinkey object.");
         }
 
         input_storage_manager(
@@ -354,12 +362,14 @@ namespace heongpu
         sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
-            throw std::logic_error("Secretkey is not generated!");
+            throw StateError("Secretkey is not generated! Call "
+                             "HEKeyGenerator::generate_secret_key first.");
         }
 
         if (rk.relin_key_generated_)
         {
-            throw std::logic_error("Relinkey is already generated!");
+            throw StateError("Relinkey is already generated! "
+                             "Use a new Relinkey object.");
         }
 
         input_storage_manager(
@@ -474,17 +484,20 @@ namespace heongpu
         sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
-            throw std::logic_error("Secretkey is not generated!");
+            throw StateError("Secretkey is not generated! Call "
+                             "HEKeyGenerator::generate_secret_key first.");
         }
 
         if (!rk_stage_1.relin_key_generated_)
         {
-            throw std::logic_error("Relinkey1 is not generated!");
+            throw StateError("Relinkey1 is not generated! "
+                             "Generate the stage 1 relinearization key first.");
         }
 
         if (rk_stage_2.relin_key_generated_)
         {
-            throw std::logic_error("Relinkey2 is already generated!");
+            throw StateError("Relinkey2 is already generated! "
+                             "Use a new Relinkey object.");
         }
 
         input_storage_manager(
@@ -617,7 +630,11 @@ namespace heongpu
                 dimension = rk.d_;
                 break;
             default:
-                throw std::invalid_argument("Invalid Key Switching Type");
+                throw ParameterError(
+                    error_message("Invalid Key Switching Type ",
+                                  static_cast<int>(rk.key_type),
+                                  "! Expected KEYSWITCHING_METHOD_I (1) or "
+                                  "KEYSWITCHING_METHOD_II (2)."));
                 break;
         }
 
@@ -698,7 +715,11 @@ namespace heongpu
                 dimension = rk.d_;
                 break;
             default:
-                throw std::invalid_argument("Invalid Key Switching Type");
+                throw ParameterError(
+                    error_message("Invalid Key Switching Type ",
+                                  static_cast<int>(rk.key_type),
+                                  "! Expected KEYSWITCHING_METHOD_I (1) or "
+                                  "KEYSWITCHING_METHOD_II (2)."));
                 break;
         }
 
@@ -760,12 +781,14 @@ namespace heongpu
         sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
-            throw std::logic_error("Secretkey is not generated!");
+            throw StateError("Secretkey is not generated! Call "
+                             "HEKeyGenerator::generate_secret_key first.");
         }
 
         if (gk.galois_key_generated_)
         {
-            throw std::logic_error("Galoiskey is already generated!");
+            throw StateError("Galoiskey is already generated! "
+                             "Use a new Galoiskey object.");
         }
 
         RNGSeed common_seed = gk.seed();
@@ -1029,12 +1052,14 @@ namespace heongpu
         sk.validate_context(context_);
         if (!sk.secret_key_generated_)
         {
-            throw std::logic_error("Secretkey is not generated!");
+            throw StateError("Secretkey is not generated! Call "
+                             "HEKeyGenerator::generate_secret_key first.");
         }
 
         if (gk.galois_key_generated_)
         {
-            throw std::logic_error("Galoiskey is already generated!");
+            throw StateError("Galoiskey is already generated! "
+                             "Use a new Galoiskey object.");
         }
 
         RNGSeed common_seed = gk.seed();
@@ -1389,7 +1414,11 @@ namespace heongpu
                 dimension = gk.d_;
                 break;
             default:
-                throw std::invalid_argument("Invalid Key Switching Type");
+                throw ParameterError(
+                    error_message("Invalid Key Switching Type ",
+                                  static_cast<int>(gk.key_type),
+                                  "! Expected KEYSWITCHING_METHOD_I (1) or "
+                                  "KEYSWITCHING_METHOD_II (2)."));
                 break;
         }
 

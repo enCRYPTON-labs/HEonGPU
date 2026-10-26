@@ -11,6 +11,7 @@
 #include "gpuntt/common/nttparameters.cuh"
 #include <stdexcept>
 #include <vector>
+#include <heongpu/util/error.h>
 
 namespace heongpu
 {
@@ -161,7 +162,11 @@ namespace heongpu
                 }
                 else
                 {
-                    throw std::invalid_argument("Invalid storage type!");
+                    throw ParameterError(
+                        error_message("Invalid storage type ",
+                                      static_cast<int>(options.storage_),
+                                      "! Expected storage_type::DEVICE or "
+                                      "storage_type::HOST."));
                 }
             }
         }
@@ -238,7 +243,11 @@ namespace heongpu
                     }
                     else
                     {
-                        throw std::invalid_argument("Invalid storage type!");
+                        throw ParameterError(
+                            error_message("Invalid storage type ",
+                                          static_cast<int>(options.storage_),
+                                          "! Expected storage_type::DEVICE or "
+                                          "storage_type::HOST."));
                     }
                 }
             }
@@ -271,7 +280,9 @@ namespace heongpu
         }
         else
         {
-            throw std::invalid_argument("Invalid storage type!");
+            throw ParameterError(error_message(
+                "Invalid storage type ", static_cast<int>(options.storage_),
+                "! Expected storage_type::DEVICE or storage_type::HOST."));
         }
     }
 

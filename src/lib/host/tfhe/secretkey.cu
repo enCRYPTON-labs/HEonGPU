@@ -13,7 +13,8 @@ namespace heongpu
     {
         if (!context)
         {
-            throw std::invalid_argument("HEContext is not set!");
+            throw ParameterError("HEContext is not set! Pass a context "
+                                 "created with GenHEContext.");
         }
 
         context_ = context;
@@ -45,12 +46,23 @@ namespace heongpu
     void Secretkey<Scheme::TFHE>::validate_context(
         const HEContext<Scheme::TFHE>& context) const
     {
-        if (!context || !context_ || n_ != context->n_ || N_ != context->N_ ||
-            k_ != context->k_ || bk_l_ != context->bk_l_ ||
-            bk_bg_bit_ != context->bk_bg_bit_ ||
+        if (!context)
+            throw ParameterError("HEContext is not set! Pass a context "
+                                 "created with GenHEContext.");
+        if (!context_)
+            throw ContextMismatchError("Secretkey context mismatch! The "
+                                       "secret key has no context.");
+        if (n_ != context->n_ || N_ != context->N_ || k_ != context->k_ ||
+            bk_l_ != context->bk_l_ || bk_bg_bit_ != context->bk_bg_bit_ ||
             lwe_alpha_min != context->ks_stdev_ ||
             tlwe_alpha_min != context->bk_stdev_)
-            throw std::invalid_argument("Secretkey context mismatch!");
+            throw ContextMismatchError(error_message(
+                "Secretkey context mismatch! The key has n=", n_, ", N=", N_,
+                ", k=", k_, ", bk_l=", bk_l_, ", bk_bg_bit=", bk_bg_bit_,
+                ", the context has n=", context->n_, ", N=", context->N_,
+                ", k=", context->k_, ", bk_l=", context->bk_l_,
+                ", bk_bg_bit=", context->bk_bg_bit_,
+                " (the noise parameters must match as well)."));
         if (secret_key_generated_)
         {
             const size_t lwe_size = storage_type_ == storage_type::DEVICE

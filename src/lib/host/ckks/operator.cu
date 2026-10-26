@@ -17,7 +17,10 @@ namespace heongpu
     {
         if (!context || !context->context_generated_)
         {
-            throw std::invalid_argument("HEContext is not generated!");
+            throw StateError(
+                "HEContext is not generated! Create the "
+                "context with GenHEContext and call generate() before "
+                "using it.");
         }
 
         context_ = std::move(context);
@@ -73,7 +76,10 @@ namespace heongpu
 
         if (input1.depth_ != input2.depth_)
         {
-            throw std::logic_error("Ciphertexts leveled are not equal");
+            throw LevelMismatchError(error_message(
+                "Ciphertexts leveled are not equal (depth ", input1.depth_,
+                " and ", input2.depth_,
+                ")! Use mod_drop to bring both operands to the same depth."));
         }
 
         if (input1.encoding_ != input2.encoding_)
@@ -104,7 +110,11 @@ namespace heongpu
             input2.memory_size() <
                 (cipher_size * context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * current_decomp_count),
+                " coefficients per ciphertext, got ", input1.memory_size(),
+                " and ", input2.memory_size(), "."));
         }
 
         input_storage_manager(
@@ -167,7 +177,10 @@ namespace heongpu
 
         if (input1.depth_ != input2.depth_)
         {
-            throw std::logic_error("Ciphertexts leveled are not equal");
+            throw LevelMismatchError(error_message(
+                "Ciphertexts leveled are not equal (depth ", input1.depth_,
+                " and ", input2.depth_,
+                ")! Use mod_drop to bring both operands to the same depth."));
         }
 
         if (input1.encoding_ != input2.encoding_)
@@ -198,7 +211,11 @@ namespace heongpu
             input2.memory_size() <
                 (cipher_size * context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * current_decomp_count),
+                " coefficients per ciphertext, got ", input1.memory_size(),
+                " and ", input2.memory_size(), "."));
         }
 
         input_storage_manager(
@@ -266,7 +283,10 @@ namespace heongpu
         if (input1.memory_size() <
             (cipher_size * context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * current_decomp_count),
+                " coefficients, got ", input1.memory_size(), "."));
         }
 
         input_storage_manager(
@@ -314,7 +334,10 @@ namespace heongpu
     {
         if (input1.depth_ != input2.depth_)
         {
-            throw std::logic_error("Ciphertexts leveled are not equal");
+            throw LevelMismatchError(error_message(
+                "Ciphertexts leveled are not equal (depth ", input1.depth_,
+                " and ", input2.depth_,
+                ")! Use mod_drop to bring both operands to the same depth."));
         }
 
         if (input1.encoding_ != input2.encoding_)
@@ -330,12 +353,18 @@ namespace heongpu
         if (input1.memory_size() <
             (cipher_size * context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * current_decomp_count),
+                " coefficients, got ", input1.memory_size(), "."));
         }
 
         if (input2.size() < (context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Plaintext size!");
+            throw ParameterError(
+                error_message("Invalid Plaintext size! Expected at least ",
+                              (context_->n * current_decomp_count),
+                              " coefficients, got ", input2.size(), "."));
         }
 
         DeviceVector<Data64> output_memory(
@@ -359,7 +388,10 @@ namespace heongpu
     {
         if (input1.depth_ != input2.depth_)
         {
-            throw std::logic_error("Ciphertexts leveled are not equal");
+            throw LevelMismatchError(error_message(
+                "Ciphertexts leveled are not equal (depth ", input1.depth_,
+                " and ", input2.depth_,
+                ")! Use mod_drop to bring both operands to the same depth."));
         }
 
         if (input1.encoding_ != input2.encoding_)
@@ -375,12 +407,18 @@ namespace heongpu
         if (input1.memory_size() <
             (cipher_size * context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * current_decomp_count),
+                " coefficients, got ", input1.memory_size(), "."));
         }
 
         if (input2.size() < (context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Plaintext size!");
+            throw ParameterError(
+                error_message("Invalid Plaintext size! Expected at least ",
+                              (context_->n * current_decomp_count),
+                              " coefficients, got ", input2.size(), "."));
         }
 
         addition<<<dim3((context_->n >> 8), current_decomp_count, 1), 256, 0,
@@ -400,7 +438,10 @@ namespace heongpu
         if (input1.memory_size() <
             (cipher_size * context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * current_decomp_count),
+                " coefficients, got ", input1.memory_size(), "."));
         }
 
         DeviceVector<Data64> output_memory(
@@ -429,7 +470,10 @@ namespace heongpu
         if (input1.memory_size() <
             (cipher_size * context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * current_decomp_count),
+                " coefficients, got ", input1.memory_size(), "."));
         }
 
         addition_constant_plain_ckks_poly<<<dim3((context_->n >> 8),
@@ -446,7 +490,10 @@ namespace heongpu
     {
         if (input1.depth_ != input2.depth_)
         {
-            throw std::logic_error("Ciphertexts leveled are not equal");
+            throw LevelMismatchError(error_message(
+                "Ciphertexts leveled are not equal (depth ", input1.depth_,
+                " and ", input2.depth_,
+                ")! Use mod_drop to bring both operands to the same depth."));
         }
 
         if (input1.encoding_ != input2.encoding_)
@@ -462,12 +509,18 @@ namespace heongpu
         if (input1.memory_size() <
             (cipher_size * context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * current_decomp_count),
+                " coefficients, got ", input1.memory_size(), "."));
         }
 
         if (input2.size() < (context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Plaintext size!");
+            throw ParameterError(
+                error_message("Invalid Plaintext size! Expected at least ",
+                              (context_->n * current_decomp_count),
+                              " coefficients, got ", input2.size(), "."));
         }
 
         DeviceVector<Data64> output_memory(
@@ -491,7 +544,10 @@ namespace heongpu
     {
         if (input1.depth_ != input2.depth_)
         {
-            throw std::logic_error("Ciphertexts leveled are not equal");
+            throw LevelMismatchError(error_message(
+                "Ciphertexts leveled are not equal (depth ", input1.depth_,
+                " and ", input2.depth_,
+                ")! Use mod_drop to bring both operands to the same depth."));
         }
 
         if (input1.encoding_ != input2.encoding_)
@@ -507,12 +563,18 @@ namespace heongpu
         if (input1.memory_size() <
             (cipher_size * context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * current_decomp_count),
+                " coefficients, got ", input1.memory_size(), "."));
         }
 
         if (input2.size() < (context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Plaintext size!");
+            throw ParameterError(
+                error_message("Invalid Plaintext size! Expected at least ",
+                              (context_->n * current_decomp_count),
+                              " coefficients, got ", input2.size(), "."));
         }
 
         substraction<<<dim3((context_->n >> 8), current_decomp_count, 1), 256,
@@ -533,7 +595,10 @@ namespace heongpu
         if (input1.memory_size() <
             (cipher_size * context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * current_decomp_count),
+                " coefficients, got ", input1.memory_size(), "."));
         }
 
         DeviceVector<Data64> output_memory(
@@ -562,7 +627,10 @@ namespace heongpu
         if (input1.memory_size() <
             (cipher_size * context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * current_decomp_count),
+                " coefficients, got ", input1.memory_size(), "."));
         }
 
         substraction_constant_plain_ckks_poly<<<dim3((context_->n >> 8),
@@ -583,7 +651,10 @@ namespace heongpu
         if (input1.memory_size() <
             (cipher_size * context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * current_decomp_count),
+                " coefficients, got ", input1.memory_size(), "."));
         }
 
         DeviceVector<Data64> output_memory(
@@ -648,7 +719,10 @@ namespace heongpu
         if (input1.memory_size() <
             (cipher_size * context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * current_decomp_count),
+                " coefficients, got ", input1.memory_size(), "."));
         }
 
         DeviceVector<Data64> output_memory(
@@ -759,7 +833,10 @@ namespace heongpu
         if (input1.memory_size() <
             (cipher_size * context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * current_decomp_count),
+                " coefficients, got ", input1.memory_size(), "."));
         }
 
         DeviceVector<Data64> output_memory(
@@ -786,7 +863,10 @@ namespace heongpu
         if (input1.memory_size() <
             (cipher_size * context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (cipher_size * context_->n * current_decomp_count),
+                " coefficients, got ", input1.memory_size(), "."));
         }
 
         DeviceVector<Data64> output_memory(
@@ -808,7 +888,10 @@ namespace heongpu
     {
         if (input1.depth_ != input2.depth_)
         {
-            throw std::logic_error("Ciphertexts leveled are not equal");
+            throw LevelMismatchError(error_message(
+                "Ciphertexts leveled are not equal (depth ", input1.depth_,
+                " and ", input2.depth_,
+                ")! Use mod_drop to bring both operands to the same depth."));
         }
 
         if (input1.encoding_ != input2.encoding_)
@@ -822,7 +905,11 @@ namespace heongpu
         if (input1.memory_size() < (2 * context_->n * current_decomp_count) ||
             input2.memory_size() < (2 * context_->n * current_decomp_count))
         {
-            throw std::invalid_argument("Invalid Ciphertexts size!");
+            throw ParameterError(error_message(
+                "Invalid Ciphertexts size! Expected at least ",
+                (2 * context_->n * current_decomp_count),
+                " coefficients per ciphertext, got ", input1.memory_size(),
+                " and ", input2.memory_size(), "."));
         }
 
         DeviceVector<Data64> output_memory(
@@ -851,7 +938,10 @@ namespace heongpu
     {
         if (input1.depth_ != input2.depth_)
         {
-            throw std::logic_error("Ciphertexts leveled are not equal");
+            throw LevelMismatchError(error_message(
+                "Ciphertexts leveled are not equal (depth ", input1.depth_,
+                " and ", input2.depth_,
+                ")! Use mod_drop to bring both operands to the same depth."));
         }
 
         if (input1.encoding_ != input2.encoding_)
@@ -1371,7 +1461,10 @@ namespace heongpu
                 if (!(galois_key.galois_elt.find(index) !=
                       galois_key.galois_elt.end()))
                 {
-                    throw std::logic_error("Galois key not present!");
+                    throw KeyNotFoundError(error_message(
+                        "Galois key not present for rotation step ", index,
+                        " (needed for shift ", shift,
+                        ")! Generate the Galoiskey with this shift."));
                 }
                 required_galoiselt.push_back(galois_key.galois_elt[index]);
             }
@@ -1413,7 +1506,10 @@ namespace heongpu
                 if (!(galois_key.galois_elt.find(index) !=
                       galois_key.galois_elt.end()))
                 {
-                    throw std::logic_error("Galois key not present!");
+                    throw KeyNotFoundError(error_message(
+                        "Galois key not present for rotation step ", index,
+                        " (needed for shift ", shift,
+                        ")! Generate the Galoiskey with this shift."));
                 }
                 required_galoiselt.push_back(galois_key.galois_elt[index]);
             }
@@ -5059,7 +5155,9 @@ namespace heongpu
         int current_decomp_count = context_->Q_size - input1.depth_;
         if (current_decomp_count != 1)
         {
-            throw std::logic_error("Ciphertexts leveled should be at max!");
+            throw LevelMismatchError(error_message(
+                "Ciphertexts leveled should be at max! The ciphertext has ",
+                current_decomp_count, " moduli, expected ", 1, "."));
         }
 
         Ciphertext<Scheme::CKKS> scaled_input1 = input1;
@@ -5139,7 +5237,10 @@ namespace heongpu
         int current_decomp_count = context_->Q_size - input1.depth_;
         if (current_decomp_count != (stc_config_.level_start_ + 1))
         {
-            throw std::logic_error("Ciphertexts leveled should be at max!");
+            throw LevelMismatchError(error_message(
+                "Ciphertexts leveled should be at max! The ciphertext has ",
+                current_decomp_count, " moduli, expected ",
+                stc_config_.level_start_ + 1, "."));
         }
 
         // Slot to coeff
@@ -5380,7 +5481,10 @@ namespace heongpu
         int current_decomp_count = context_->Q_size - input2.depth_;
         if (current_decomp_count != (stc_config_.level_start_ + 1))
         {
-            throw std::logic_error("Ciphertexts leveled should be at max!");
+            throw LevelMismatchError(error_message(
+                "Ciphertexts leveled should be at max! The ciphertext has ",
+                current_decomp_count, " moduli, expected ",
+                stc_config_.level_start_ + 1, "."));
         }
 
         Ciphertext<Scheme::CKKS> input_ =
@@ -5410,7 +5514,10 @@ namespace heongpu
         int current_decomp_count = context_->Q_size - input1.depth_;
         if (current_decomp_count != (stc_config_.level_start_ + 1))
         {
-            throw std::logic_error("Ciphertexts leveled should be at max!");
+            throw LevelMismatchError(error_message(
+                "Ciphertexts leveled should be at max! The ciphertext has ",
+                current_decomp_count, " moduli, expected ",
+                stc_config_.level_start_ + 1, "."));
         }
 
         // Slot to coeff
