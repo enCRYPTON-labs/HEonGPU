@@ -102,6 +102,66 @@ HEonGPU includes a high-performance serialization module for all major objects (
 * **Raw Binary Format**: For maximum speed.
 * **Zlib Compression**: An optional compressed format that can reduce storage and bandwidth requirements by up to 60%, useful for network-bound applications or long-term storage.
 
+Error Handling
+--------------
+
+HEonGPU reports errors with exceptions. The most common ones have their own types, declared in ``<heongpu/util/error.h>``, and their messages contain the values involved and how to fix the problem.
+
+.. list-table:: HEonGPU exception types
+   :widths: 25 25 50
+   :header-rows: 1
+
+   * - Type
+     - Standard base
+     - Thrown when
+   * - ``ParameterError``
+     - ``std::invalid_argument``
+     - A parameter or an argument has an invalid value, for example a scale out of bounds.
+   * - ``StateError``
+     - ``std::invalid_argument``
+     - An object is used before it is ready, for example a key that is not generated yet.
+   * - ``ContextMismatchError``
+     - ``std::invalid_argument``
+     - An object is used with a different ``HEContext`` (see below).
+   * - ``LevelMismatchError``
+     - ``std::invalid_argument``
+     - The operands are not at the levels the operation requires.
+   * - ``KeyNotFoundError``
+     - ``std::invalid_argument``
+     - A key needed by the operation is missing, for example a Galois key for a rotation step.
+   * - ``SerializationError``
+     - ``std::runtime_error``
+     - Serialized data is malformed or written for another scheme.
+   * - ``SystemError``
+     - ``std::runtime_error``
+     - A system service fails, for example the random number generator.
+
+All of them also derive from ``heongpu::Error``, so one handler can catch every HEonGPU exception. Existing handlers for the standard types keep working.
+
+.. code-block:: cpp
+
+    try
+    {
+        operators.add(ciphertext1, ciphertext2, result);
+    }
+    catch (const heongpu::LevelMismatchError& error)
+    {
+        // "Ciphertexts leveled are not equal (depth 0 and 1)! ..."
+        operators.mod_drop_inplace(ciphertext1);
+        operators.add(ciphertext1, ciphertext2, result);
+    }
+    catch (const heongpu::Error& error)
+    {
+        std::cerr << error.what() << std::endl;
+    }
+
+Context Identity
+----------------
+
+Every generated ``HEContext`` has an identity, returned by ``context_id()``, computed from the scheme, the ring size, the Q and P primes and (for BFV) the plaintext modulus. Ciphertexts, plaintexts and keys remember the identity of the context they were created with, and operators, encryptors, decryptors and encoders throw ``ContextMismatchError`` when they get an object of another context. This catches, for example, two contexts with the same ring size and number of primes but different primes, which would otherwise give wrong results.
+
+Contexts generated from the same parameters, for example on a client and a server, have the same identity, so their objects can be used together. The serialization format does not store the identity yet, so objects loaded with ``load`` are not checked this way.
+
 Tutorials
 ---------
 
