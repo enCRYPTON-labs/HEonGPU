@@ -208,10 +208,35 @@ namespace heongpu
         return ((size - 1) * 64) + calculate_bit_count(number[size - 1]);
     }
 
+    namespace
+    {
+        // Exact for every 64-bit modulus, unlike the Barrett reduction of
+        // Modulus64.
+        Data64 mult_mod(Data64 a, Data64 b, Data64 modulus)
+        {
+            return static_cast<Data64>(static_cast<unsigned __int128>(a) * b %
+                                       modulus);
+        }
+
+        Data64 exp_mod(Data64 base, Data64 exponent, Data64 modulus)
+        {
+            Data64 result = 1 % modulus;
+            base %= modulus;
+            while (exponent > 0)
+            {
+                if (exponent & 1)
+                {
+                    result = mult_mod(result, base, modulus);
+                }
+                base = mult_mod(base, base, modulus);
+                exponent >>= 1;
+            }
+            return result;
+        }
+    } // namespace
+
     bool miller_rabin(const Data64& value, size_t num_rounds)
     {
-        Modulus64 modulus_in(value);
-
         Data64 d = value - 1;
         Data64 r = 0;
         while (0 == (d & 0x1)) // #true while the last bit of r is zero
@@ -224,23 +249,44 @@ namespace heongpu
             return false;
         }
 
-        // apply miller_rabin primality test
-        std::random_device rand;
+        // The first rounds use the twelve smallest primes as bases, which
+        // decide every 64-bit value without error; further rounds use random
+        // bases.
+        static const Data64 bases[] = {2,  3,  5,  7,  11, 13,
+                                       17, 19, 23, 29, 31, 37};
+        constexpr size_t base_count = sizeof(bases) / sizeof(bases[0]);
+        std::unique_ptr<std::random_device> rand;
         std::uniform_int_distribution<Data64> dist(3, value - 1);
         for (size_t i = 0; i < num_rounds; i++)
         {
-            Data64 a = i ? dist(rand) : 2;
-            Data64 x = OPERATOR64::exp(a, d, modulus_in);
+            Data64 a;
+            if (i < base_count)
+            {
+                a = bases[i] % value;
+                if (a == 0)
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                if (!rand)
+                {
+                    rand = std::make_unique<std::random_device>();
+                }
+                a = dist(*rand);
+            }
+            Data64 x = exp_mod(a, d, value);
             if (x == 1 || x == value - 1)
             {
                 continue;
             }
-            Data64 count = 0;
-            do
+            // value is a probable prime if x becomes -1 within r - 1
+            // squarings.
+            for (Data64 count = 1; (count < r) && (x != value - 1); count++)
             {
-                x = OPERATOR64::mult(x, x, modulus_in);
-                count++;
-            } while (x != value - 1 && count < r - 1);
+                x = mult_mod(x, x, value);
+            }
             if (x != value - 1)
             {
                 return false;
@@ -251,10 +297,12 @@ namespace heongpu
 
     bool is_prime(const Data64& value)
     {
-        size_t num_rounds = 11;
+        // Twelve rounds with the fixed bases of miller_rabin decide every
+        // 64-bit value.
+        size_t num_rounds = 12;
 
         // First check the prime under 1000.
-        std::vector<Data64> low_primes = {
+        static const std::vector<Data64> low_primes = {
             3ULL,   5ULL,   7ULL,   11ULL,  13ULL,  17ULL,  19ULL,  23ULL,
             29ULL,  31ULL,  37ULL,  41ULL,  43ULL,  47ULL,  53ULL,  59ULL,
             61ULL,  67ULL,  71ULL,  73ULL,  79ULL,  83ULL,  89ULL,  97ULL,

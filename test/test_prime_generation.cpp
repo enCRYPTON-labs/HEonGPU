@@ -40,6 +40,39 @@ namespace
     }
 } // namespace
 
+TEST(PrimeGeneration, Is_Prime)
+{
+    auto trial_division = [](Data64 value)
+    {
+        for (Data64 d = 3; d * d <= value; d += 2)
+        {
+            if (value % d == 0)
+            {
+                return false;
+            }
+        }
+        return true;
+    };
+    for (Data64 value = 3; value < 300000; value += 2)
+    {
+        ASSERT_EQ(heongpu::is_prime(value), trial_division(value)) << value;
+    }
+
+    // Strong pseudoprimes to the bases 2, 2 to 7, 2 to 11, 2 to 13 and 2 to
+    // 17.
+    for (Data64 value : {2047ULL, 3215031751ULL, 2152302898747ULL,
+                         3474749660383ULL, 341550071728321ULL})
+    {
+        EXPECT_FALSE(heongpu::is_prime(value)) << value;
+    }
+    // Large primes, one of them 2^61 - 1, and composites next to them.
+    EXPECT_TRUE(heongpu::is_prime((Data64(1) << 61) - 1));
+    EXPECT_TRUE(heongpu::is_prime(0x1fffffffffe00001ULL));
+    EXPECT_TRUE(heongpu::is_prime(18446744073709551557ULL)); // 2^64 - 59
+    EXPECT_FALSE(heongpu::is_prime((Data64(1) << 61) + 1));
+    EXPECT_FALSE(heongpu::is_prime(18446744073709551557ULL - 2));
+}
+
 TEST(PrimeGeneration, Below)
 {
     for (size_t n : {4096, 65536})

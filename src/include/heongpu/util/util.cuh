@@ -250,6 +250,11 @@ namespace heongpu
     int calculate_bit_count(Data64 number);
     int calculate_big_integer_bit_count(Data64* number, int word_count);
 
+    /**
+     * @brief Miller-Rabin test of the odd value with num_rounds bases. The
+     * first twelve are the primes from 2 to 37, which decide every 64-bit
+     * value without error; further rounds use random bases.
+     */
     bool miller_rabin(const Data64& value, size_t num_rounds);
 
     bool is_prime(const Data64& value);
