@@ -183,6 +183,7 @@ set(HEONGPU_HOST_BFV_SOURCES
     lib/host/bfv/plaintext.cu
     lib/host/bfv/publickey.cu
     lib/host/bfv/secretkey.cu
+    lib/host/bfv/session.cu
 )
 
 add_library(heongpu_host_bfv OBJECT ${HEONGPU_HOST_BFV_SOURCES})

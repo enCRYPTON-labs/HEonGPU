@@ -20,6 +20,7 @@
 #include <heongpu/host/bfv/operator.cuh>
 #include <heongpu/host/bfv/mpcmanager.cuh>
 #include <heongpu/host/bfv/parameters.cuh>
+#include <heongpu/host/bfv/session.cuh>
 
 #include <heongpu/host/ckks/context.cuh>
 #include <heongpu/host/ckks/secretkey.cuh>
