@@ -81,17 +81,17 @@ BFV Session (``18_bfv_session.cpp``)
 Advanced Features
 -----------------
 
-These examples demonstrate more advanced capabilities of the library, such as different key-switching methods and parallel execution with CUDA streams.
+These examples demonstrate more advanced capabilities of the library, such as key switching and parallel execution with CUDA streams.
 
-7. Key-Switching Methods in BFV (``4_switchkey_methods_bfv.cpp``)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+7. Key Switching in BFV (``4_bfv_key_switching.cpp``)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     This example explores the various key-switching operations available in the BFV scheme.
 
     * **Workflow**: After a standard multiplication and relinearization, it demonstrates how to perform ``rotate_rows`` and ``rotate_columns`` using Galois keys. It also shows how to perform a ``keyswitch`` operation to change the secret key under which a ciphertext is encrypted.
     * **Key Concept**: **Galois Keys and Rotation**. It illustrates how to generate ``Galoiskey`` objects and use them to perform SIMD rotations on the encrypted vectors.
 
-8. Key-Switching Methods in CKKS (``5_switchkey_methods_ckks.cpp``)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+8. Key Switching in CKKS (``5_ckks_key_switching.cpp``)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     This example is the CKKS counterpart to the previous one, showcasing rotations and key-switching for approximate numbers.
 
     * **Workflow**: It demonstrates the use of ``rotate_inplace`` with Galois keys and the ``keyswitch`` operation, highlighting that the core concepts are similar across both BFV and CKKS.

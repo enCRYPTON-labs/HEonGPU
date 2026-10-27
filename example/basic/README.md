@@ -10,9 +10,9 @@ The basic example directory in the HEonGPU repository contains sample programs t
 
 - [3_basic_memorypool_config.cpp](3_basic_memorypool_config.cpp): Shows how to configure the memory pool (host/device size via percentages or bytes) before generating a context->
 
-- [4_switchkey_methods_bfv.cpp](4_switchkey_methods_bfv.cpp): Explores different key switching methods in the BFV scheme, illustrating how to manage and switch between keys during encrypted computations.
+- [4_bfv_key_switching.cpp](4_bfv_key_switching.cpp): Rotations and key switching in the BFV scheme: it rotates rows and columns with Galois keys and switches a ciphertext to another secret key.
 
-- [5_switchkey_methods_ckks.cpp](5_switchkey_methods_ckks.cpp): Examines key switching methods within the CKKS scheme, demonstrating the process of changing keys in homomorphic operations.
+- [5_ckks_key_switching.cpp](5_ckks_key_switching.cpp): Rotations and key switching in the CKKS scheme: it rotates the slots with Galois keys and switches a ciphertext to another secret key.
 
 - [6_ckks_coefficient_encoding.cpp](6_ckks_coefficient_encoding.cpp): Demonstrates CKKS coefficient encoding (`encoding::coefficient`) end-to-end, including encode/encrypt/decrypt/decode and encoding-mismatch validation.
 

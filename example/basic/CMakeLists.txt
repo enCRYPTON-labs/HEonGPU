@@ -10,8 +10,8 @@ set(EXECUTABLES
     1_basic_bfv 1_basic_bfv.cpp
     2_basic_ckks 2_basic_ckks.cpp
     3_basic_memorypool_config 3_basic_memorypool_config.cpp
-    4_switchkey_methods_bfv 4_switchkey_methods_bfv.cpp
-    5_switchkey_methods_ckks 5_switchkey_methods_ckks.cpp
+    4_bfv_key_switching 4_bfv_key_switching.cpp
+    5_ckks_key_switching 5_ckks_key_switching.cpp
     6_ckks_coefficient_encoding 6_ckks_coefficient_encoding.cpp
     7_ckks_coeff_to_slot_roundtrip 7_ckks_coeff_to_slot_roundtrip.cpp
     8_default_stream_usage 8_default_stream_usage.cpp

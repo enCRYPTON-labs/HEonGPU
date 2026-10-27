@@ -101,7 +101,7 @@ Homomorphic operation number and depth consume for homomorphic DFT(from [paper](
 | Depth            | 1           | 1           | O(log<sub>r</sub> n)    | O(log<sub>r</sub> n)      |
 
 </div>
-Although this method results in higher depth consumption in stages `Coeff to Slot` and `Slot to Coeff` compared to Naive and BSGS approaches, it provides a significant performance improvement. The `EncodingMatrixConfig` of each stage sets its start level, its level loss and its baby-step/giant-step ratio. The matrix multiplications use double hoisting and require `KEYSWITCHING_METHOD_II` (more than one P prime). There is also an option to store all galois keys on the CPU, but this would significantly slow down the bootstrapping process. However, the key size still considerably large, so it is important to keep this in mind while perfoming bootstrapping!
+Although this method results in higher depth consumption in stages `Coeff to Slot` and `Slot to Coeff` compared to Naive and BSGS approaches, it provides a significant performance improvement. The `EncodingMatrixConfig` of each stage sets its start level, its level loss and its baby-step/giant-step ratio. The matrix multiplications use double hoisting. There is also an option to store all galois keys on the CPU, but this would significantly slow down the bootstrapping process. However, the key size still considerably large, so it is important to keep this in mind while perfoming bootstrapping!
 
 `Approximate Modular Reduction` evaluates a Chebyshev interpolation of the cosine followed by double-angle steps. The `EvalModConfig` class configures it (`K`, polynomial degree, number of double-angle steps, `message_ratio`).
 
