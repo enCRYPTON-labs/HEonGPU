@@ -30,28 +30,75 @@ namespace heongpu
             return count;
         }
 
-        // Bit count of Q: the scaling primes alternate below and above
-        // 2^scale_bit_size, starting below, and the ones above have one more
-        // bit.
-        int q_bit_count(const HEParams<Scheme::CKKS>& params, int depth)
+        // Q for the ring size degree: the first prime, then one scaling
+        // prime per level. Rescaling by q_l turns the scale s_l of level l
+        // into s_l^2 / q_l, the scale of level l - 1 when ciphertexts of the
+        // same scale are multiplied. Each q_l is the prime closest to
+        // s_l^2 / 2^scale_bit_size, so the scale stays around
+        // 2^scale_bit_size at every level instead of doubling the error of
+        // the level above (eprint 2020/1118). The levels are chosen from the
+        // top, which rescaling drops first.
+        std::vector<Data64> q_primes(const HEParams<Scheme::CKKS>& params,
+                                     std::size_t degree, int depth)
         {
-            return params.first_modulus_bit_size +
-                   depth * params.scale_bit_size + depth / 2;
+            std::vector<Data64> primes =
+                generate_primes_below(degree, params.first_modulus_bit_size, 1);
+            // The scale stays close to 2^scale_bit_size, so one more
+            // candidate on each side than there are levels suffices.
+            std::vector<Data64> candidates = generate_primes_around(
+                degree, params.scale_bit_size, 2 * depth + 2, primes);
+
+            std::vector<Data64> scaling(depth);
+            double power = params.scale();
+            double scale = power;
+            for (int level = depth; level >= 1; level--)
+            {
+                double target = scale * scale / power;
+                auto closest = std::min_element(
+                    candidates.begin(), candidates.end(),
+                    [&](Data64 a, Data64 b)
+                    {
+                        return std::abs(static_cast<double>(a) - target) <
+                               std::abs(static_cast<double>(b) - target);
+                    });
+                scaling[level - 1] = *closest;
+                scale = scale * scale / static_cast<double>(*closest);
+                candidates.erase(closest);
+            }
+            primes.insert(primes.end(), scaling.begin(), scaling.end());
+            return primes;
         }
 
-        // The largest depth that fits limit with special_count P primes, or
-        // -1 if none does.
-        int max_depth(const HEParams<Scheme::CKKS>& params, int limit,
-                      int special_count)
+        // The largest depth whose Q fits limit with special_count P primes
+        // for the ring size degree, or -1 if none does.
+        int max_depth(const HEParams<Scheme::CKKS>& params, std::size_t degree,
+                      int limit, int special_count)
         {
-            int depth = -1;
-            while (q_bit_count(params, depth + 1) +
-                       special_count * special_bit_size <=
-                   limit)
+            auto fits = [&](int depth)
             {
-                depth++;
+                return bit_count(q_primes(params, degree, depth)) +
+                           special_count * special_bit_size <=
+                       limit;
+            };
+            // Every scaling prime has at least scale_bit_size bits.
+            int low = -1;
+            int high = (limit - special_count * special_bit_size -
+                        params.first_modulus_bit_size) /
+                           params.scale_bit_size +
+                       1;
+            while (high - low > 1)
+            {
+                int middle = (low + high) / 2;
+                if ((middle >= 0) && fits(middle))
+                {
+                    low = middle;
+                }
+                else
+                {
+                    high = middle;
+                }
             }
-            return depth;
+            return low;
         }
 
         void check(const HEParams<Scheme::CKKS>& params)
@@ -185,26 +232,43 @@ namespace heongpu
         check(*this);
 
         int depth = multiplicative_depth;
-        int q_bits = q_bit_count(*this, depth);
         int min_special_count = std::max(special_modulus_count, 1);
 
         // The smallest ring size that fits Q and the P primes, or the given
-        // one.
+        // one. The primes depend on the ring size.
         std::size_t degree =
             (poly_modulus_degree != 0) ? poly_modulus_degree : MIN_POLY_DEGREE;
         std::size_t max_degree =
             (poly_modulus_degree != 0) ? poly_modulus_degree : MAX_POLY_DEGREE;
+        // Every scaling prime has at least scale_bit_size bits, so smaller
+        // ring sizes need not be tried.
+        int min_bits = first_modulus_bit_size + depth * scale_bit_size +
+                       min_special_count * special_bit_size;
         while ((degree < max_degree) &&
-               (q_bits + min_special_count * special_bit_size >
-                max_coeff_bit_count(security_level, degree)))
+               (min_bits > max_coeff_bit_count(security_level, degree)))
         {
             degree *= 2;
         }
+        std::vector<Data64> q;
+        int limit;
+        while (true)
+        {
+            q = q_primes(*this, degree, depth);
+            limit = max_coeff_bit_count(security_level, degree);
+            if ((bit_count(q) + min_special_count * special_bit_size <=
+                 limit) ||
+                (degree >= max_degree))
+            {
+                break;
+            }
+            degree *= 2;
+        }
 
-        int limit = max_coeff_bit_count(security_level, degree);
+        int q_bits = bit_count(q);
         if (q_bits + min_special_count * special_bit_size > limit)
         {
-            int fitting_depth = max_depth(*this, limit, min_special_count);
+            int fitting_depth =
+                max_depth(*this, degree, limit, min_special_count);
             std::string special =
                 (special_modulus_count == 0)
                     ? std::string("one P prime")
@@ -237,12 +301,7 @@ namespace heongpu
         parameters.poly_modulus_degree = degree;
         parameters.scale = scale();
 
-        parameters.coeff_modulus =
-            generate_primes_below(degree, first_modulus_bit_size, 1);
-        std::vector<Data64> scaling = generate_primes_around(
-            degree, scale_bit_size, depth, parameters.coeff_modulus);
-        parameters.coeff_modulus.insert(parameters.coeff_modulus.end(),
-                                        scaling.begin(), scaling.end());
+        parameters.coeff_modulus = q;
         parameters.special_modulus = generate_primes_below(
             degree, special_bit_size, special_count, parameters.coeff_modulus);
 

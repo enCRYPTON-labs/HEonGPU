@@ -58,32 +58,49 @@ TEST(CKKSParameters, Never_Exceed_The_Security_Limit)
     {
         for (int scale_bits : {30, 35, 40, 45, 50, 55, 59})
         {
+            int fitted = 0;
             for (int depth = 0; depth <= 60; depth++)
             {
                 Params p = params(depth, scale_bits, level);
-                // Q needs this many bits; the scaling primes above the scale
-                // have one more bit.
-                int q_bits = 60 + depth * scale_bits + depth / 2;
-                if (q_bits + 60 > heongpu::max_coeff_bit_count(level, 65536))
+                heongpu::HEParameterSet<S> set;
+                try
                 {
-                    EXPECT_THROW(p.generate(), heongpu::ParameterError)
-                        << depth << " " << scale_bits;
-                    continue;
+                    set = p.generate();
                 }
-
-                auto set = p.generate();
+                catch (const heongpu::ParameterError&)
+                {
+                    // Deeper computations do not fit either.
+                    EXPECT_THROW(
+                        params(depth + 1, scale_bits, level).generate(),
+                        heongpu::ParameterError);
+                    break;
+                }
+                fitted++;
                 SCOPED_TRACE(set.to_string());
                 std::size_t n = set.poly_modulus_degree;
                 EXPECT_LE(set.total_bit_count(), set.max_bit_count());
                 EXPECT_EQ(set.multiplicative_depth(), depth);
-                EXPECT_EQ(set.total_bit_count(),
-                          q_bits + 60 * int(set.special_modulus.size()));
+
+                // The first prime has 60 bits, the scaling primes are next to
+                // the scale and the P primes have 60 bits.
+                EXPECT_EQ(bit_length(set.coeff_modulus[0]), 60);
+                for (int i = 1; i <= depth; i++)
+                {
+                    int bits = bit_length(set.coeff_modulus[i]);
+                    EXPECT_TRUE((bits == scale_bits) ||
+                                (bits == scale_bits + 1));
+                }
+                for (Data64 prime : set.special_modulus)
+                {
+                    EXPECT_EQ(bit_length(prime), 60);
+                }
 
                 // The smallest ring size, and as many P primes as fit.
                 if (n > 4096)
                 {
-                    EXPECT_GT(q_bits + 60,
-                              heongpu::max_coeff_bit_count(level, n / 2));
+                    Params smaller = p;
+                    smaller.poly_modulus_degree = n / 2;
+                    EXPECT_THROW(smaller.generate(), heongpu::ParameterError);
                 }
                 EXPECT_GE(set.special_modulus.size(), 1u);
                 EXPECT_LE(set.special_modulus.size(), size_t(depth + 1));
@@ -108,6 +125,7 @@ TEST(CKKSParameters, Never_Exceed_The_Security_Limit)
                 // The context accepts them.
                 EXPECT_NO_THROW(set.make_context());
             }
+            EXPECT_GT(fitted, 0);
         }
     }
 }
@@ -137,14 +155,33 @@ TEST(CKKSParameters, Choices)
         EXPECT_EQ(set.digit_count(), e.digits);
     }
 
-    // The first prime and the P primes are 60 bit, the scaling primes
-    // alternate below and above the scale.
+    // The first prime and the P primes have 60 bits, the scaling primes 40
+    // or 41.
     auto set = params(5).generate();
     EXPECT_EQ(set.to_string(),
-              "HEParameterSet<CKKS>(N=16384, Q=60+40+41+40+41+40 bits, "
-              "P=60+60 bits, total=382/438 bits, digits=3, scale=2^40, "
+              "HEParameterSet<CKKS>(N=16384, Q=60+40+41+41+40+41 bits, "
+              "P=60+60 bits, total=383/438 bits, digits=3, scale=2^40, "
               "security=sec128)");
     EXPECT_EQ(set.scale, std::pow(2.0, 40));
+}
+
+TEST(CKKSParameters, Scale_Stays_Around_The_Scale_When_Squaring)
+{
+    // Squaring and rescaling from the top level: s_{l-1} = s_l^2 / q_l.
+    for (int scale_bits : {40, 50})
+    {
+        for (int depth : {10, 20, 30})
+        {
+            auto set = params(depth, scale_bits).generate();
+            SCOPED_TRACE(set.to_string());
+            double scale = std::ldexp(1.0, scale_bits);
+            for (int level = depth; level >= 1; level--)
+            {
+                scale = scale * scale / double(set.coeff_modulus[level]);
+                ASSERT_NEAR(std::log2(scale), scale_bits, 1e-3) << level;
+            }
+        }
+    }
 }
 
 TEST(CKKSParameters, Given_Ring_Size_And_Special_Count)
@@ -168,7 +205,7 @@ TEST(CKKSParameters, Given_Ring_Size_And_Special_Count)
     small.poly_modulus_degree = 8192;
     EXPECT_EQ(message_of([&] { small.generate(); }),
               "Depth 5 with the scale 2^40 does not fit sec128 with N = 8192: "
-              "Q and one P prime need 322 bits, the limit is 218. At most "
+              "Q and one P prime need 323 bits, the limit is 218. At most "
               "depth 2 fits.");
 
     small.poly_modulus_degree = 4096;
@@ -223,6 +260,48 @@ TEST(CKKSParameters, Apply_Checks_The_Security_Level)
     EXPECT_EQ(same->get_poly_modulus_degree(), 16384);
     EXPECT_EQ(same->get_ciphertext_modulus_count(), 4);
     EXPECT_EQ(same->get_key_modulus_count(), 8);
+}
+
+TEST(CKKSParameters, Squaring_On_The_GPU_Keeps_The_Scale)
+{
+    constexpr int depth = 12;
+    Params p = params(depth);
+    auto context = p.make_context();
+    context->generate();
+    heongpu::HEKeyGenerator<S> generator(context);
+    auto secret_key = generator.secret_key();
+    auto public_key = generator.public_key(secret_key);
+    auto relin_key = generator.relin_key(secret_key);
+    heongpu::HEEncoder<S> encoder(context);
+    heongpu::HEEncryptor<S> encryptor(context, public_key);
+    heongpu::HEDecryptor<S> decryptor(context, secret_key);
+    heongpu::HEArithmeticOperator<S> operators(context, encoder);
+
+    // Signs, whose squares are 1.
+    int slots = context->get_poly_modulus_degree() / 2;
+    std::vector<double> x(slots);
+    for (int i = 0; i < slots; i++)
+    {
+        x[i] = (i % 3 == 0) ? -1.0 : 1.0;
+    }
+    auto plaintext = encoder.encode(x, p.scale());
+    auto ciphertext = encryptor.encrypt(plaintext);
+    for (int level = 0; level < depth; level++)
+    {
+        operators.multiply_inplace(ciphertext, ciphertext);
+        operators.relinearize_inplace(ciphertext, relin_key);
+        operators.rescale_inplace(ciphertext);
+        ASSERT_NEAR(std::log2(ciphertext.scale()), 40.0, 1e-3) << level;
+    }
+    EXPECT_EQ(ciphertext.level(), 0);
+
+    auto decrypted = decryptor.decrypt(ciphertext);
+    auto values = encoder.decode(decrypted);
+    for (int i = 0; i < slots; i++)
+    {
+        // Squaring doubles the relative error at every level.
+        ASSERT_NEAR(values[i], 1.0, std::ldexp(1.0, -8)) << i;
+    }
 }
 
 // Multiplies by a ciphertext of signs at every level, so the values keep

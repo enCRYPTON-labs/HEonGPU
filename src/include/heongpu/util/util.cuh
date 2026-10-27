@@ -284,10 +284,9 @@ namespace heongpu
      * @brief Returns the count primes p = 1 (mod 2 * poly_modulus_degree)
      * closest to 2^bit_size that are not in excluded, alternately below and
      * above it, starting below. The ones below have bit_size bits, the ones
-     * above bit_size + 1. Used for CKKS scaling primes: rescaling by them in
-     * turn keeps the scale around 2^bit_size instead of drifting in one
-     * direction. bit_size is from log2(poly_modulus_degree) + 2 to 60. Throws
-     * ParameterError if there are not enough of them.
+     * above bit_size + 1: the candidates for CKKS scaling primes. bit_size is
+     * from log2(poly_modulus_degree) + 2 to 60. Throws ParameterError if there
+     * are not enough of them.
      */
     std::vector<Data64>
     generate_primes_around(size_t poly_modulus_degree, int bit_size,

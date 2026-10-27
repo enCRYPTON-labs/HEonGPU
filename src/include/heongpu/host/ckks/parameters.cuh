@@ -74,9 +74,11 @@ namespace heongpu
      *
      * generate() takes the smallest ring size N whose security limit fits Q,
      * which has a first prime of first_modulus_bit_size bits and one scaling
-     * prime per level, together with at least one 60 bit P prime. The
-     * scaling primes are the primes closest to the scale, alternately below
-     * and above it, so rescaling keeps the scale around 2^scale_bit_size.
+     * prime per level, together with at least one 60 bit P prime. Rescaling
+     * by the scaling prime q_l turns the scale s_l of level l into
+     * s_l^2 / q_l when ciphertexts of the same scale are multiplied, so q_l
+     * is the prime closest to s_l^2 / 2^scale_bit_size: the scale stays
+     * around 2^scale_bit_size at every level.
      * P then gets as many 60 bit primes as the limit leaves room for, up to
      * the number of Q primes: a larger P splits Q into fewer key switching
      * digits, which makes key switching faster and the keys smaller.

@@ -23,8 +23,8 @@ int main(int argc, char* argv[])
     params.multiplicative_depth = 2;
 
     // The scale is 2^30. Every rescaling divides by a Q prime close to the
-    // scale; HEParams takes them alternately below and above 2^30, so the
-    // scale stays close to 2^30. The first Q prime, 60 bits by default
+    // scale; HEParams chooses them so that the scale stays close to 2^30 at
+    // every level. The first Q prime, 60 bits by default
     // (params.first_modulus_bit_size), bounds the result at the last level:
     // here 30 bits before the decimal point and about 20-30 bits after.
     params.scale_bit_size = 30;
