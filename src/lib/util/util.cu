@@ -458,12 +458,14 @@ namespace heongpu
                     "! Expected a power of two from ", MIN_POLY_DEGREE, " to ",
                     MAX_POLY_DEGREE, "."));
             }
-            if ((bit_size < MIN_USER_DEFINED_MOD_BIT_COUNT) ||
-                (bit_size > max_bit_size))
+            // 2N + 1, the smallest candidate, has log2(N) + 2 bits.
+            int min_bit_size = calculate_bit_size(poly_modulus_degree) + 1;
+            if ((bit_size < min_bit_size) || (bit_size > max_bit_size))
             {
                 throw ParameterError(error_message(
                     "Invalid prime bit size ", bit_size, "! Expected ",
-                    MIN_USER_DEFINED_MOD_BIT_COUNT, " to ", max_bit_size, "."));
+                    min_bit_size, " to ", max_bit_size,
+                    " for N = ", poly_modulus_degree, "."));
             }
         }
 

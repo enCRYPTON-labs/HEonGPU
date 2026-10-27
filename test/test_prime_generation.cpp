@@ -151,8 +151,13 @@ TEST(PrimeGeneration, Excluded)
 
 TEST(PrimeGeneration, InvalidRequests)
 {
-    EXPECT_THROW(heongpu::generate_primes_below(8192, 29, 1),
+    // 2N + 1 = 2^14 + 1 has 15 bits.
+    EXPECT_THROW(heongpu::generate_primes_below(8192, 14, 1),
                  heongpu::ParameterError);
+    EXPECT_EQ(heongpu::generate_primes_below(8192, 17, 1),
+              std::vector<Data64>{114689});
+    EXPECT_EQ(heongpu::generate_primes_below(32768, 17, 1),
+              std::vector<Data64>{65537});
     EXPECT_THROW(heongpu::generate_primes_below(8192, 62, 1),
                  heongpu::ParameterError);
     EXPECT_THROW(heongpu::generate_primes_around(8192, 61, 1),

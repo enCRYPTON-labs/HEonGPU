@@ -179,6 +179,7 @@ set(HEONGPU_HOST_BFV_SOURCES
     lib/host/bfv/keygenerator.cu
     lib/host/bfv/mpcmanager.cu
     lib/host/bfv/operator.cu
+    lib/host/bfv/parameters.cu
     lib/host/bfv/plaintext.cu
     lib/host/bfv/publickey.cu
     lib/host/bfv/secretkey.cu

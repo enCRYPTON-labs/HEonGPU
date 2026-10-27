@@ -76,6 +76,11 @@ namespace heongpu
 
         inline int get_poly_modulus_degree() const noexcept { return n; }
 
+        inline sec_level_type get_security_level() const noexcept
+        {
+            return sec_level_;
+        }
+
         inline int get_log_poly_modulus_degree() const noexcept
         {
             return n_power;

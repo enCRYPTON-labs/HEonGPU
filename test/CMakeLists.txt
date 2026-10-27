@@ -68,6 +68,7 @@ set(EXECUTABLES
     ckks_decrypt_depth_testcases test_ckks_decrypt_depth.cpp
     prime_generation_testcases test_prime_generation.cpp
     ckks_parameters_testcases test_ckks_parameters.cpp
+    bfv_parameters_testcases test_bfv_parameters.cpp
 )
 
 function(add_test exe source)
