@@ -598,7 +598,7 @@ HEonGPU follows [semantic versioning](https://semver.org/):
 - **Minor versions** (1.4, 1.5, ...) add features without breaking code that compiles against the previous minor version. They can change the ABI, so rebuild code that uses HEonGPU; the shared library is versioned accordingly (`libheongpu.so.1.4`).
 - **Patch versions** (1.4.1, ...) fix bugs without changing the API or the ABI.
 
-APIs that will be removed are first marked `[[deprecated]]`, with the replacement in the warning, for at least one minor version, and removed in the next major version.
+APIs that will be removed are first marked `[[deprecated]]`, with the replacement in the warning, for at least one minor version, and removed in the next major version. The documentation (Advanced Topics) lists the deprecated APIs.
 
 Serialized data stays readable: HEonGPU 1.x reads the data written by every earlier 1.x version. A newer version can write data that older versions cannot read; `save(stream, heongpu::serialization_format::v1)` writes data for HEonGPU 1.2 and earlier until 2.0; it is deprecated since 1.7.0, and 2.0 keeps reading such data.
 

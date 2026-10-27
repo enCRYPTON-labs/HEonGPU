@@ -55,6 +55,17 @@ HEonGPU follows `semantic versioning <https://semver.org/>`_:
 
 APIs that will be removed are first marked ``[[deprecated]]``, with the replacement in the warning, for at least one minor version, and removed in the next major version.
 
+Deprecated since 1.7.0, removed in 2.0:
+
+* CKKS ``rotate_rows``, ``rotate_rows_inplace`` and ``rotate_rows_hoisted``: use ``rotate``, ``rotate_inplace`` and ``rotate_hoisted``. CKKS slots are not split into rows; BFV keeps ``rotate_rows`` and ``rotate_columns``.
+* The CKKS bootstrapping functions that take the switch keys by pointer (``regular_bootstrapping``, ``slim_bootstrapping``, ``bit_bootstrapping`` and the gates such as ``AND_bootstrapping``): use the overloads with ``CKKSBootstrappingKeys``.
+* ``serialization_format::v1`` for writing; 2.0 still reads data in this format.
+* ``keyswitching_type::KEYSWITCHING_METHOD_I``: every context uses hybrid key switching. 2.0 removes ``keyswitching_type`` from the public API.
+* The upper case values ``storage_type::HOST``/``DEVICE``, ``encoding::SLOT``/``COEFFICIENT``, ``arithmetic_bootstrapping_type::NONE``/``REGULAR_BOOTSTRAPPING``/``SLIM_BOOTSTRAPPING`` and ``logic_bootstrapping_type::NONE``/``BIT_BOOTSTRAPPING``/``GATE_BOOTSTRAPPING``: use the lower case values (``storage_type::device``, ``encoding::slot``, ``arithmetic_bootstrapping_type::regular``, ...).
+* ``bootstrapping_key_indexs``: use ``bootstrapping_key_indices`` (since 1.2).
+
+2.0 will also take the inputs of the operations by ``const`` reference, which does not change code that calls them.
+
 Serialized data stays readable: HEonGPU 1.x reads the data written by every earlier 1.x version. A newer version can write data that older versions cannot read; ``save(stream, heongpu::serialization_format::v1)`` writes data for HEonGPU 1.2 and earlier until 2.0; it is deprecated since 1.7.0, and 2.0 keeps reading such data.
 
 Supported toolchain: CUDA 12.8 or newer, a C++20 compiler (tested with GCC 11.4) and CMake 4.0 or newer.

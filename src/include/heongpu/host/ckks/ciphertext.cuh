@@ -150,14 +150,17 @@ namespace heongpu
         inline int size() const noexcept { return cipher_size_; }
 
         /**
-         * @brief Returns the depth level of the ciphertext.
+         * @brief Returns the depth of the ciphertext: the number of primes
+         * dropped from Q by rescaling or mod_drop, 0 at the top level.
          *
-         * @return int Depth level of the ciphertext.
+         * @return int Depth of the ciphertext.
          */
         inline int depth() const noexcept { return depth_; }
 
         /**
-         * @brief Returns the level of the ciphertext.
+         * @brief Returns the level of the ciphertext: the number of
+         * rescalings left, L - depth() for the L scaling primes of Q, 0 when
+         * only the first prime is left.
          *
          * @return int Level of the ciphertext.
          */

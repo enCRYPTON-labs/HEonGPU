@@ -119,6 +119,11 @@ The following table, derived from the lattice-estimator, shows the recommended t
    * - :math:`2^{16}` (65536)
      - 1761
 
+Levels and Depth (CKKS)
+-----------------------
+
+A CKKS ciphertext is counted in two directions. Its **depth** is the number of primes that rescaling or ``mod_drop`` has dropped from :math:`Q`: 0 at the top level. Its **level** is the number of rescalings left: :math:`L` at the top, for the :math:`L` scaling primes after the first prime of :math:`Q`, and 0 when only the first prime is left. So ``level() == L - depth()``. The encoder and ``Plaintext`` take a depth (``encode(message, scale, depth)``), while the context and bootstrapping take levels (``get_level_scale(level)``, ``BootstrappingLevels``). ``Ciphertext`` has both ``depth()`` and ``level()``.
+
 Automatic Rescaling (CKKS)
 --------------------------
 
