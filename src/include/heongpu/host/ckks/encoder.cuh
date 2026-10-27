@@ -79,8 +79,8 @@ namespace heongpu
             {
                 if (message.size() > static_cast<std::size_t>(context_->n))
                 {
-                    throw std::invalid_argument(
-                        "Vector size can not be higher than polynomial degree!");
+                    throw std::invalid_argument("Vector size can not be higher "
+                                                "than polynomial degree!");
                 }
             }
 
@@ -149,8 +149,8 @@ namespace heongpu
             {
                 if (message.size() > static_cast<std::size_t>(context_->n))
                 {
-                    throw std::invalid_argument(
-                        "Vector size can not be higher than polynomial degree!");
+                    throw std::invalid_argument("Vector size can not be higher "
+                                                "than polynomial degree!");
                 }
             }
 
@@ -580,6 +580,122 @@ namespace heongpu
          */
         inline int slot_count() const noexcept { return slot_count_; }
 
+        /**
+         * @brief Encodes a message of double values at the top level with its
+         * scale, in rescale_mode::automatic; see
+         * HEContextImpl<Scheme::CKKS>::set_rescale_mode. Throws StateError in
+         * rescale_mode::manual, which needs a scale.
+         */
+        __host__ void
+        encode(Plaintext<Scheme::CKKS>& plain,
+               const std::vector<double>& message,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            encode(plain, message, level_scale(0), options, type);
+        }
+
+        /**
+         * @brief Encodes a message of double values at the given depth with the
+         * scale of its level, in rescale_mode::automatic, for ciphertexts of
+         * that depth; see encode(plain, message, scale, depth).
+         */
+        __host__ void
+        encode(Plaintext<Scheme::CKKS>& plain,
+               const std::vector<double>& message, int depth,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            encode(plain, message, level_scale(depth), depth, options, type);
+        }
+
+        /**
+         * @brief Encodes a message of double values at the top level with its
+         * scale, in rescale_mode::automatic; see
+         * HEContextImpl<Scheme::CKKS>::set_rescale_mode. Throws StateError in
+         * rescale_mode::manual, which needs a scale.
+         */
+        __host__ void
+        encode(Plaintext<Scheme::CKKS>& plain,
+               const HostVector<double>& message,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            encode(plain, message, level_scale(0), options, type);
+        }
+
+        /**
+         * @brief Encodes a message of double values at the given depth with the
+         * scale of its level, in rescale_mode::automatic, for ciphertexts of
+         * that depth; see encode(plain, message, scale, depth).
+         */
+        __host__ void
+        encode(Plaintext<Scheme::CKKS>& plain,
+               const HostVector<double>& message, int depth,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            encode(plain, message, level_scale(depth), depth, options, type);
+        }
+
+        /**
+         * @brief Encodes a message of complex values at the top level with its
+         * scale, in rescale_mode::automatic; see
+         * HEContextImpl<Scheme::CKKS>::set_rescale_mode. Throws StateError in
+         * rescale_mode::manual, which needs a scale.
+         */
+        __host__ void
+        encode(Plaintext<Scheme::CKKS>& plain,
+               const std::vector<Complex64>& message,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            encode(plain, message, level_scale(0), options, type);
+        }
+
+        /**
+         * @brief Encodes a message of complex values at the given depth with
+         * the scale of its level, in rescale_mode::automatic, for ciphertexts
+         * of that depth; see encode(plain, message, scale, depth).
+         */
+        __host__ void
+        encode(Plaintext<Scheme::CKKS>& plain,
+               const std::vector<Complex64>& message, int depth,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            encode(plain, message, level_scale(depth), depth, options, type);
+        }
+
+        /**
+         * @brief Encodes a message of complex values at the top level with its
+         * scale, in rescale_mode::automatic; see
+         * HEContextImpl<Scheme::CKKS>::set_rescale_mode. Throws StateError in
+         * rescale_mode::manual, which needs a scale.
+         */
+        __host__ void
+        encode(Plaintext<Scheme::CKKS>& plain,
+               const HostVector<Complex64>& message,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            encode(plain, message, level_scale(0), options, type);
+        }
+
+        /**
+         * @brief Encodes a message of complex values at the given depth with
+         * the scale of its level, in rescale_mode::automatic, for ciphertexts
+         * of that depth; see encode(plain, message, scale, depth).
+         */
+        __host__ void
+        encode(Plaintext<Scheme::CKKS>& plain,
+               const HostVector<Complex64>& message, int depth,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            encode(plain, message, level_scale(depth), depth, options, type);
+        }
+
         HEEncoder() = default;
         HEEncoder(const HEEncoder& copy) = default;
         HEEncoder(HEEncoder&& source) = default;
@@ -646,6 +762,66 @@ namespace heongpu
         }
 
         /**
+         * @brief Returns message encoded into a new plaintext at the top level
+         * with its scale, in rescale_mode::automatic; see encode(plain,
+         * message).
+         */
+        __host__ Plaintext<Scheme::CKKS>
+        encode(const std::vector<double>& message,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            Plaintext<Scheme::CKKS> output(context_, options);
+            encode(output, message, options, type);
+            return output;
+        }
+
+        /**
+         * @brief Returns message encoded into a new plaintext at the given
+         * depth with the scale of its level, in rescale_mode::automatic; see
+         * encode(plain, message, depth).
+         */
+        __host__ Plaintext<Scheme::CKKS>
+        encode(const std::vector<double>& message, int depth,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            Plaintext<Scheme::CKKS> output(context_, options);
+            encode(output, message, depth, options, type);
+            return output;
+        }
+
+        /**
+         * @brief Returns message encoded into a new plaintext at the top level
+         * with its scale, in rescale_mode::automatic; see encode(plain,
+         * message).
+         */
+        __host__ Plaintext<Scheme::CKKS>
+        encode(const std::vector<Complex64>& message,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            Plaintext<Scheme::CKKS> output(context_, options);
+            encode(output, message, options, type);
+            return output;
+        }
+
+        /**
+         * @brief Returns message encoded into a new plaintext at the given
+         * depth with the scale of its level, in rescale_mode::automatic; see
+         * encode(plain, message, depth).
+         */
+        __host__ Plaintext<Scheme::CKKS>
+        encode(const std::vector<Complex64>& message, int depth,
+               const ExecutionOptions& options = ExecutionOptions(),
+               encoding type = encoding::SLOT)
+        {
+            Plaintext<Scheme::CKKS> output(context_, options);
+            encode(output, message, depth, options, type);
+            return output;
+        }
+
+        /**
          * @brief Returns the values decoded from plain; see decode(message,
          * plain).
          */
@@ -659,6 +835,19 @@ namespace heongpu
         }
 
       private:
+        // The scale of the level of depth in rescale_mode::automatic.
+        double level_scale(int depth) const
+        {
+            validate_depth(depth);
+            if (context_->rescale_mode_ != rescale_mode::automatic)
+            {
+                throw StateError("Encoding without a scale needs the automatic "
+                                 "rescale mode! Pass a scale, or set the mode "
+                                 "with set_rescale_mode.");
+            }
+            return context_->level_scales_[context_->Q_size - 1 - depth];
+        }
+
         void validate_depth(int depth) const
         {
             if (depth < 0 || depth >= context_->Q_size)

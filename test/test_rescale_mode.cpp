@@ -118,3 +118,43 @@ TEST(RescaleMode, Products_Have_The_Scales_Of_The_Levels)
         EXPECT_EQ(ciphertext.scale(), context->get_level_scale(level - 1));
     }
 }
+
+TEST(RescaleMode, Encoding_With_The_Scales_Of_The_Levels)
+{
+    constexpr int depth = 5;
+    auto manual = params(depth, Mode::manual).make_context();
+    manual->generate();
+    heongpu::HEEncoder<S> manual_encoder(manual);
+    std::vector<double> x(manual->get_poly_modulus_degree() / 2, 0.25);
+    EXPECT_THROW(manual_encoder.encode(x), heongpu::StateError);
+    EXPECT_THROW(manual_encoder.encode(x, 2), heongpu::StateError);
+
+    auto context = params(depth).make_context();
+    context->generate();
+    heongpu::HEEncoder<S> encoder(context);
+
+    auto top = encoder.encode(x);
+    EXPECT_EQ(top.depth(), 0);
+    EXPECT_EQ(top.scale(), context->get_level_scale(depth));
+    for (int d = 0; d <= depth; d++)
+    {
+        double scale = context->get_level_scale(depth - d);
+        auto plaintext = encoder.encode(x, d);
+        EXPECT_EQ(plaintext.depth(), d);
+        EXPECT_EQ(plaintext.scale(), scale);
+        // The same plaintext as with the scale given.
+        auto reference = encoder.encode(x, scale, d);
+        EXPECT_EQ(encoder.decode(plaintext), encoder.decode(reference));
+    }
+
+    std::vector<Complex64> z(x.size(), Complex64(0.5, -0.25));
+    EXPECT_EQ(encoder.encode(z, 3).scale(), context->get_level_scale(2));
+
+    heongpu::HostVector<double> host(x.size(), 0.25);
+    heongpu::Plaintext<S> plaintext(context);
+    encoder.encode(plaintext, host, 1);
+    EXPECT_EQ(plaintext.scale(), context->get_level_scale(depth - 1));
+
+    EXPECT_THROW(encoder.encode(x, depth + 1), heongpu::ParameterError);
+    EXPECT_THROW(encoder.encode(x, -1), heongpu::ParameterError);
+}
