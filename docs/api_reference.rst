@@ -89,7 +89,8 @@ Context and Parameter Classes
             HEParameterSet<Scheme::CKKS> generate() const;
             HEContext<Scheme::CKKS> make_context() const;
             double scale() const;
-            rescale_mode rescale_mode = rescale_mode::manual;
+            // Unset: manual for generate(), automatic for HESession.
+            std::optional<rescale_mode> rescale_mode;
         };
 
         template <> struct HEParams<Scheme::BFV> {

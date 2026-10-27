@@ -71,6 +71,10 @@ namespace heongpu
 
     template <Scheme S> struct HEParameterSet;
 
+    template <Scheme S> class HESession;
+
+    template <Scheme S> class SessionCiphertext;
+
     // Describes the type of encryption scheme to be used.
     enum class scheme_type : std::uint8_t
     {

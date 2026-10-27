@@ -8,6 +8,7 @@
 #define HEONGPU_CKKS_PARAMETERS_H
 
 #include <cstddef>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -110,8 +111,9 @@ namespace heongpu
         // Number of 60 bit P primes; 0 to take as many as fit.
         int special_modulus_count = 0;
         // The rescale mode of the context, see
-        // HEContextImpl<Scheme::CKKS>::set_rescale_mode.
-        heongpu::rescale_mode rescale_mode = heongpu::rescale_mode::manual;
+        // HEContextImpl<Scheme::CKKS>::set_rescale_mode. Unset, generate()
+        // takes rescale_mode::manual and HESession rescale_mode::automatic.
+        std::optional<heongpu::rescale_mode> rescale_mode;
 
         /**
          * @brief Returns the parameters. Throws ParameterError if no

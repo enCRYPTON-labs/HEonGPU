@@ -224,6 +224,7 @@ set(HEONGPU_HOST_CKKS_SOURCES
     lib/host/ckks/precision.cu
     lib/host/ckks/publickey.cu
     lib/host/ckks/secretkey.cu
+    lib/host/ckks/session.cu
 )
 
 add_library(heongpu_host_ckks OBJECT ${HEONGPU_HOST_CKKS_SOURCES})

@@ -306,7 +306,8 @@ namespace heongpu
         parameters.security_level = security_level;
         parameters.poly_modulus_degree = degree;
         parameters.scale = scale();
-        parameters.rescale_mode = rescale_mode;
+        parameters.rescale_mode =
+            rescale_mode.value_or(heongpu::rescale_mode::manual);
 
         parameters.coeff_modulus = q;
         parameters.special_modulus = generate_primes_below(
