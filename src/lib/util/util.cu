@@ -747,9 +747,11 @@ namespace heongpu
     {
         int idx = blockIdx.x * blockDim.x + threadIdx.x; // ring size
 
+        // The values from (t + 1) / 2 up are negative: an odd t gives
+        // -(t - 1) / 2 to (t - 1) / 2.
         int64_t threshold = (modulus[0].value + 1) >> 1;
         int64_t input_reg = static_cast<int64_t>(input[idx]);
-        input_reg = (input_reg > threshold)
+        input_reg = (input_reg >= threshold)
                         ? input_reg - static_cast<int64_t>(modulus[0].value)
                         : input_reg;
 

@@ -205,3 +205,39 @@ int main(int argc, char** argv)
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
+TEST(HEonGPU, BFV_Signed_Encoding_Decoding)
+{
+    // The signed values of an odd plain modulus t are -(t - 1) / 2 to
+    // (t - 1) / 2, both ends included.
+    size_t poly_modulus_degree = 4096;
+    int64_t plain_modulus = 1032193;
+    int64_t half = (plain_modulus - 1) / 2;
+    heongpu::HEContext<heongpu::Scheme::BFV> context =
+        heongpu::GenHEContext<heongpu::Scheme::BFV>(
+            heongpu::sec_level_type::none);
+    context->set_poly_modulus_degree(poly_modulus_degree);
+    context->set_coeff_modulus_bit_sizes({36, 36}, {37});
+    context->set_plain_modulus(plain_modulus);
+    context->generate();
+
+    heongpu::HEEncoder<heongpu::Scheme::BFV> encoder(context);
+
+    std::vector<int64_t> message(poly_modulus_degree);
+    for (size_t i = 0; i < poly_modulus_degree; i++)
+    {
+        message[i] = int64_t(i * 7919) % (2 * half + 1) - half;
+    }
+    message[0] = -half;
+    message[1] = half;
+    message[2] = -1;
+    message[3] = 0;
+
+    heongpu::Plaintext<heongpu::Scheme::BFV> P1(context);
+    encoder.encode(P1, message);
+
+    std::vector<int64_t> gpu_result;
+    encoder.decode(gpu_result, P1);
+    cudaDeviceSynchronize();
+
+    EXPECT_EQ(message, gpu_result);
+}
