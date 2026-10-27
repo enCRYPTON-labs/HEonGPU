@@ -16,35 +16,36 @@ constexpr auto Scheme = heongpu::Scheme::CKKS;
 
 int main(int argc, char* argv[])
 {
-    // Initialize encryption parameters for the CKKS scheme.
-    heongpu::HEContext<Scheme> context = heongpu::GenHEContext<Scheme>();
+    // Describe what the computation needs and let HEParams choose the
+    // encryption parameters. This example rescales twice, so it needs a
+    // multiplicative depth of 2.
+    heongpu::HEParams<Scheme> params;
+    params.multiplicative_depth = 2;
 
-    // Set the polynomial modulus degree. This controls the complexity
-    // of the computations and the size of the ciphertexts. Larger values
-    // allow more complex operations but increase computational cost.
-    // Here, we choose 8192, a moderate value.
-    size_t poly_modulus_degree = 8192;
-    context->set_poly_modulus_degree(poly_modulus_degree);
+    // The scale is 2^30. Every rescaling divides by a Q prime close to the
+    // scale; HEParams takes them alternately below and above 2^30, so the
+    // scale stays close to 2^30. The first Q prime, 60 bits by default
+    // (params.first_modulus_bit_size), bounds the result at the last level:
+    // here 30 bits before the decimal point and about 20-30 bits after.
+    params.scale_bit_size = 30;
 
-    // Alternative -> select sec_level_type as sec128(default), sec192,
-    // sec256, none
+    // Alternatives: params.security_level = heongpu::sec_level_type::sec192
+    // (sec128 by default) or sec256, and params.poly_modulus_degree to choose
+    // the ring size instead of the smallest one that fits.
+
+    // HEParams takes the smallest polynomial modulus degree N whose security
+    // limit fits Q and a 60 bit P prime, here 8192, and then as many 60 bit P
+    // primes as fit: a larger P makes key switching faster.
+    heongpu::HEParameterSet<Scheme> parameters = params.generate();
+    std::cout << parameters << std::endl;
+
+    // The parameters can also be set by hand:
     // heongpu::HEContext<Scheme> context = heongpu::GenHEContext<Scheme>(
-    //    heongpu::sec_level_type::sec128);
-    // The key switching method is selected from the P modulus size: one P
-    // prime selects KEYSWITCHING_METHOD_I, more select KEYSWITCHING_METHOD_II.
-
-    // A recommended approach is to align the initial scale and the primes in
-    // the coeff_modulus closely. After multiplication and rescaling, this
-    // alignment helps maintain a consistent scale throughout computations. For
-    // a circuit with depth D, D rescalings are required, removing D primes from
-    // the coeff_modulus. The remaining prime should be slightly larger than the
-    // scale to preserve the plaintext's precision.
-
-    // A suggested for parameter selection: Start with a 60-bit prime in the
-    // Q(ciphertext modulus) for maximum decryption precision. Use 60-bit prime
-    // for P, ensuring it matches the size of the others (Q_tilda = QxP). Select
-    // intermediate primes that are similar in value.
-    context->set_coeff_modulus_bit_sizes({60, 30, 30, 30}, {60});
+    //     heongpu::sec_level_type::sec128);
+    // context->set_poly_modulus_degree(8192);
+    // context->set_coeff_modulus_bit_sizes({60, 30, 30}, {60});
+    heongpu::HEContext<Scheme> context = parameters.make_context();
+    const size_t poly_modulus_degree = parameters.poly_modulus_degree;
 
     // Generate a HEonGPU context with these parameters. The context checks the
     // validity of the parameters and provides various utilities needed for
@@ -52,11 +53,7 @@ int main(int argc, char* argv[])
     context->generate();
     context->print_parameters();
 
-    // The scale is set to 2^30, resulting in 30 bits of precision before the
-    // decimal point and approximately 20-30 bits after at the final level.
-    // Intermediate primes, close to 30 bits, ensure consistent scale
-    // stabilization.
-    double scale = pow(2.0, 30);
+    double scale = params.scale();
 
     // Generate keys: the public key for encryption, the secret key for
     // decryption and evaluation key(relinkey) for relinearization.

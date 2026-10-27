@@ -16,39 +16,37 @@ constexpr auto Scheme = heongpu::Scheme::BFV;
 
 int main(int argc, char* argv[])
 {
-    // Initialize encryption parameters for the BFV scheme.
-    heongpu::HEContext<Scheme> context = heongpu::GenHEContext<Scheme>();
+    // Describe what the computation needs and let HEParams choose the
+    // encryption parameters. This example multiplies by a ciphertext and then
+    // by a plaintext, two multiplications in a row; a multiplication by a
+    // plaintext can use as much noise budget as one by a ciphertext.
+    heongpu::HEParams<Scheme> params;
+    params.multiplicative_depth = 2;
 
-    // Set the polynomial modulus degree. This controls the complexity
-    // of the computations and the size of the ciphertexts. Larger values
-    // allow more complex operations but increase computational cost.
-    // Here, we choose 8192, a moderate value.
-    size_t poly_modulus_degree = 8192;
-    context->set_poly_modulus_degree(poly_modulus_degree);
+    // The plaintext modulus t bounds the values of the slots. With
+    // plain_modulus_bit_size, HEParams takes the largest prime of that many
+    // bits that is 1 mod 2N, which batching needs. A larger t uses more noise
+    // budget per multiplication. Alternatively, set params.plain_modulus.
+    params.plain_modulus_bit_size = 20;
 
-    // Alternative -> select sec_level_type as sec128(default), sec192,
-    // sec256, none
+    // Alternatives: params.security_level = heongpu::sec_level_type::sec192
+    // (sec128 by default) or sec256, and params.poly_modulus_degree to choose
+    // the ring size instead of the smallest one that fits.
+
+    // HEParams takes the smallest polynomial modulus degree N whose security
+    // limit fits the coefficient modulus Q the noise needs, here 8192. Larger
+    // values allow more operations but increase the computational cost.
+    heongpu::HEParameterSet<Scheme> parameters = params.generate();
+    std::cout << parameters << std::endl;
+
+    // The parameters can also be set by hand:
     // heongpu::HEContext<Scheme> context = heongpu::GenHEContext<Scheme>(
-    //    heongpu::sec_level_type::sec128);
-    // The key switching method is selected from the P modulus size: one P
-    // prime selects KEYSWITCHING_METHOD_I, more select KEYSWITCHING_METHOD_II.
-
-    // Set the coefficient modulus, which determines the size of the noise
-    // budget. This parameter is crucial for controlling the number of
-    // operations that can be performed before the ciphertext becomes too
-    // noisy to decrypt. We use a default setting suitable for our chosen
-    // polynomial modulus degree.
-    context->set_coeff_modulus_default_values(1);
-
-    // Alternative -> first input is Q (ciphertext modulus), second one
-    // is P and it determines to Q_tilda which is key modulus.(Q_tilda = QxP)
-    // context->set_coeff_modulus({40, 40, 40, 40}, {40});
-
-    // Set the plaintext modulus, which affects the range of plaintext values
-    // and the noise budget usage during multiplications. Choosing a smaller
-    // value can help in maintaining a larger noise budget.
-    int plain_modulus = 1032193;
-    context->set_plain_modulus(plain_modulus);
+    //     heongpu::sec_level_type::sec128);
+    // context->set_poly_modulus_degree(8192);
+    // context->set_coeff_modulus_bit_sizes({54, 54}, {55});
+    // context->set_plain_modulus(1032193);
+    heongpu::HEContext<Scheme> context = parameters.make_context();
+    const size_t poly_modulus_degree = parameters.poly_modulus_degree;
 
     // Generate a HEonGPU context with these parameters. The context checks the
     // validity of the parameters and provides various utilities needed for

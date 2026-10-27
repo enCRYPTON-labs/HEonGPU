@@ -395,15 +395,14 @@ $ Example: ./build/bin/examples/1_basic_bfv
 #include <heongpu/heongpu.hpp>
 
 int main() {   
-    heongpu::HEContext<heongpu::Scheme::BFV> context =
-        heongpu::GenHEContext<heongpu::Scheme::BFV>();
-
-    size_t poly_modulus_degree = 8192;
-    context->set_poly_modulus_degree(poly_modulus_degree);
-    context->set_coeff_modulus_default_values(1);
-    int plain_modulus = 1032193;
-    context->set_plain_modulus(plain_modulus);
+    // Parameters for one multiplication in a row with a 20 bit plaintext
+    // modulus at 128-bit security.
+    heongpu::HEParams<heongpu::Scheme::BFV> params;
+    params.multiplicative_depth = 1;
+    params.plain_modulus_bit_size = 20;
+    heongpu::HEContext<heongpu::Scheme::BFV> context = params.make_context();
     context->generate();
+    size_t poly_modulus_degree = context->get_poly_modulus_degree();
 
     heongpu::HEKeyGenerator<heongpu::Scheme::BFV> keygen(context);
     heongpu::Secretkey<heongpu::Scheme::BFV> secret_key(context);

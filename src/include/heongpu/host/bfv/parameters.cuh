@@ -87,7 +87,10 @@ namespace heongpu
      */
     template <> struct HEParams<Scheme::BFV>
     {
-        // Number of multiplications in a row the computation needs.
+        // Number of multiplications in a row the computation needs. A
+        // multiplication by a plaintext can use as much noise budget as one by
+        // a ciphertext, less if the plaintext is small, for example one value
+        // in every slot.
         int multiplicative_depth = 1;
         // The plaintext modulus t, from 2 to 2^31 - 1; 0 to take the largest
         // prime 1 (mod 2N) of plain_modulus_bit_size bits, which allows

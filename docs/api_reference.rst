@@ -61,6 +61,36 @@ Context and Parameter Classes
             void generate();
         };
 
+**HEParams**
+    Chooses the ring size and the primes from what the computation needs, see the Parameter Selection Guide. ``generate()`` returns them as an ``HEParameterSet``, which ``apply(context)`` sets on a context and ``make_context()`` sets on a new one.
+
+    .. code-block:: cpp
+       :linenos:
+
+        template <> struct HEParams<Scheme::CKKS> {
+            int multiplicative_depth = 1;
+            int scale_bit_size = 40;
+            int first_modulus_bit_size = 60;
+            sec_level_type security_level = sec_level_type::sec128;
+            std::size_t poly_modulus_degree = 0;  // 0: the smallest that fits
+            int special_modulus_count = 0;        // 0: as many as fit
+
+            HEParameterSet<Scheme::CKKS> generate() const;
+            HEContext<Scheme::CKKS> make_context() const;
+            double scale() const;
+        };
+
+        template <> struct HEParams<Scheme::BFV> {
+            int multiplicative_depth = 1;
+            Data64 plain_modulus = 0;             // 0: chosen from the bit size
+            int plain_modulus_bit_size = 20;
+            sec_level_type security_level = sec_level_type::sec128;
+            std::size_t poly_modulus_degree = 0;  // 0: the smallest that fits
+
+            HEParameterSet<Scheme::BFV> generate() const;
+            HEContext<Scheme::BFV> make_context() const;
+        };
+
 Key Management Classes
 ----------------------
 

@@ -129,17 +129,17 @@ The following "toy example" from the repository demonstrates a complete FHE work
     #include <heongpu/heongpu.hpp>
 
     int main() {     
-        // 1. Set up the HEContext for the BFV scheme
-        heongpu::HEContext<heongpu::Scheme::BFV> context =
-                heongpu::GenHEContext<heongpu::Scheme::BFV>();
+        // 1. Choose the encryption parameters for the BFV scheme: one
+        //    multiplication in a row with a 20 bit plaintext modulus at
+        //    128-bit security
+        heongpu::HEParams<heongpu::Scheme::BFV> params;
+        params.multiplicative_depth = 1;
+        params.plain_modulus_bit_size = 20;
 
-        // 2. Define and set encryption parameters
-        size_t poly_modulus_degree = 8192;
-        context->set_poly_modulus_degree(poly_modulus_degree);
-        context->set_coeff_modulus_default_values(1); // Use 1 default prime for the coeff modulus
-        int plain_modulus = 1032193;
-        context->set_plain_modulus(plain_modulus);
+        // 2. Set up the HEContext with them
+        heongpu::HEContext<heongpu::Scheme::BFV> context = params.make_context();
         context->generate(); // Finalize context and pre-compute values on GPU
+        size_t poly_modulus_degree = context->get_poly_modulus_degree();
 
         // 3. Generate keys
         heongpu::HEKeyGenerator<heongpu::Scheme::BFV> keygen(context);

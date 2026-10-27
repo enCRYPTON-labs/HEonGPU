@@ -67,19 +67,40 @@ CKKS bootstrapping needs a context, keys and a configuration that fit together. 
                                                preset.sparse_secret_key_hamming_weight);
     auto refreshed = operators.regular_bootstrapping(ciphertext, boot_keys);
 
-Bootstrapping brings a ciphertext above the level it starts from down to that level. ``preset.levels()``, or ``bootstrapping_levels(config, type)`` for another configuration, returns the levels it uses: ``input_level`` and ``output_level``, and ``usable_levels()`` for the computation between two bootstrappings (9 for regular and slim, 8 for bit and 7 for gate bootstrapping with the presets).
+Bootstrapping brings a ciphertext above the level it starts from down to that level. ``preset.levels()``, or ``bootstrapping_levels(config, type)`` for another configuration, returns the levels it uses: ``input_level`` and ``output_level``, and ``usable_levels()`` for the computation between two bootstrappings (9 for regular and slim, 8 for bit and 7 for gate bootstrapping with the presets). ``regular(levels)``, ``slim(levels)``, ``bit(levels)`` and ``gate(levels)`` leave ``levels`` levels instead, each a 40-bit prime, and move the configuration to them; at 128-bit security at most 14 fit with regular and slim, 12 with bit and 11 with gate bootstrapping.
 
 Parameter Selection Guide
 -------------------------
 
-Choosing the right encryption parameters is crucial for balancing security, performance, and the computational depth of the circuits you can evaluate. In HEonGPU, all parameters are explicitly set at the ``HEContext`` level before key generation.
+Choosing the right encryption parameters is crucial for balancing security, performance, and the computational depth of the circuits you can evaluate. In HEonGPU, all parameters are set at the ``HEContext`` level before key generation, either by hand or by the parameter generator ``HEParams``.
 
 * **Security Level**: The library is designed and tested for a 128-bit security level, which is the standard for most modern applications.
 * **Polynomial Modulus Degree (N)**: This parameter is the primary driver of security and performance. Larger values of :math:`N` provide more security and a larger "noise budget" (allowing for more computations), but at a significant performance cost. The library is optimized for power-of-two values for :math:`N` in the range of :math:`[2^{12}, 2^{16}]`.
 * **Coefficient Modulus (q)**: This is a chain of prime numbers whose product forms the ciphertext modulus. The total bit-size of :math:`q` determines the computational depth—a larger modulus allows for more sequential multiplications. The library's use of the Residue Number System (RNS) makes operations with these prime chains highly suitable for parallelization on the GPU.
 * **Plaintext Modulus (t)**: For the BFV scheme, this parameter defines the size of the integer message space (i.e., computations are performed modulo :math:`t`).
 
-The library provides default parameter generation to simplify this process. The following table, derived from the lattice-estimator, shows the recommended total bit-length of the key modulus (:math:`\tilde{Q} = QP`) for different polynomial degrees to achieve a 128-bit security level.
+``HEParams`` chooses :math:`N` and the primes from what the computation needs: the multiplicative depth, the security level, and the scale for CKKS or the plaintext modulus for BFV. It takes the smallest :math:`N` whose security limit fits them; the parameters it returns never exceed the limit.
+
+.. code-block:: cpp
+
+    heongpu::HEParams<heongpu::Scheme::CKKS> params;
+    params.multiplicative_depth = 10;
+    params.scale_bit_size = 40;  // the default
+    auto parameters = params.generate();
+    std::cout << parameters << std::endl;
+    // HEParameterSet<CKKS>(N=32768, Q=60+40+41+...+41 bits, P=60+60+60+60+60+60 bits,
+    //                      total=825/881 bits, digits=2, scale=2^40, security=sec128)
+    auto context = parameters.make_context();
+    context->generate();
+    double scale = params.scale();
+
+For CKKS, ``Q`` holds a first prime of ``first_modulus_bit_size`` bits (60 by default) and one prime per level, the primes closest to the scale, alternately below and above it, so that rescaling keeps the scale close to :math:`2^{\Delta}`. ``P`` gets as many 60-bit primes as the limit leaves room for, up to the number of ``Q`` primes: a larger ``P`` splits ``Q`` into fewer key switching digits, which makes key switching faster and the keys smaller. ``special_modulus_count`` fixes the number of ``P`` primes instead.
+
+For BFV, ``plain_modulus_bit_size`` (20 by default) chooses the largest prime of that many bits that is 1 mod :math:`2N`, which batching needs; ``plain_modulus`` gives :math:`t` directly. ``Q`` gets the bits the noise of ``multiplicative_depth`` multiplications needs plus a margin of 10 bits, from a model calibrated against ``remainder_noise_budget``: a fresh ciphertext uses about :math:`\log_2 t + \log_2 N / 2 + 2` bits and each multiplication about :math:`\log_2 t + \log_2 N` more. A multiplication by a plaintext can use as much as one by a ciphertext. ``P`` is one prime with a bit more than the ``Q`` primes.
+
+``poly_modulus_degree`` fixes :math:`N`, and ``security_level`` selects 128-, 192- or 256-bit security. When the request does not fit, ``generate()`` throws ``ParameterError`` with the largest depth that fits. ``HEParameterSet::apply(context)`` sets the parameters of a context created by hand. The parameters can still be set directly with ``set_poly_modulus_degree`` and ``set_coeff_modulus_bit_sizes`` or ``set_coeff_modulus_values``.
+
+The following table, derived from the lattice-estimator, shows the recommended total bit-length of the key modulus (:math:`\tilde{Q} = QP`) for different polynomial degrees to achieve a 128-bit security level.
 
 .. list-table:: Recommended Modulus Sizes for 128-bit Security
    :widths: 25 25
@@ -95,6 +116,8 @@ The library provides default parameter generation to simplify this process. The 
      - 438
    * - :math:`2^{15}` (32768)
      - 881
+   * - :math:`2^{16}` (65536)
+     - 1761
 
 Storage Management with `ExecutionOptions`
 ------------------------------------------

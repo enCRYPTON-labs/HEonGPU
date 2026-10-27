@@ -14,7 +14,7 @@ These examples cover the fundamental workflows for the BFV, CKKS, and TFHE schem
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     This example demonstrates the core workflow for performing exact integer arithmetic with the BFV scheme.
 
-    * **Workflow**: It shows how to set up the ``HEContext`` for BFV, generate keys, encode a vector of integers into a plaintext, encrypt it, perform homomorphic multiplication and relinearization, and finally decrypt and decode the result.
+    * **Workflow**: It shows how to choose the parameters with ``HEParams`` from the multiplicative depth and the plaintext modulus size, set up the ``HEContext`` for BFV, generate keys, encode a vector of integers into a plaintext, encrypt it, perform homomorphic multiplication and relinearization, and finally decrypt and decode the result.
 
     * **Key Concept**: **Noise Budget Management**. The example explicitly prints the noise budget remaining in the ciphertext before and after operations using ``decryptor.remainder_noise_budget()``.
 
@@ -22,7 +22,7 @@ These examples cover the fundamental workflows for the BFV, CKKS, and TFHE schem
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     This example introduces the CKKS scheme for approximate arithmetic on real numbers.
 
-    * **Workflow**: It covers setting up the CKKS context, defining a ``scale`` for precision, encoding a vector of doubles, encrypting, performing homomorphic multiplication, and then applying the essential ``relinearize`` and ``rescale`` operations.
+    * **Workflow**: It covers choosing the parameters with ``HEParams`` from the multiplicative depth and the scale, setting up the CKKS context, encoding a vector of doubles, encrypting, performing homomorphic multiplication, and then applying the essential ``relinearize`` and ``rescale`` operations.
     * **Key Concept**: **Scaling and Rescaling**. It demonstrates the critical need to call ``operators.rescale_inplace()`` after a multiplication to manage the scale of the ciphertext and control the precision of the approximate numbers.
 
 3. Memory Pool Configuration (``3_basic_memorypool_config.cpp``)
