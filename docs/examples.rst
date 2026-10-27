@@ -54,6 +54,14 @@ These examples cover the fundamental workflows for the BFV, CKKS, and TFHE schem
 
     * **Key Concept**: **Gate Bootstrapping**. Every binary gate operation (except for NOT) in TFHE involves a bootstrapping procedure to refresh the ciphertext, allowing for the evaluation of arbitrarily complex boolean circuits. This is demonstrated by passing the ``boot_key`` to each logic function.
 
+CKKS Automatic Rescaling (``16_ckks_automatic_rescale.cpp``)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   This example evaluates :math:`x^3 + xy + y` in the automatic rescale mode.
+
+    * **Workflow**: It chooses the parameters with ``HEParams`` and ``rescale_mode::automatic``, encodes without a scale, and multiplies and adds ciphertexts of different levels without calling ``rescale_inplace`` or ``mod_drop``.
+
+    * **Key Concept**: **Scales of the levels**. Every level has one scale, and the operators keep the ciphertexts at the scales of their levels.
+
 Advanced Features
 -----------------
 

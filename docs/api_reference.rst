@@ -61,6 +61,17 @@ Context and Parameter Classes
             void generate();
         };
 
+**rescale_mode** (CKKS)
+    ``rescale_mode::manual`` (the default) leaves rescaling and bringing operands to the same level to the application; with ``rescale_mode::automatic`` the operators do both, see Automatic Rescaling in the User Guide.
+
+    .. code-block:: cpp
+       :linenos:
+
+        // On HEContextImpl<Scheme::CKKS>, after the moduli are set:
+        void set_rescale_mode(rescale_mode mode, double scale = 0.0);
+        rescale_mode get_rescale_mode() const;
+        double get_level_scale(int level) const;  // automatic mode
+
 **HEParams**
     Chooses the ring size and the primes from what the computation needs, see the Parameter Selection Guide. ``generate()`` returns them as an ``HEParameterSet``, which ``apply(context)`` sets on a context and ``make_context()`` sets on a new one.
 
@@ -78,6 +89,7 @@ Context and Parameter Classes
             HEParameterSet<Scheme::CKKS> generate() const;
             HEContext<Scheme::CKKS> make_context() const;
             double scale() const;
+            rescale_mode rescale_mode = rescale_mode::manual;
         };
 
         template <> struct HEParams<Scheme::BFV> {

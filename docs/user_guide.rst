@@ -119,6 +119,43 @@ The following table, derived from the lattice-estimator, shows the recommended t
    * - :math:`2^{16}` (65536)
      - 1761
 
+Automatic Rescaling (CKKS)
+--------------------------
+
+By default, the application rescales CKKS ciphertexts after multiplications and brings operands to the same level with ``mod_drop``. In the automatic rescale mode the operators do both:
+
+.. code-block:: cpp
+
+    heongpu::HEParams<heongpu::Scheme::CKKS> params;
+    params.multiplicative_depth = 3;
+    params.rescale_mode = heongpu::rescale_mode::automatic;
+    auto context = params.make_context();
+    context->generate();
+    // ... keys, encoder, encryptor, decryptor and operators
+
+    auto plaintext = encoder.encode(values);  // the scale of the top level
+    auto x = encryptor.encrypt(plaintext);
+    auto x2 = operators.multiply(x, x);
+    operators.relinearize_inplace(x2, relin_key);
+    auto x3 = operators.multiply(x2, x);  // x2 is rescaled, x brought down to its level
+    operators.relinearize_inplace(x3, relin_key);
+    auto sum = operators.add(x3, x);      // x brought down to the level of x3
+
+A context created by hand selects the mode after setting its moduli with ``context->set_rescale_mode(heongpu::rescale_mode::automatic, scale)``.
+
+**Scales of the levels.** In the automatic mode every level :math:`l` has one scale :math:`s_l`: the top level has the scale given to the mode, and :math:`s_{l-1} = s_l^2 / q_l`, where :math:`q_l` is the prime that rescaling drops at level :math:`l`. Multiplying two ciphertexts of level :math:`l` and rescaling gives exactly :math:`s_{l-1}`, so all ciphertexts of a level have the same scale and can be added. ``context->get_level_scale(level)`` returns :math:`s_l`. The primes that ``HEParams`` chooses keep every :math:`s_l` next to the requested scale.
+
+**What the operators do.**
+
+* A ciphertext that needs a rescaling is rescaled before a multiplication, a rotation, a conjugation or an addition to a ciphertext that does not need one; two ciphertexts that both need one are added as they are, which saves rescalings when products are summed. ``rescale_inplace`` does nothing on a ciphertext that does not need a rescaling, so code written for the manual mode gives the same results.
+* A ciphertext at a higher level is brought down to the level of the other operand with the scale of that level: it is dropped to the level above, multiplied by an integer and rescaled. ``mod_drop`` does the same.
+* ``HEEncoder::encode(message)`` encodes at the top level and ``encode(message, depth)`` at a depth, both with the scale of the level. Plaintexts must have the scale of their level; a plaintext brought down to a lower level keeps its scale, so encode it at the depth of the ciphertext.
+* ``multiply_plain(ciphertext, constant, ...)`` encodes the constant with the scale of the level; its ``scale`` argument is not used.
+* ``evaluate_polynomial`` and ``evaluate_chebyshev`` return the result with the scale of its level.
+* The inputs are not changed; the operators rescale and bring down copies.
+
+Relinearization is not automatic: it needs the relinearization key. Two operands at the same level with different scales, for example a ciphertext encoded with another scale, raise ``ParameterError``. Bootstrapping, the CoeffToSlot and SlotToCoeff transforms and ``HELogicOperator`` need the manual mode and raise ``StateError`` in the automatic one. The mode is not part of the context identity and is not saved with the context, since keys and ciphertexts are the same in both modes; set it again after ``load``.
+
 Storage Management with `ExecutionOptions`
 ------------------------------------------
 
