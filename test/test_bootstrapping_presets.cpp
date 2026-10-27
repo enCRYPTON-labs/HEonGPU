@@ -6,6 +6,7 @@
 
 #include <heongpu/heongpu.hpp>
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <cmath>
 #include <vector>
 
@@ -61,38 +62,9 @@ namespace
         }
         return error;
     }
-} // namespace
 
-TEST(BootstrappingPresets, Levels)
-{
-    struct Expected
-    {
-        Preset preset;
-        int eval_mod, input_level, output_level;
-    };
-    std::vector<Expected> cases = {{Preset::regular(), 8, 0, 9},
-                                   {Preset::slim(), 8, 3, 12},
-                                   {Preset::bit(), 9, 3, 11},
-                                   {Preset::gate(), 10, 3, 10}};
-    for (const auto& c : cases)
-    {
-        heongpu::BootstrappingLevels levels = c.preset.levels();
-        EXPECT_EQ(levels.coeff_to_slot, 4);
-        EXPECT_EQ(levels.eval_mod, c.eval_mod);
-        EXPECT_EQ(levels.slot_to_coeff, 3);
-        EXPECT_EQ(levels.depth(), 7 + c.eval_mod);
-        EXPECT_EQ(levels.input_level, c.input_level);
-        EXPECT_EQ(levels.output_level, c.output_level);
-    }
-    EXPECT_EQ(Preset::regular().levels().usable_levels(), 9);
-    EXPECT_EQ(Preset::slim().levels().usable_levels(), 9);
-    EXPECT_EQ(Preset::bit().levels().usable_levels(), 8);
-    EXPECT_EQ(Preset::gate().levels().usable_levels(), 7);
-}
-
-TEST(BootstrappingPresets, Regular_And_Slim)
-{
-    for (const Preset& preset : {Preset::regular(), Preset::slim()})
+    // Bootstraps with preset, which must be a regular or slim preset.
+    void check_arithmetic(const Preset& preset)
     {
         Environment setup(preset);
         heongpu::HEArithmeticOperator<S> operators(setup.context,
@@ -141,11 +113,9 @@ TEST(BootstrappingPresets, Regular_And_Slim)
         EXPECT_THROW(operators.generate_bootstrapping_params(Preset::bit()),
                      heongpu::ParameterError);
     }
-}
 
-TEST(BootstrappingPresets, Bit_And_Gate)
-{
-    for (const Preset& preset : {Preset::bit(), Preset::gate()})
+    // Bootstraps with preset, which must be a bit or gate preset.
+    void check_logic(const Preset& preset)
     {
         Environment setup(preset);
         heongpu::HELogicOperator<S> operators(setup.context, *setup.encoder,
@@ -185,6 +155,134 @@ TEST(BootstrappingPresets, Bit_And_Gate)
 
         EXPECT_THROW(operators.generate_bootstrapping_params(Preset::regular()),
                      heongpu::ParameterError);
+    }
+} // namespace
+
+TEST(BootstrappingPresets, Levels)
+{
+    struct Expected
+    {
+        Preset preset;
+        int eval_mod, input_level, output_level;
+    };
+    std::vector<Expected> cases = {{Preset::regular(), 8, 0, 9},
+                                   {Preset::slim(), 8, 3, 12},
+                                   {Preset::bit(), 9, 3, 11},
+                                   {Preset::gate(), 10, 3, 10}};
+    for (const auto& c : cases)
+    {
+        heongpu::BootstrappingLevels levels = c.preset.levels();
+        EXPECT_EQ(levels.coeff_to_slot, 4);
+        EXPECT_EQ(levels.eval_mod, c.eval_mod);
+        EXPECT_EQ(levels.slot_to_coeff, 3);
+        EXPECT_EQ(levels.depth(), 7 + c.eval_mod);
+        EXPECT_EQ(levels.input_level, c.input_level);
+        EXPECT_EQ(levels.output_level, c.output_level);
+    }
+    EXPECT_EQ(Preset::regular().levels().usable_levels(), 9);
+    EXPECT_EQ(Preset::slim().levels().usable_levels(), 9);
+    EXPECT_EQ(Preset::bit().levels().usable_levels(), 8);
+    EXPECT_EQ(Preset::gate().levels().usable_levels(), 7);
+}
+
+TEST(BootstrappingPresets, Usable_Levels)
+{
+    // The examples: CoeffToSlot from level 24 and EvalMod from level 20.
+    for (const Preset& preset :
+         {Preset::regular(), Preset::slim(), Preset::bit(), Preset::gate()})
+    {
+        EXPECT_EQ(preset.config.cts_config_.level_start_, 24);
+        EXPECT_EQ(preset.config.eval_mod_config_.level_start_, 20);
+    }
+    EXPECT_EQ(Preset::regular().config.stc_config_.level_start_, 12);
+    EXPECT_EQ(Preset::slim().config.stc_config_.level_start_, 3);
+    EXPECT_EQ(Preset::regular().coeff_modulus.size(), 25u);
+    EXPECT_EQ(Preset::regular().coeff_modulus[9], 0xffff820001);
+
+    struct Case
+    {
+        Preset (*preset)(int);
+        int max_levels;
+    };
+    for (const Case& c : {Case{Preset::regular, 14}, Case{Preset::slim, 14},
+                          Case{Preset::bit, 12}, Case{Preset::gate, 11}})
+    {
+        for (int levels = 1; levels <= c.max_levels; levels++)
+        {
+            Preset preset = c.preset(levels);
+            heongpu::BootstrappingLevels used = preset.levels();
+            EXPECT_EQ(used.usable_levels(), levels);
+            EXPECT_EQ(used.depth(), 7 + used.eval_mod);
+            int q_count = static_cast<int>(
+                std::max(preset.coeff_modulus.size(),
+                         preset.coeff_modulus_bit_sizes.size()));
+            EXPECT_EQ(preset.config.cts_config_.level_start_, q_count - 1);
+
+            // The context accepts the moduli.
+            auto context =
+                heongpu::GenHEContext<S>(heongpu::sec_level_type::sec128);
+            EXPECT_NO_THROW(preset.apply(context)) << levels;
+        }
+        EXPECT_THROW(c.preset(c.max_levels + 1), heongpu::ParameterError);
+        EXPECT_THROW(c.preset(0), heongpu::ParameterError);
+    }
+
+    // The levels after the ones of regular() are primes around 2^40.
+    Preset regular = Preset::regular(12);
+    Preset example = Preset::regular();
+    for (int i = 0; i <= 9; i++)
+    {
+        EXPECT_EQ(regular.coeff_modulus[i], example.coeff_modulus[i]);
+    }
+    for (int i = 10; i <= 12; i++)
+    {
+        EXPECT_NEAR(std::log2(double(regular.coeff_modulus[i])), 40.0, 1e-3);
+    }
+
+    try
+    {
+        Preset::regular(15);
+    }
+    catch (const heongpu::ParameterError& error)
+    {
+        EXPECT_STREQ(error.what(),
+                     "The regular bootstrapping preset with 15 usable levels "
+                     "does not fit sec128 with N = 65536: Q and P need 1799 "
+                     "bits, the limit is 1761. At most 14 usable levels fit.");
+    }
+}
+
+TEST(BootstrappingPresets, Regular_And_Slim)
+{
+    for (const Preset& preset : {Preset::regular(), Preset::slim()})
+    {
+        check_arithmetic(preset);
+    }
+}
+
+// Each test runs in its own process, so these do not share the memory pool
+// with the ones above.
+TEST(BootstrappingPresets, Regular_And_Slim_With_Other_Levels)
+{
+    for (const Preset& preset : {Preset::regular(14), Preset::slim(3)})
+    {
+        check_arithmetic(preset);
+    }
+}
+
+TEST(BootstrappingPresets, Bit_And_Gate)
+{
+    for (const Preset& preset : {Preset::bit(), Preset::gate()})
+    {
+        check_logic(preset);
+    }
+}
+
+TEST(BootstrappingPresets, Bit_And_Gate_With_Other_Levels)
+{
+    for (const Preset& preset : {Preset::bit(12), Preset::gate(2)})
+    {
+        check_logic(preset);
     }
 }
 

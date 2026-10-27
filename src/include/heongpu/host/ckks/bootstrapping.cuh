@@ -56,7 +56,10 @@ namespace heongpu
      * bootstrapping configuration.
      *
      * regular(), slim(), bit() and gate() return the parameters of the
-     * bootstrapping examples, with N = 2^16 for 128-bit security:
+     * bootstrapping examples, with N = 2^16 for 128-bit security. They leave
+     * 9, 9, 8 and 7 levels for the computation between two bootstrappings;
+     * regular(levels), slim(levels), bit(levels) and gate(levels) leave
+     * levels instead, with the configuration moved to the new levels:
      * @code
      * auto preset = heongpu::CKKSBootstrappingPreset::regular();
      * auto context = heongpu::GenHEContext<heongpu::Scheme::CKKS>(
@@ -73,6 +76,19 @@ namespace heongpu
         static CKKSBootstrappingPreset slim();
         static CKKSBootstrappingPreset bit();
         static CKKSBootstrappingPreset gate();
+
+        /**
+         * @brief Return the presets above with usable_levels levels for the
+         * computation between two bootstrappings; levels().usable_levels() is
+         * usable_levels. Every level costs a 40 bit Q prime. Throws
+         * ParameterError if usable_levels is less than 1 or the moduli do not
+         * fit 128-bit security with N = 2^16: at most 14 levels fit with
+         * regular and slim, 12 with bit and 11 with gate.
+         */
+        static CKKSBootstrappingPreset regular(int usable_levels);
+        static CKKSBootstrappingPreset slim(int usable_levels);
+        static CKKSBootstrappingPreset bit(int usable_levels);
+        static CKKSBootstrappingPreset gate(int usable_levels);
 
         // Exactly one of them is not NONE.
         arithmetic_bootstrapping_type arithmetic_type =
