@@ -1620,7 +1620,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             input_storage_manager(
@@ -1651,7 +1651,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             input_storage_manager(
@@ -1684,7 +1684,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             input_storage_manager(
@@ -1751,7 +1751,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             input_storage_manager(
@@ -1816,7 +1816,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             Ciphertext<Scheme::BFV> inner_input1 =
@@ -1894,7 +1894,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             Ciphertext<Scheme::BFV> inner_input1 =
@@ -1971,7 +1971,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             Ciphertext<Scheme::BFV> inner_input1 =
@@ -2051,7 +2051,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             Ciphertext<Scheme::BFV> inner_input1 =
@@ -2130,7 +2130,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             input_storage_manager(
@@ -2199,7 +2199,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             input_storage_manager(
@@ -2268,7 +2268,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             Ciphertext<Scheme::BFV> inner_input1 =
@@ -2349,7 +2349,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             Ciphertext<Scheme::BFV> inner_input1 =
@@ -2429,7 +2429,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             Ciphertext<Scheme::BFV> inner_input1 =
@@ -2513,7 +2513,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             Ciphertext<Scheme::BFV> inner_input1 =

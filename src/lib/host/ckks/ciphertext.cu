@@ -42,11 +42,11 @@ namespace heongpu
         rescale_required_ = false;
         relinearization_required_ = false;
         scale_ = 0;
-        encoding_ = encoding::SLOT;
+        encoding_ = encoding::slot;
 
         storage_type_ = options.storage_;
 
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             device_locations_ =
                 DeviceVector<Data64>(cipher_memory_size, options.stream_);
@@ -59,7 +59,7 @@ namespace heongpu
 
     void Ciphertext<Scheme::CKKS>::store_in_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -78,13 +78,13 @@ namespace heongpu
                 host_locations_.shrink_to_fit();
             }
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 
     void Ciphertext<Scheme::CKKS>::store_in_host(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             if (memory_size() == 0)
             {
@@ -107,7 +107,7 @@ namespace heongpu
                 device_locations_.shrink_to_fit(stream);
             }
 
-            storage_type_ = storage_type::HOST;
+            storage_type_ = storage_type::host;
         }
         else
         {
@@ -117,7 +117,7 @@ namespace heongpu
 
     Data64* Ciphertext<Scheme::CKKS>::data()
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             return device_locations_.data();
         }
@@ -138,7 +138,7 @@ namespace heongpu
             cipher.resize(cipher_memory_size);
         }
 
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             HEONGPU_CUDA_CHECK(
                 cudaMemcpyAsync(cipher.data(), device_locations_.data(),
@@ -164,7 +164,7 @@ namespace heongpu
             cipher.resize(cipher_memory_size);
         }
 
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             HEONGPU_CUDA_CHECK(
                 cudaMemcpyAsync(cipher.data(), device_locations_.data(),
@@ -185,7 +185,7 @@ namespace heongpu
         if (ciphertext_generated_)
         {
             const size_t expected_size = checked_memory_size();
-            if ((storage_type_ == storage_type::DEVICE
+            if ((storage_type_ == storage_type::device
                      ? device_locations_.size()
                      : host_locations_.size()) < expected_size)
             {
@@ -224,7 +224,7 @@ namespace heongpu
             os.write((char*) &ciphertext_generated_,
                      sizeof(ciphertext_generated_));
 
-            if (storage_type_ == storage_type::DEVICE)
+            if (storage_type_ == storage_type::device)
             {
                 uint32_t ciphertext_memory_size =
                     cipher_size_ * (coeff_modulus_count_ - depth_) * ring_size_;
@@ -269,10 +269,10 @@ namespace heongpu
             (cipher_size_ != 2 && cipher_size_ != 3) ||
             relinearization_required_ != (cipher_size_ == 3) ||
             !std::isfinite(scale_) || scale_ <= 0 ||
-            (encoding_ != encoding::SLOT &&
-             encoding_ != encoding::COEFFICIENT) ||
-            (storage_type_ != storage_type::DEVICE &&
-             storage_type_ != storage_type::HOST))
+            (encoding_ != encoding::slot &&
+             encoding_ != encoding::coefficient) ||
+            (storage_type_ != storage_type::device &&
+             storage_type_ != storage_type::host))
         {
             throw std::runtime_error("Invalid ciphertext parameters!");
         }
@@ -310,7 +310,7 @@ namespace heongpu
                 context->Q_size, " moduli."));
         }
         validate_context_identity(context_id_, context, "Ciphertext");
-        const size_t actual_size = storage_type_ == storage_type::DEVICE
+        const size_t actual_size = storage_type_ == storage_type::device
                                        ? device_locations_.size()
                                        : host_locations_.size();
         if (actual_size < expected_size)
@@ -413,7 +413,7 @@ namespace heongpu
 
     int Ciphertext<Scheme::CKKS>::memory_size()
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             return device_locations_.size();
         }
@@ -441,7 +441,7 @@ namespace heongpu
     void Ciphertext<Scheme::CKKS>::memory_set(
         DeviceVector<Data64>&& new_device_vector)
     {
-        storage_type_ = storage_type::DEVICE;
+        storage_type_ = storage_type::device;
         device_locations_ = std::move(new_device_vector);
 
         if (host_locations_.size() > 0)
@@ -453,7 +453,7 @@ namespace heongpu
 
     void Ciphertext<Scheme::CKKS>::copy_to_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -469,18 +469,18 @@ namespace heongpu
                     DeviceVector<Data64>(host_locations_, stream);
             }
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 
     void Ciphertext<Scheme::CKKS>::remove_from_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             device_locations_.resize(0, stream);
             device_locations_.shrink_to_fit(stream);
 
-            storage_type_ = storage_type::HOST;
+            storage_type_ = storage_type::host;
         }
         else
         {
@@ -490,7 +490,7 @@ namespace heongpu
 
     void Ciphertext<Scheme::CKKS>::remove_from_host()
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -499,7 +499,7 @@ namespace heongpu
             host_locations_.resize(0);
             host_locations_.shrink_to_fit();
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 

@@ -84,9 +84,8 @@ namespace
         auto ciphertext = setup.encryptor->encrypt(plaintext);
 
         // The input is at the top level; bootstrapping brings it down.
-        bool regular =
-            preset.arithmetic_type ==
-            heongpu::arithmetic_bootstrapping_type::REGULAR_BOOTSTRAPPING;
+        bool regular = preset.arithmetic_type ==
+                       heongpu::arithmetic_bootstrapping_type::regular;
         auto result = regular
                           ? operators.regular_bootstrapping(ciphertext, keys)
                           : operators.slim_bootstrapping(ciphertext, keys);
@@ -135,8 +134,7 @@ namespace
         auto x = setup.encryptor->encrypt(plaintext_a);
         auto y = setup.encryptor->encrypt(plaintext_b);
 
-        bool bit = preset.logic_type ==
-                   heongpu::logic_bootstrapping_type::BIT_BOOTSTRAPPING;
+        bool bit = preset.logic_type == heongpu::logic_bootstrapping_type::bit;
         std::vector<double> expected(slots);
         for (int i = 0; i < slots; i++)
         {

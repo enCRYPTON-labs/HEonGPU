@@ -627,7 +627,7 @@ namespace heongpu
                             context_->Q_size, context_->P_size);
                         HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                        if (options.storage_ == storage_type::DEVICE)
+                        if (options.storage_ == storage_type::device)
                         {
                             gk.device_location_[galois.second] =
                                 std::move(output_memory);
@@ -685,7 +685,7 @@ namespace heongpu
                         context_->P_size);
                     HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                    if (options.storage_ == storage_type::DEVICE)
+                    if (options.storage_ == storage_type::device)
                     {
                         gk.zero_device_location_ = std::move(output_memory);
                     }
@@ -746,7 +746,7 @@ namespace heongpu
                             context_->Q_size, context_->P_size);
                         HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                        if (options.storage_ == storage_type::DEVICE)
+                        if (options.storage_ == storage_type::device)
                         {
                             gk.device_location_[galois_] =
                                 std::move(output_memory);
@@ -804,7 +804,7 @@ namespace heongpu
                         context_->P_size);
                     HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                    if (options.storage_ == storage_type::DEVICE)
+                    if (options.storage_ == storage_type::device)
                     {
                         gk.zero_device_location_ = std::move(output_memory);
                     }
@@ -864,7 +864,7 @@ namespace heongpu
         {
             input_storage_types.push_back(all_gk[i].storage_type_);
 
-            if (all_gk[i].storage_type_ == storage_type::DEVICE)
+            if (all_gk[i].storage_type_ == storage_type::device)
             {
                 for (const auto& pair : all_gk[i].device_location_)
                 {
@@ -932,7 +932,7 @@ namespace heongpu
                 HEONGPU_CUDA_CHECK(cudaGetLastError());
             }
 
-            if (options.storage_ == storage_type::DEVICE)
+            if (options.storage_ == storage_type::device)
             {
                 gk.device_location_[galois.second] = std::move(output_memory);
             }
@@ -969,7 +969,7 @@ namespace heongpu
             HEONGPU_CUDA_CHECK(cudaGetLastError());
         }
 
-        if (options.storage_ == storage_type::DEVICE)
+        if (options.storage_ == storage_type::device)
         {
             gk.zero_device_location_ = std::move(output_memory);
         }
@@ -986,7 +986,7 @@ namespace heongpu
         {
             for (int i = 0; i < participant_count; i++)
             {
-                if (input_storage_types[i] == storage_type::DEVICE)
+                if (input_storage_types[i] == storage_type::device)
                 {
                     // pass
                 }

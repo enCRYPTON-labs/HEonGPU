@@ -186,7 +186,7 @@ Storage Management with `ExecutionOptions`
 
 The ``ExecutionOptions`` struct provides precise control over where data resides, which is critical for optimizing complex computational pipelines by minimizing host-device data transfers.
 
-* ``set_storage_type(storage_type)``: Defines the desired location (``DEVICE`` or ``HOST``) for the *output* data of an operation.
+* ``set_storage_type(storage_type)``: Defines the desired location (``device`` or ``host``) for the *output* data of an operation.
 * ``set_initial_location(bool)``: If ``true``, ensures that input data returns to its original location after the computation. If ``false``, input data that was moved to the device for computation will remain on the device.
 
 .. code-block:: cpp
@@ -194,7 +194,7 @@ The ``ExecutionOptions`` struct provides precise control over where data resides
     // Example: Inputs are on HOST, but we want the output on DEVICE
     // and want inputs to remain on HOST after the operation.
     ExecutionOptions options;
-    options.set_storage_type(storage_type::DEVICE)
+    options.set_storage_type(storage_type::device)
            .set_initial_location(true);
 
     operators.add(host_input1, host_input2, device_output, options);
@@ -210,26 +210,26 @@ The following table details the behavior for all combinations:
      - Input Locations (Before)
      - Input Locations (After)
      - Output Location
-   * - `DEVICE`
+   * - `device`
      - `true`
-     - `input1: HOST, input2: HOST`
-     - `input1: HOST, input2: HOST`
-     - `DEVICE`
-   * - `DEVICE`
+     - `input1: host, input2: host`
+     - `input1: host, input2: host`
+     - `device`
+   * - `device`
      - `false`
-     - `input1: HOST, input2: HOST`
-     - `input1: DEVICE, input2: DEVICE`
-     - `DEVICE`
-   * - `HOST`
+     - `input1: host, input2: host`
+     - `input1: device, input2: device`
+     - `device`
+   * - `host`
      - `true`
-     - `input1: HOST, input2: DEVICE`
-     - `input1: HOST, input2: HOST`
-     - `HOST`
-   * - `HOST`
+     - `input1: host, input2: device`
+     - `input1: host, input2: host`
+     - `host`
+   * - `host`
      - `false`
-     - `input1: DEVICE, input2: DEVICE`
-     - `input1: DEVICE, input2: DEVICE`
-     - `HOST`
+     - `input1: device, input2: device`
+     - `input1: device, input2: device`
+     - `host`
 
 Serialization
 -------------

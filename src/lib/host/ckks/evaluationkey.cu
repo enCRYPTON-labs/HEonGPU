@@ -42,7 +42,7 @@ namespace heongpu
 
     void Relinkey<Scheme::CKKS>::store_in_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -52,13 +52,13 @@ namespace heongpu
             host_location_.resize(0);
             host_location_.shrink_to_fit();
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 
     void Relinkey<Scheme::CKKS>::store_in_host(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             host_location_ = HostVector<Data64>(relinkey_size_);
             cudaMemcpyAsync(host_location_.data(), device_location_.data(),
@@ -68,7 +68,7 @@ namespace heongpu
 
             device_location_.resize(0, stream);
 
-            storage_type_ = storage_type::HOST;
+            storage_type_ = storage_type::host;
         }
         else
         {
@@ -78,7 +78,7 @@ namespace heongpu
 
     Data64* Relinkey<Scheme::CKKS>::data()
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             return device_location_.data();
         }
@@ -89,7 +89,7 @@ namespace heongpu
     }
     Data64* Relinkey<Scheme::CKKS>::data(size_t i)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             return device_location_leveled_[i].data();
         }
@@ -131,7 +131,7 @@ namespace heongpu
 
             os.write((char*) &relinkey_size_, sizeof(relinkey_size_));
 
-            if (storage_type_ == storage_type::DEVICE)
+            if (storage_type_ == storage_type::device)
             {
                 HostVector<Data64> host_locations_temp(relinkey_size_);
                 cudaMemcpy(host_locations_temp.data(), device_location_.data(),
@@ -205,7 +205,7 @@ namespace heongpu
 
             is.read((char*) &relinkey_size_, sizeof(relinkey_size_));
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
             relin_key_generated_ = true;
 
             HostVector<Data64> host_locations_temp(relinkey_size_);
@@ -226,7 +226,7 @@ namespace heongpu
 
     int Relinkey<Scheme::CKKS>::memory_size()
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             if (relinkey_size_leveled_.size() == 0)
             {
@@ -286,7 +286,7 @@ namespace heongpu
     void
     Relinkey<Scheme::CKKS>::memory_set(DeviceVector<Data64>&& new_device_vector)
     {
-        storage_type_ = storage_type::DEVICE;
+        storage_type_ = storage_type::device;
         device_location_ = std::move(new_device_vector);
 
         if (host_location_.size() > 0)
@@ -300,7 +300,7 @@ namespace heongpu
     Relinkey<Scheme::CKKS>::memory_set(DeviceVector<Data64>&& new_device_vector,
                                        int i)
     {
-        storage_type_ = storage_type::DEVICE;
+        storage_type_ = storage_type::device;
         device_location_leveled_[i] = std::move(new_device_vector);
 
         for (int i = 0; i < host_location_leveled_.size(); i++)
@@ -315,7 +315,7 @@ namespace heongpu
 
     void Relinkey<Scheme::CKKS>::copy_to_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -345,13 +345,13 @@ namespace heongpu
                 }
             }
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 
     void Relinkey<Scheme::CKKS>::remove_from_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             if (relinkey_size_leveled_.size() == 0)
             {
@@ -378,7 +378,7 @@ namespace heongpu
 
     void Relinkey<Scheme::CKKS>::remove_from_host()
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -635,7 +635,7 @@ namespace heongpu
 
     void Galoiskey<Scheme::CKKS>::store_in_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -654,13 +654,13 @@ namespace heongpu
             zero_host_location_.resize(0);
             zero_host_location_.shrink_to_fit();
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 
     void Galoiskey<Scheme::CKKS>::store_in_host(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             for (auto& galois_ : device_location_)
             {
@@ -685,7 +685,7 @@ namespace heongpu
             device_location_.clear();
             zero_device_location_.resize(0);
 
-            storage_type_ = storage_type::HOST;
+            storage_type_ = storage_type::host;
         }
         else
         {
@@ -695,7 +695,7 @@ namespace heongpu
 
     Data64* Galoiskey<Scheme::CKKS>::data(size_t i)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             return device_location_[i].data();
         }
@@ -707,7 +707,7 @@ namespace heongpu
 
     Data64* Galoiskey<Scheme::CKKS>::c_data()
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             return zero_device_location_.data();
         }
@@ -770,7 +770,7 @@ namespace heongpu
 
             os.write((char*) &galoiskey_size_, sizeof(galoiskey_size_));
 
-            if (storage_type_ == storage_type::DEVICE)
+            if (storage_type_ == storage_type::device)
             {
                 uint32_t key_count = device_location_.size();
                 os.write((char*) &key_count, sizeof(key_count));
@@ -872,7 +872,7 @@ namespace heongpu
             is.read((char*) &galois_key_generated_,
                     sizeof(galois_key_generated_));
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
             galois_key_generated_ = true;
 
             if (customized)
@@ -993,7 +993,7 @@ namespace heongpu
 
     void Switchkey<Scheme::CKKS>::store_in_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -1003,13 +1003,13 @@ namespace heongpu
             host_location_.resize(0);
             host_location_.shrink_to_fit();
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 
     void Switchkey<Scheme::CKKS>::store_in_host(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             host_location_ = HostVector<Data64>(switchkey_size_);
             cudaMemcpyAsync(host_location_.data(), device_location_.data(),
@@ -1019,7 +1019,7 @@ namespace heongpu
 
             device_location_.resize(0, stream);
 
-            storage_type_ = storage_type::HOST;
+            storage_type_ = storage_type::host;
         }
         else
         {
@@ -1029,7 +1029,7 @@ namespace heongpu
 
     Data64* Switchkey<Scheme::CKKS>::data()
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             return device_location_.data();
         }
@@ -1067,7 +1067,7 @@ namespace heongpu
 
             os.write((char*) &switchkey_size_, sizeof(switchkey_size_));
 
-            if (storage_type_ == storage_type::DEVICE)
+            if (storage_type_ == storage_type::device)
             {
                 HostVector<Data64> host_locations_temp(switchkey_size_);
                 cudaMemcpy(host_locations_temp.data(), device_location_.data(),
@@ -1129,7 +1129,7 @@ namespace heongpu
 
             is.read((char*) &switchkey_size_, sizeof(switchkey_size_));
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
             switch_key_generated_ = true;
 
             HostVector<Data64> host_locations_temp(switchkey_size_);
@@ -1151,7 +1151,7 @@ namespace heongpu
 
     int Switchkey<Scheme::CKKS>::memory_size()
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             return device_location_.size();
         }
@@ -1179,7 +1179,7 @@ namespace heongpu
     void Switchkey<Scheme::CKKS>::memory_set(
         DeviceVector<Data64>&& new_device_vector)
     {
-        storage_type_ = storage_type::DEVICE;
+        storage_type_ = storage_type::device;
         device_location_ = std::move(new_device_vector);
 
         if (host_location_.size() > 0)
@@ -1191,7 +1191,7 @@ namespace heongpu
 
     void Switchkey<Scheme::CKKS>::copy_to_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -1206,18 +1206,18 @@ namespace heongpu
                 device_location_ = DeviceVector<Data64>(host_location_, stream);
             }
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 
     void Switchkey<Scheme::CKKS>::remove_from_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             device_location_.resize(0, stream);
             device_location_.shrink_to_fit(stream);
 
-            storage_type_ = storage_type::HOST;
+            storage_type_ = storage_type::host;
         }
         else
         {
@@ -1227,7 +1227,7 @@ namespace heongpu
 
     void Switchkey<Scheme::CKKS>::remove_from_host()
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -1236,7 +1236,7 @@ namespace heongpu
             host_location_.resize(0);
             host_location_.shrink_to_fit();
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 

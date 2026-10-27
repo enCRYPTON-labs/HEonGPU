@@ -47,10 +47,10 @@ namespace heongpu
         {
             switch (type)
             {
-                case storage_type::HOST:
-                    return "HOST";
-                case storage_type::DEVICE:
-                    return "DEVICE";
+                case storage_type::host:
+                    return "host";
+                case storage_type::device:
+                    return "device";
             }
             return "unknown";
         }
@@ -59,10 +59,10 @@ namespace heongpu
         {
             switch (type)
             {
-                case encoding::SLOT:
-                    return "SLOT";
-                case encoding::COEFFICIENT:
-                    return "COEFFICIENT";
+                case encoding::slot:
+                    return "slot";
+                case encoding::coefficient:
+                    return "coefficient";
             }
             return "unknown";
         }

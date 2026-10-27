@@ -35,11 +35,11 @@ namespace heongpu
     __host__ void HEKeyGenerator<Scheme::BFV>::generate_secret_key(
         Secretkey<Scheme::BFV>& sk, const ExecutionOptions& options)
     {
-        if (options.storage_ != storage_type::DEVICE &&
-            options.storage_ != storage_type::HOST)
+        if (options.storage_ != storage_type::device &&
+            options.storage_ != storage_type::host)
             throw ParameterError(error_message(
                 "Invalid storage type ", static_cast<int>(options.storage_),
-                "! Expected storage_type::DEVICE or storage_type::HOST."));
+                "! Expected storage_type::device or storage_type::host."));
         sk.validate_context(context_);
         if (sk.secret_key_generated_)
         {
@@ -343,7 +343,7 @@ namespace heongpu
                             ctx->P_size);
                         HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                        if (options.storage_ == storage_type::DEVICE)
+                        if (options.storage_ == storage_type::device)
                         {
                             gk.device_location_[galois.second] =
                                 std::move(output_memory);
@@ -398,7 +398,7 @@ namespace heongpu
                         ctx->Q_prime_size, ctx->d, ctx->Q_size, ctx->P_size);
                     HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                    if (options.storage_ == storage_type::DEVICE)
+                    if (options.storage_ == storage_type::device)
                     {
                         gk.zero_device_location_ = std::move(output_memory);
                     }
@@ -457,7 +457,7 @@ namespace heongpu
                             ctx->P_size);
                         HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                        if (options.storage_ == storage_type::DEVICE)
+                        if (options.storage_ == storage_type::device)
                         {
                             gk.device_location_[galois_] =
                                 std::move(output_memory);
@@ -512,7 +512,7 @@ namespace heongpu
                         ctx->Q_prime_size, ctx->d, ctx->Q_size, ctx->P_size);
                     HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                    if (options.storage_ == storage_type::DEVICE)
+                    if (options.storage_ == storage_type::device)
                     {
                         gk.zero_device_location_ = std::move(output_memory);
                     }

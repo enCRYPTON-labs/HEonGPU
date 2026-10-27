@@ -572,7 +572,7 @@ namespace heongpu
                                     output.cipher_size_ = 2;
                                     output.depth_ = 0;
                                     output.in_ntt_domain_ = true;
-                                    output.encoding_ = encoding::SLOT;
+                                    output.encoding_ = encoding::slot;
                                     output.scale_ = scale_;
                                     output.rescale_required_ = false;
                                     output.relinearization_required_ = false;

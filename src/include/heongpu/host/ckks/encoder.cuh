@@ -56,7 +56,7 @@ namespace heongpu
         encode(Plaintext<Scheme::CKKS>& plain,
                const std::vector<double>& message, double scale,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             if ((scale <= 0) || (static_cast<int>(log2(scale)) >=
                                  context_->total_coeff_bit_count))
@@ -67,7 +67,7 @@ namespace heongpu
                     context_->total_coeff_bit_count, "."));
             }
 
-            if (type == encoding::SLOT)
+            if (type == encoding::slot)
             {
                 if (message.size() > slot_count_)
                 {
@@ -88,7 +88,7 @@ namespace heongpu
                 plain,
                 [&](Plaintext<Scheme::CKKS>& plain_)
                 {
-                    if (type == encoding::SLOT)
+                    if (type == encoding::slot)
                     {
                         encode_ckks(plain_, message, scale, options.stream_);
                     }
@@ -126,7 +126,7 @@ namespace heongpu
         encode(Plaintext<Scheme::CKKS>& plain,
                const HostVector<double>& message, double scale,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             if ((scale <= 0) || (static_cast<int>(log2(scale)) >=
                                  context_->total_coeff_bit_count))
@@ -137,7 +137,7 @@ namespace heongpu
                     context_->total_coeff_bit_count, "."));
             }
 
-            if (type == encoding::SLOT)
+            if (type == encoding::slot)
             {
                 if (message.size() > slot_count_)
                 {
@@ -158,7 +158,7 @@ namespace heongpu
                 plain,
                 [&](Plaintext<Scheme::CKKS>& plain_)
                 {
-                    if (type == encoding::SLOT)
+                    if (type == encoding::slot)
                     {
                         encode_ckks(plain_, message, scale, options.stream_);
                     }
@@ -196,7 +196,7 @@ namespace heongpu
         encode(Plaintext<Scheme::CKKS>& plain,
                const std::vector<Complex64>& message, double scale,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             if ((scale <= 0) || (static_cast<int>(log2(scale)) >=
                                  context_->total_coeff_bit_count))
@@ -207,7 +207,7 @@ namespace heongpu
                     context_->total_coeff_bit_count, "."));
             }
 
-            if (type == encoding::COEFFICIENT)
+            if (type == encoding::coefficient)
             {
                 throw std::invalid_argument(
                     "Complex coefficient encoding is not supported for CKKS.");
@@ -251,7 +251,7 @@ namespace heongpu
         encode(Plaintext<Scheme::CKKS>& plain,
                const HostVector<Complex64>& message, double scale,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             if ((scale <= 0) || (static_cast<int>(log2(scale)) >=
                                  context_->total_coeff_bit_count))
@@ -262,7 +262,7 @@ namespace heongpu
                     context_->total_coeff_bit_count, "."));
             }
 
-            if (type == encoding::COEFFICIENT)
+            if (type == encoding::coefficient)
             {
                 throw std::invalid_argument(
                     "Complex coefficient encoding is not supported for CKKS.");
@@ -309,7 +309,7 @@ namespace heongpu
         encode(Plaintext<Scheme::CKKS>& plain,
                const std::vector<double>& message, double scale, int depth,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             validate_depth(depth);
             encode(plain, message, scale, options, type);
@@ -324,7 +324,7 @@ namespace heongpu
         encode(Plaintext<Scheme::CKKS>& plain,
                const HostVector<double>& message, double scale, int depth,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             validate_depth(depth);
             encode(plain, message, scale, options, type);
@@ -339,7 +339,7 @@ namespace heongpu
         encode(Plaintext<Scheme::CKKS>& plain,
                const std::vector<Complex64>& message, double scale, int depth,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             validate_depth(depth);
             encode(plain, message, scale, options, type);
@@ -354,7 +354,7 @@ namespace heongpu
         encode(Plaintext<Scheme::CKKS>& plain,
                const HostVector<Complex64>& message, double scale, int depth,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             validate_depth(depth);
             encode(plain, message, scale, options, type);
@@ -375,7 +375,7 @@ namespace heongpu
         encode(Plaintext<Scheme::CKKS>& plain, const double& message,
                double scale,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             if ((scale <= 0) || (static_cast<int>(log2(scale)) >=
                                  context_->total_coeff_bit_count))
@@ -424,7 +424,7 @@ namespace heongpu
         encode(Plaintext<Scheme::CKKS>& plain, const std::int64_t& message,
                double scale,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             if ((scale <= 0) || (static_cast<int>(log2(scale)) >=
                                  context_->total_coeff_bit_count))
@@ -475,7 +475,7 @@ namespace heongpu
                 plain,
                 [&](Plaintext<Scheme::CKKS>& plain_)
                 {
-                    if (plain_.encoding_ == encoding::COEFFICIENT)
+                    if (plain_.encoding_ == encoding::coefficient)
                     {
                         decode_ckks_coeff(message, plain_, options.stream_);
                     }
@@ -505,7 +505,7 @@ namespace heongpu
                 plain,
                 [&](Plaintext<Scheme::CKKS>& plain_)
                 {
-                    if (plain_.encoding_ == encoding::COEFFICIENT)
+                    if (plain_.encoding_ == encoding::coefficient)
                     {
                         decode_ckks_coeff(message, plain_, options.stream_);
                     }
@@ -533,7 +533,7 @@ namespace heongpu
                 plain,
                 [&](Plaintext<Scheme::CKKS>& plain_)
                 {
-                    if (plain_.encoding_ == encoding::COEFFICIENT)
+                    if (plain_.encoding_ == encoding::coefficient)
                     {
                         throw std::invalid_argument(
                             "Coefficient encoded CKKS plaintext can not be "
@@ -562,7 +562,7 @@ namespace heongpu
                 plain,
                 [&](Plaintext<Scheme::CKKS>& plain_)
                 {
-                    if (plain_.encoding_ == encoding::COEFFICIENT)
+                    if (plain_.encoding_ == encoding::coefficient)
                     {
                         throw std::invalid_argument(
                             "Coefficient encoded CKKS plaintext can not be "
@@ -590,7 +590,7 @@ namespace heongpu
         encode(Plaintext<Scheme::CKKS>& plain,
                const std::vector<double>& message,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             encode(plain, message, level_scale(0), options, type);
         }
@@ -604,7 +604,7 @@ namespace heongpu
         encode(Plaintext<Scheme::CKKS>& plain,
                const std::vector<double>& message, int depth,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             encode(plain, message, level_scale(depth), depth, options, type);
         }
@@ -619,7 +619,7 @@ namespace heongpu
         encode(Plaintext<Scheme::CKKS>& plain,
                const HostVector<double>& message,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             encode(plain, message, level_scale(0), options, type);
         }
@@ -633,7 +633,7 @@ namespace heongpu
         encode(Plaintext<Scheme::CKKS>& plain,
                const HostVector<double>& message, int depth,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             encode(plain, message, level_scale(depth), depth, options, type);
         }
@@ -648,7 +648,7 @@ namespace heongpu
         encode(Plaintext<Scheme::CKKS>& plain,
                const std::vector<Complex64>& message,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             encode(plain, message, level_scale(0), options, type);
         }
@@ -662,7 +662,7 @@ namespace heongpu
         encode(Plaintext<Scheme::CKKS>& plain,
                const std::vector<Complex64>& message, int depth,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             encode(plain, message, level_scale(depth), depth, options, type);
         }
@@ -677,7 +677,7 @@ namespace heongpu
         encode(Plaintext<Scheme::CKKS>& plain,
                const HostVector<Complex64>& message,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             encode(plain, message, level_scale(0), options, type);
         }
@@ -691,7 +691,7 @@ namespace heongpu
         encode(Plaintext<Scheme::CKKS>& plain,
                const HostVector<Complex64>& message, int depth,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             encode(plain, message, level_scale(depth), depth, options, type);
         }
@@ -712,7 +712,7 @@ namespace heongpu
         __host__ Plaintext<Scheme::CKKS>
         encode(const std::vector<double>& message, double scale,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             Plaintext<Scheme::CKKS> output(context_, options);
             encode(output, message, scale, options, type);
@@ -726,7 +726,7 @@ namespace heongpu
         __host__ Plaintext<Scheme::CKKS>
         encode(const std::vector<double>& message, double scale, int depth,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             Plaintext<Scheme::CKKS> output(context_, options);
             encode(output, message, scale, depth, options, type);
@@ -740,7 +740,7 @@ namespace heongpu
         __host__ Plaintext<Scheme::CKKS>
         encode(const std::vector<Complex64>& message, double scale,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             Plaintext<Scheme::CKKS> output(context_, options);
             encode(output, message, scale, options, type);
@@ -754,7 +754,7 @@ namespace heongpu
         __host__ Plaintext<Scheme::CKKS>
         encode(const std::vector<Complex64>& message, double scale, int depth,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             Plaintext<Scheme::CKKS> output(context_, options);
             encode(output, message, scale, depth, options, type);
@@ -769,7 +769,7 @@ namespace heongpu
         __host__ Plaintext<Scheme::CKKS>
         encode(const std::vector<double>& message,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             Plaintext<Scheme::CKKS> output(context_, options);
             encode(output, message, options, type);
@@ -784,7 +784,7 @@ namespace heongpu
         __host__ Plaintext<Scheme::CKKS>
         encode(const std::vector<double>& message, int depth,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             Plaintext<Scheme::CKKS> output(context_, options);
             encode(output, message, depth, options, type);
@@ -799,7 +799,7 @@ namespace heongpu
         __host__ Plaintext<Scheme::CKKS>
         encode(const std::vector<Complex64>& message,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             Plaintext<Scheme::CKKS> output(context_, options);
             encode(output, message, options, type);
@@ -814,7 +814,7 @@ namespace heongpu
         __host__ Plaintext<Scheme::CKKS>
         encode(const std::vector<Complex64>& message, int depth,
                const ExecutionOptions& options = ExecutionOptions(),
-               encoding type = encoding::SLOT)
+               encoding type = encoding::slot)
         {
             Plaintext<Scheme::CKKS> output(context_, options);
             encode(output, message, depth, options, type);
@@ -867,7 +867,7 @@ namespace heongpu
                 return;
             }
             const int size = context_->n * (context_->Q_size - depth);
-            if (plain.storage_type_ == storage_type::DEVICE)
+            if (plain.storage_type_ == storage_type::device)
             {
                 DeviceVector<Data64> kept(size, options.stream_);
                 HEONGPU_CUDA_CHECK(

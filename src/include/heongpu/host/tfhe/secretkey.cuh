@@ -48,7 +48,7 @@ namespace heongpu
          */
         bool is_on_device() const noexcept
         {
-            if (storage_type_ == storage_type::DEVICE)
+            if (storage_type_ == storage_type::device)
             {
                 return true;
             }
@@ -143,7 +143,7 @@ namespace heongpu
             HEONGPU_CUDA_CHECK(cudaStreamSynchronize(copy.stream()));
             if (copy.secret_key_generated_)
             {
-                if (copy.storage_type_ == storage_type::DEVICE)
+                if (copy.storage_type_ == storage_type::device)
                 {
                     lwe_key_device_location_.resize(
                         copy.lwe_key_device_location_.size(),
@@ -322,7 +322,7 @@ namespace heongpu
         int offset_ = 0;
 
         bool secret_key_generated_ = false;
-        storage_type storage_type_ = storage_type::DEVICE;
+        storage_type storage_type_ = storage_type::device;
 
         void validate_context(const HEContext<Scheme::TFHE>& context) const;
         void copy_to_device(cudaStream_t stream);

@@ -125,16 +125,28 @@ namespace heongpu
 
     enum class arithmetic_bootstrapping_type : std::uint8_t
     {
-        NONE = 0x0,
-        REGULAR_BOOTSTRAPPING = 0x1,
-        SLIM_BOOTSTRAPPING = 0x2,
+        none = 0x0,
+        regular = 0x1,
+        slim = 0x2,
+
+        NONE [[deprecated("Use arithmetic_bootstrapping_type::none.")]] = none,
+        REGULAR_BOOTSTRAPPING
+        [[deprecated("Use arithmetic_bootstrapping_type::regular.")]] = regular,
+        SLIM_BOOTSTRAPPING
+        [[deprecated("Use arithmetic_bootstrapping_type::slim.")]] = slim,
     };
 
     enum class logic_bootstrapping_type : std::uint8_t
     {
-        NONE = 0x0,
-        BIT_BOOTSTRAPPING = 0x1, // https://eprint.iacr.org/2024/767.pdf
-        GATE_BOOTSTRAPPING = 0x2, // https://eprint.iacr.org/2024/767.pdf
+        none = 0x0,
+        bit = 0x1, // https://eprint.iacr.org/2024/767.pdf
+        gate = 0x2, // https://eprint.iacr.org/2024/767.pdf
+
+        NONE [[deprecated("Use logic_bootstrapping_type::none.")]] = none,
+        BIT_BOOTSTRAPPING [[deprecated("Use logic_bootstrapping_type::bit.")]] =
+            bit,
+        GATE_BOOTSTRAPPING
+        [[deprecated("Use logic_bootstrapping_type::gate.")]] = gate,
     };
 
     // How CKKS ciphertexts are rescaled; see
@@ -151,8 +163,11 @@ namespace heongpu
 
     enum class encoding : std::uint8_t
     {
-        SLOT = 0x0,
-        COEFFICIENT = 0x1
+        slot = 0x0,
+        coefficient = 0x1,
+
+        SLOT [[deprecated("Use encoding::slot.")]] = slot,
+        COEFFICIENT [[deprecated("Use encoding::coefficient.")]] = coefficient
     };
 
     enum class serialization_format : std::uint8_t

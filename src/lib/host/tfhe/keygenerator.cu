@@ -29,11 +29,11 @@ namespace heongpu
             throw std::runtime_error("Secretkey is already generated!");
         }
 
-        if (options.storage_ != storage_type::DEVICE &&
-            options.storage_ != storage_type::HOST)
+        if (options.storage_ != storage_type::device &&
+            options.storage_ != storage_type::host)
             throw ParameterError(error_message(
                 "Invalid storage type ", static_cast<int>(options.storage_),
-                "! Expected storage_type::DEVICE or storage_type::HOST."));
+                "! Expected storage_type::device or storage_type::host."));
         sk.validate_context(context_);
         detail::PrivateRandomBuffer<int32_t> lwe(context_->n_);
         detail::PrivateRandomBuffer<int32_t> tlwe(context_->k_ * context_->N_);
@@ -47,9 +47,9 @@ namespace heongpu
         HEONGPU_CUDA_CHECK(cudaStreamSynchronize(options.stream_));
         sk.lwe_key_device_location_ = std::move(lwe_device);
         sk.tlwe_key_device_location_ = std::move(tlwe_device);
-        sk.storage_type_ = storage_type::DEVICE;
+        sk.storage_type_ = storage_type::device;
         sk.secret_key_generated_ = true;
-        if (options.storage_ == storage_type::HOST)
+        if (options.storage_ == storage_type::host)
             sk.store_in_host(options.stream_);
     }
 
@@ -215,7 +215,7 @@ namespace heongpu
                         bk.switch_key_variances_ = std::vector<double>(
                             total_noise_size,
                             context_->ks_stdev_ * context_->ks_stdev_);
-                        bk.storage_type_ = storage_type::DEVICE;
+                        bk.storage_type_ = storage_type::device;
                         bk.boot_key_generated_ = true;
                     },
                     options);

@@ -61,7 +61,7 @@ namespace heongpu
          */
         bool is_on_device() const noexcept
         {
-            if (storage_type_ == storage_type::DEVICE)
+            if (storage_type_ == storage_type::device)
             {
                 return true;
             }
@@ -186,7 +186,7 @@ namespace heongpu
               ciphertext_generated_(copy.ciphertext_generated_),
               context_id_(copy.context_id_)
         {
-            if (copy.storage_type_ == storage_type::DEVICE)
+            if (copy.storage_type_ == storage_type::device)
             {
                 device_locations_.resize(copy.device_locations_.size(),
                                          copy.device_locations_.stream());
@@ -236,7 +236,7 @@ namespace heongpu
                 ciphertext_generated_ = copy.ciphertext_generated_;
                 context_id_ = copy.context_id_;
 
-                if (copy.storage_type_ == storage_type::DEVICE)
+                if (copy.storage_type_ == storage_type::device)
                 {
                     device_locations_.resize(copy.device_locations_.size(),
                                              copy.device_locations_.stream());

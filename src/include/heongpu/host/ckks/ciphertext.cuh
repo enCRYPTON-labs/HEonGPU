@@ -61,7 +61,7 @@ namespace heongpu
          */
         bool is_on_device() const noexcept
         {
-            if (storage_type_ == storage_type::DEVICE)
+            if (storage_type_ == storage_type::device)
             {
                 return true;
             }
@@ -230,7 +230,7 @@ namespace heongpu
               context_id_(copy.context_id_)
 
         {
-            if (copy.storage_type_ == storage_type::DEVICE)
+            if (copy.storage_type_ == storage_type::device)
             {
                 device_locations_.resize(copy.device_locations_.size(),
                                          copy.device_locations_.stream());
@@ -289,7 +289,7 @@ namespace heongpu
                 ciphertext_generated_ = copy.ciphertext_generated_;
                 context_id_ = copy.context_id_;
 
-                if (copy.storage_type_ == storage_type::DEVICE)
+                if (copy.storage_type_ == storage_type::device)
                 {
                     device_locations_.resize(copy.device_locations_.size(),
                                              copy.device_locations_.stream());
@@ -357,10 +357,10 @@ namespace heongpu
         int depth_ = 0;
 
         bool in_ntt_domain_ = true;
-        storage_type storage_type_ = storage_type::DEVICE;
+        storage_type storage_type_ = storage_type::device;
 
         double scale_ = 0;
-        encoding encoding_ = encoding::SLOT;
+        encoding encoding_ = encoding::slot;
         bool rescale_required_ = false;
         bool relinearization_required_ = false;
 

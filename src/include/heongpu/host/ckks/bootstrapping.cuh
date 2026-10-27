@@ -92,8 +92,8 @@ namespace heongpu
 
         // Exactly one of them is not NONE.
         arithmetic_bootstrapping_type arithmetic_type =
-            arithmetic_bootstrapping_type::NONE;
-        logic_bootstrapping_type logic_type = logic_bootstrapping_type::NONE;
+            arithmetic_bootstrapping_type::none;
+        logic_bootstrapping_type logic_type = logic_bootstrapping_type::none;
 
         std::size_t poly_modulus_degree = 0;
         // The Q and P primes; when they are empty, primes of the bit sizes

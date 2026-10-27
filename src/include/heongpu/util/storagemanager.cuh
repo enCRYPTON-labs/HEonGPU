@@ -19,13 +19,16 @@ namespace heongpu
      * @enum storage_type
      * @brief Specifies the storage type for objects.
      *
-     * - `HOST`: Indicates that the object is stored in the host memory.
-     * - `DEVICE`: Indicates that the object is stored in the device memory.
+     * - `host`: Indicates that the object is stored in the host memory.
+     * - `device`: Indicates that the object is stored in the device memory.
      */
     enum class storage_type : std::uint8_t
     {
-        HOST = 0x1, // Host memory storage
-        DEVICE = 0x2 // Device memory storage
+        host = 0x1, // Host memory storage
+        device = 0x2, // Device memory storage
+
+        HOST [[deprecated("Use storage_type::host.")]] = host,
+        DEVICE [[deprecated("Use storage_type::device.")]] = device
     };
 
     /**
@@ -39,7 +42,7 @@ namespace heongpu
             cudaStreamDefault; // CUDA stream to be used for execution. Defaults
                                // to cudaStreamDefault.
         storage_type storage_ =
-            storage_type::DEVICE; // Default storage type for the operation.
+            storage_type::device; // Default storage type for the operation.
                                   // Defaults to DEVICE.
         bool keep_initial_condition_ =
             true; // Determines whether to maintain the initial data location.
@@ -66,10 +69,11 @@ namespace heongpu
          * @brief Configures the storage type for execution.
          *
          * Sets the storage type where the operation's data will be stored. This
-         * can typically be either `storage_type::DEVICE` or
-         * `storage_type::HOST`.
+         * can typically be either `storage_type::device` or
+         * `storage_type::host`.
          *
-         * @param storage The storage type to set (e.g., DEVICE or HOST).
+         * @param storage The storage type to set (storage_type::device or
+         * storage_type::host).
          * @return ExecutionOptions& A reference to the updated ExecutionOptions
          * object, allowing method chaining.
          */
@@ -135,8 +139,8 @@ namespace heongpu
         if (is_input_output_same)
         {
             if (options.keep_initial_condition_ &&
-                (initial_condition == storage_type::HOST) &&
-                (options.storage_ == storage_type::DEVICE))
+                (initial_condition == storage_type::host) &&
+                (options.storage_ == storage_type::device))
             {
                 object.remove_from_host();
             }
@@ -145,18 +149,18 @@ namespace heongpu
         {
             if (options.keep_initial_condition_)
             {
-                if (initial_condition == storage_type::HOST)
+                if (initial_condition == storage_type::host)
                 {
                     object.remove_from_device(options.stream_);
                 }
             }
             else
             {
-                if (options.storage_ == storage_type::DEVICE)
+                if (options.storage_ == storage_type::device)
                 {
                     object.store_in_device(options.stream_);
                 }
-                else if (options.storage_ == storage_type::HOST)
+                else if (options.storage_ == storage_type::host)
                 {
                     object.store_in_host(options.stream_);
                 }
@@ -165,8 +169,8 @@ namespace heongpu
                     throw ParameterError(
                         error_message("Invalid storage type ",
                                       static_cast<int>(options.storage_),
-                                      "! Expected storage_type::DEVICE or "
-                                      "storage_type::HOST."));
+                                      "! Expected storage_type::device or "
+                                      "storage_type::host."));
                 }
             }
         }
@@ -216,8 +220,8 @@ namespace heongpu
             if (is_input_output_same)
             {
                 if (options.keep_initial_condition_ &&
-                    (initial_conditions[i] == storage_type::HOST) &&
-                    (options.storage_ == storage_type::DEVICE))
+                    (initial_conditions[i] == storage_type::host) &&
+                    (options.storage_ == storage_type::device))
                 {
                     objects[i].remove_from_host();
                 }
@@ -226,18 +230,18 @@ namespace heongpu
             {
                 if (options.keep_initial_condition_)
                 {
-                    if (initial_conditions[i] == storage_type::HOST)
+                    if (initial_conditions[i] == storage_type::host)
                     {
                         objects[i].remove_from_device(options.stream_);
                     }
                 }
                 else
                 {
-                    if (options.storage_ == storage_type::DEVICE)
+                    if (options.storage_ == storage_type::device)
                     {
                         objects[i].store_in_device(options.stream_);
                     }
-                    else if (options.storage_ == storage_type::HOST)
+                    else if (options.storage_ == storage_type::host)
                     {
                         objects[i].store_in_host(options.stream_);
                     }
@@ -246,8 +250,8 @@ namespace heongpu
                         throw ParameterError(
                             error_message("Invalid storage type ",
                                           static_cast<int>(options.storage_),
-                                          "! Expected storage_type::DEVICE or "
-                                          "storage_type::HOST."));
+                                          "! Expected storage_type::device or "
+                                          "storage_type::host."));
                     }
                 }
             }
@@ -270,11 +274,11 @@ namespace heongpu
     {
         function(object);
 
-        if (options.storage_ == storage_type::DEVICE)
+        if (options.storage_ == storage_type::device)
         {
             object.store_in_device(options.stream_);
         }
-        else if (options.storage_ == storage_type::HOST)
+        else if (options.storage_ == storage_type::host)
         {
             object.store_in_host(options.stream_);
         }
@@ -282,7 +286,7 @@ namespace heongpu
         {
             throw ParameterError(error_message(
                 "Invalid storage type ", static_cast<int>(options.storage_),
-                "! Expected storage_type::DEVICE or storage_type::HOST."));
+                "! Expected storage_type::device or storage_type::host."));
         }
     }
 

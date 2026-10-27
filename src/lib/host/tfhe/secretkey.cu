@@ -40,7 +40,7 @@ namespace heongpu
         offset_ = context->offset_;
 
         storage_type_ =
-            store_in_gpu ? storage_type::DEVICE : storage_type::HOST;
+            store_in_gpu ? storage_type::device : storage_type::host;
     }
 
     void Secretkey<Scheme::TFHE>::validate_context(
@@ -65,10 +65,10 @@ namespace heongpu
                 " (the noise parameters must match as well)."));
         if (secret_key_generated_)
         {
-            const size_t lwe_size = storage_type_ == storage_type::DEVICE
+            const size_t lwe_size = storage_type_ == storage_type::device
                                         ? lwe_key_device_location_.size()
                                         : lwe_key_host_location_.size();
-            const size_t tlwe_size = storage_type_ == storage_type::DEVICE
+            const size_t tlwe_size = storage_type_ == storage_type::device
                                          ? tlwe_key_device_location_.size()
                                          : tlwe_key_host_location_.size();
             if (lwe_size != n_ || tlwe_size != k_ * N_)
@@ -79,7 +79,7 @@ namespace heongpu
 
     void Secretkey<Scheme::TFHE>::store_in_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -105,13 +105,13 @@ namespace heongpu
                 // pass
             }
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 
     void Secretkey<Scheme::TFHE>::store_in_host(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             if (secret_key_generated_)
             {
@@ -145,7 +145,7 @@ namespace heongpu
                 // pass
             }
 
-            storage_type_ = storage_type::HOST;
+            storage_type_ = storage_type::host;
         }
         else
         {
@@ -155,7 +155,7 @@ namespace heongpu
 
     void Secretkey<Scheme::TFHE>::copy_to_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -175,13 +175,13 @@ namespace heongpu
                 // pass
             }
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 
     void Secretkey<Scheme::TFHE>::remove_from_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             lwe_key_device_location_.resize(0, stream);
             lwe_key_device_location_.shrink_to_fit(stream);
@@ -189,7 +189,7 @@ namespace heongpu
             tlwe_key_device_location_.resize(0, stream);
             tlwe_key_device_location_.shrink_to_fit(stream);
 
-            storage_type_ = storage_type::HOST;
+            storage_type_ = storage_type::host;
         }
         else
         {
@@ -199,7 +199,7 @@ namespace heongpu
 
     void Secretkey<Scheme::TFHE>::remove_from_host()
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -211,7 +211,7 @@ namespace heongpu
             tlwe_key_host_location_.resize(0);
             tlwe_key_host_location_.shrink_to_fit();
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 

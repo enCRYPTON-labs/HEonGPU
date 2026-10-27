@@ -14,7 +14,7 @@ The basic example directory in the HEonGPU repository contains sample programs t
 
 - [5_switchkey_methods_ckks.cpp](5_switchkey_methods_ckks.cpp): Examines key switching methods within the CKKS scheme, demonstrating the process of changing keys in homomorphic operations.
 
-- [6_ckks_coefficient_encoding.cpp](6_ckks_coefficient_encoding.cpp): Demonstrates CKKS coefficient encoding (`encoding::COEFFICIENT`) end-to-end, including encode/encrypt/decrypt/decode and encoding-mismatch validation.
+- [6_ckks_coefficient_encoding.cpp](6_ckks_coefficient_encoding.cpp): Demonstrates CKKS coefficient encoding (`encoding::coefficient`) end-to-end, including encode/encrypt/decrypt/decode and encoding-mismatch validation.
 
 - [7_ckks_coeff_to_slot_roundtrip.cpp](7_ckks_coeff_to_slot_roundtrip.cpp): Demonstrates dedicated `generate_encoding_transform_context(...)` API with explicit `CtoS_start_level` / `StoC_start_level` inputs (where `StoC_start_level` is the input level of `slot_to_coeff`), then passes that context into public `coeff_to_slot` / `slot_to_coeff` APIs and validates roundtrip correctness.
 

@@ -27,7 +27,7 @@ namespace heongpu
 
     void Ciphertext<Scheme::TFHE>::store_in_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -52,13 +52,13 @@ namespace heongpu
                 // pass
             }
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 
     void Ciphertext<Scheme::TFHE>::store_in_host(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             if (ciphertext_generated_)
             {
@@ -90,7 +90,7 @@ namespace heongpu
                 // pass
             }
 
-            storage_type_ = storage_type::HOST;
+            storage_type_ = storage_type::host;
         }
         else
         {
@@ -100,7 +100,7 @@ namespace heongpu
 
     void Ciphertext<Scheme::TFHE>::copy_to_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -121,13 +121,13 @@ namespace heongpu
                 // pass
             }
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 
     void Ciphertext<Scheme::TFHE>::remove_from_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             a_device_location_.resize(0, stream);
             a_device_location_.shrink_to_fit(stream);
@@ -135,7 +135,7 @@ namespace heongpu
             b_device_location_.resize(0, stream);
             b_device_location_.shrink_to_fit(stream);
 
-            storage_type_ = storage_type::HOST;
+            storage_type_ = storage_type::host;
         }
         else
         {
@@ -145,7 +145,7 @@ namespace heongpu
 
     void Ciphertext<Scheme::TFHE>::remove_from_host()
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -157,7 +157,7 @@ namespace heongpu
             b_host_location_.resize(0);
             b_host_location_.shrink_to_fit();
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 

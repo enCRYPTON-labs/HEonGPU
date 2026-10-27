@@ -588,7 +588,7 @@ namespace heongpu
         // TODO: make it efficient
         int iteration_count_1 = d / 4;
         int iteration_count_2 = d % 4;
-        if (relin_key.storage_type_ == storage_type::DEVICE)
+        if (relin_key.storage_type_ == storage_type::device)
         {
             keyswitch_multiply_accumulate_kernel<<<
                 dim3((context_->n >> 8), context_->Q_prime_size, 1), 256, 0,
@@ -681,7 +681,7 @@ namespace heongpu
     {
         int galoiselt =
             steps_to_galois_elt(shift, context_->n, galois_key.group_order_);
-        bool key_exist = (galois_key.storage_type_ == storage_type::DEVICE)
+        bool key_exist = (galois_key.storage_type_ == storage_type::device)
                              ? (galois_key.device_location_.find(galoiselt) !=
                                 galois_key.device_location_.end())
                              : (galois_key.host_location_.find(galoiselt) !=
@@ -752,7 +752,7 @@ namespace heongpu
 
         auto has_key = [&](int galois_elt)
         {
-            return (galois_key.storage_type_ == storage_type::DEVICE)
+            return (galois_key.storage_type_ == storage_type::device)
                        ? (galois_key.device_location_.find(galois_elt) !=
                           galois_key.device_location_.end())
                        : (galois_key.host_location_.find(galois_elt) !=
@@ -854,7 +854,7 @@ namespace heongpu
         // TODO: make it efficient
         int iteration_count_1 = d / 4;
         int iteration_count_2 = d % 4;
-        if (galois_key.storage_type_ == storage_type::DEVICE)
+        if (galois_key.storage_type_ == storage_type::device)
         {
             keyswitch_multiply_accumulate_kernel<<<
                 dim3((context_->n >> 8), context_->Q_prime_size, 1), 256, 0,
@@ -967,7 +967,7 @@ namespace heongpu
         // TODO: make it efficient
         int iteration_count_1 = d / 4;
         int iteration_count_2 = d % 4;
-        if (galois_key.storage_type_ == storage_type::DEVICE)
+        if (galois_key.storage_type_ == storage_type::device)
         {
             keyswitch_multiply_accumulate_kernel<<<
                 dim3((context_->n >> 8), context_->Q_prime_size, 1), 256, 0,
@@ -1064,7 +1064,7 @@ namespace heongpu
         // TODO: make it efficient
         int iteration_count_1 = d / 4;
         int iteration_count_2 = d % 4;
-        if (switch_key.storage_type_ == storage_type::DEVICE)
+        if (switch_key.storage_type_ == storage_type::device)
         {
             keyswitch_multiply_accumulate_kernel<<<
                 dim3((context_->n >> 8), context_->Q_prime_size, 1), 256, 0,
@@ -1255,7 +1255,7 @@ namespace heongpu
         cipher.context_id_ = input.context_id_;
         cipher.in_ntt_domain_ = input.in_ntt_domain_;
 
-        cipher.storage_type_ = storage_type::DEVICE;
+        cipher.storage_type_ = storage_type::device;
 
         cipher.relinearization_required_ = input.relinearization_required_;
         cipher.ciphertext_generated_ = true;

@@ -165,7 +165,7 @@ namespace
         void reject_and_retry(const std::string& malformed)
         {
             for (auto storage :
-                 {heongpu::storage_type::DEVICE, heongpu::storage_type::HOST})
+                 {heongpu::storage_type::device, heongpu::storage_type::host})
             {
                 heongpu::Ciphertext<scheme> target(
                     context,
@@ -178,7 +178,7 @@ namespace
                 EXPECT_EQ(target.depth(), 0);
                 EXPECT_EQ(target.data(), pointer);
                 EXPECT_EQ(target.is_on_device(),
-                          storage == heongpu::storage_type::DEVICE);
+                          storage == heongpu::storage_type::device);
                 EXPECT_THROW(save(target), std::runtime_error);
                 std::stringstream good(binary);
                 ASSERT_NO_THROW(target.load(good));
@@ -388,7 +388,7 @@ TEST_F(CKKSCiphertextSerialization, SlotCoefficientAndHostRoundTripsWork)
             values[23] = -11;
             encoder->encode(plain, values, std::pow(2.0, 30),
                             heongpu::ExecutionOptions(),
-                            heongpu::encoding::COEFFICIENT);
+                            heongpu::encoding::coefficient);
         }
         else
         {

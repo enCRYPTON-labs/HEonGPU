@@ -104,7 +104,7 @@ TEST_F(CKKSEncodeDepth, Plaintext_Matches_A_Ciphertext_Of_That_Depth)
     encoder->encode(addend, std::vector<double>(slots, 0.5), scale,
                     ciphertext.depth(),
                     heongpu::ExecutionOptions().set_storage_type(
-                        heongpu::storage_type::HOST));
+                        heongpu::storage_type::host));
     EXPECT_FALSE(addend.is_on_device());
     operators->add_plain_inplace(ciphertext, addend);
 

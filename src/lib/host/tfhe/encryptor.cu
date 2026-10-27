@@ -30,7 +30,7 @@ namespace heongpu
         alpha_min_ = secret_key.lwe_alpha_min;
         alpha_max_ = secret_key.lwe_alpha_max;
 
-        if (secret_key.storage_type_ == storage_type::DEVICE)
+        if (secret_key.storage_type_ == storage_type::device)
         {
             lwe_key_device_location_ = secret_key.lwe_key_device_location_;
         }
@@ -79,7 +79,7 @@ namespace heongpu
 
         ciphertext.variances_ =
             std::vector<double>(ciphertext.shape_, alpha_min_ * alpha_min_);
-        ciphertext.storage_type_ = storage_type::DEVICE;
+        ciphertext.storage_type_ = storage_type::device;
     }
 
     __host__ int32_t

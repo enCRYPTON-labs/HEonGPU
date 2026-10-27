@@ -2934,7 +2934,7 @@ namespace heongpu
         __host__ void generate_bootstrapping_params(
             const double scale, const BootstrappingConfig& config,
             const arithmetic_bootstrapping_type& boot_type =
-                arithmetic_bootstrapping_type::REGULAR_BOOTSTRAPPING);
+                arithmetic_bootstrapping_type::regular);
 
         __host__ std::vector<int> bootstrapping_key_indices()
         {
@@ -3111,7 +3111,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             input_storage_manager(
@@ -3142,7 +3142,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             input_storage_manager(
@@ -3176,7 +3176,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             input_storage_manager(
@@ -3246,7 +3246,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             input_storage_manager(
@@ -3315,7 +3315,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             Ciphertext<Scheme::CKKS> inner_input1 =
@@ -3397,7 +3397,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             Ciphertext<Scheme::CKKS> inner_input1 =
@@ -3478,7 +3478,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             Ciphertext<Scheme::CKKS> inner_input1 =
@@ -3562,7 +3562,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             Ciphertext<Scheme::CKKS> inner_input1 =
@@ -3645,7 +3645,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             input_storage_manager(
@@ -3717,7 +3717,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             input_storage_manager(
@@ -3789,7 +3789,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             Ciphertext<Scheme::CKKS> inner_input1 =
@@ -3874,7 +3874,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             Ciphertext<Scheme::CKKS> inner_input1 =
@@ -3958,7 +3958,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             Ciphertext<Scheme::CKKS> inner_input1 =
@@ -4046,7 +4046,7 @@ namespace heongpu
             ExecutionOptions options_inner =
                 ExecutionOptions()
                     .set_stream(options.stream_)
-                    .set_storage_type(storage_type::DEVICE)
+                    .set_storage_type(storage_type::device)
                     .set_initial_location(true);
 
             Ciphertext<Scheme::CKKS> inner_input1 =

@@ -141,7 +141,7 @@ namespace heongpu
          */
         bool is_on_device() const noexcept
         {
-            if (storage_type_ == storage_type::DEVICE)
+            if (storage_type_ == storage_type::device)
             {
                 return true;
             }
@@ -171,7 +171,7 @@ namespace heongpu
               secret_key_generated_(copy.secret_key_generated_),
               storage_type_(copy.storage_type_)
         {
-            if (copy.storage_type_ == storage_type::DEVICE)
+            if (copy.storage_type_ == storage_type::device)
             {
                 device_locations_.resize(copy.device_locations_.size(),
                                          copy.device_locations_.stream());
@@ -315,7 +315,7 @@ namespace heongpu
         bool in_ntt_domain_ = false;
         bool secret_key_generated_ = false;
 
-        storage_type storage_type_ = storage_type::DEVICE;
+        storage_type storage_type_ = storage_type::device;
 
         DeviceVector<Data64> device_locations_; // coefficients are RNS domain
         HostVector<Data64> host_locations_; // coefficients are RNS domain

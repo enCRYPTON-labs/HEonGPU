@@ -69,7 +69,7 @@ namespace heongpu
          */
         bool is_on_device() const
         {
-            return (storage_type_ == storage_type::DEVICE);
+            return (storage_type_ == storage_type::device);
         }
 
         /**
@@ -109,7 +109,7 @@ namespace heongpu
               relinkey_size_leveled_(copy.relinkey_size_leveled_),
               relin_key_generated_(copy.relin_key_generated_)
         {
-            if (copy.storage_type_ == storage_type::DEVICE)
+            if (copy.storage_type_ == storage_type::device)
             {
                 if (copy.relinkey_size_leveled_.size() == 0)
                 {
@@ -187,7 +187,7 @@ namespace heongpu
               relinkey_size_leveled_(std::move(assign.relinkey_size_leveled_)),
               relin_key_generated_(std::move(assign.relin_key_generated_))
         {
-            if (assign.storage_type_ == storage_type::DEVICE)
+            if (assign.storage_type_ == storage_type::device)
             {
                 if (assign.relinkey_size_leveled_.size() == 0)
                 {
@@ -255,7 +255,7 @@ namespace heongpu
                 relinkey_size_leveled_ = copy.relinkey_size_leveled_;
                 relin_key_generated_ = copy.relin_key_generated_;
 
-                if (copy.storage_type_ == storage_type::DEVICE)
+                if (copy.storage_type_ == storage_type::device)
                 {
                     if (copy.relinkey_size_leveled_.size() == 0)
                     {
@@ -344,7 +344,7 @@ namespace heongpu
                     std::move(assign.relinkey_size_leveled_);
                 relin_key_generated_ = std::move(assign.relin_key_generated_);
 
-                if (assign.storage_type_ == storage_type::DEVICE)
+                if (assign.storage_type_ == storage_type::device)
                 {
                     if (assign.relinkey_size_leveled_.size() == 0)
                     {
@@ -578,7 +578,7 @@ namespace heongpu
          */
         bool is_on_device() const
         {
-            return (storage_type_ == storage_type::DEVICE);
+            return (storage_type_ == storage_type::device);
         }
 
         /**
@@ -622,7 +622,7 @@ namespace heongpu
               galois_elt_zero(copy.galois_elt_zero),
               galois_key_generated_(copy.galois_key_generated_)
         {
-            if (copy.storage_type_ == storage_type::DEVICE)
+            if (copy.storage_type_ == storage_type::device)
             {
                 for (const auto& [key, value] : copy.device_location_)
                 {
@@ -685,7 +685,7 @@ namespace heongpu
               galois_elt_zero(std::move(assign.galois_elt_zero)),
               galois_key_generated_(std::move(assign.galois_key_generated_))
         {
-            if (assign.storage_type_ == storage_type::DEVICE)
+            if (assign.storage_type_ == storage_type::device)
             {
                 for (const auto& [key, value] : assign.device_location_)
                 {
@@ -743,7 +743,7 @@ namespace heongpu
                 galois_elt_zero = copy.galois_elt_zero;
                 galois_key_generated_ = copy.galois_key_generated_;
 
-                if (copy.storage_type_ == storage_type::DEVICE)
+                if (copy.storage_type_ == storage_type::device)
                 {
                     for (const auto& [key, value] : copy.device_location_)
                     {
@@ -815,7 +815,7 @@ namespace heongpu
                 galois_elt_zero = std::move(assign.galois_elt_zero);
                 galois_key_generated_ = std::move(assign.galois_key_generated_);
 
-                if (assign.storage_type_ == storage_type::DEVICE)
+                if (assign.storage_type_ == storage_type::device)
                 {
                     for (const auto& [key, value] : assign.device_location_)
                     {
@@ -1002,7 +1002,7 @@ namespace heongpu
          */
         bool is_on_device() const
         {
-            return (storage_type_ == storage_type::DEVICE);
+            return (storage_type_ == storage_type::device);
         }
 
         /**

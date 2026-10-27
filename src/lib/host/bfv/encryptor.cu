@@ -27,7 +27,7 @@ namespace heongpu
         seed_ = gen();
         offset_ = gen();
 
-        if (public_key.storage_type_ == storage_type::DEVICE)
+        if (public_key.storage_type_ == storage_type::device)
         {
             public_key_ = public_key.device_locations_;
         }

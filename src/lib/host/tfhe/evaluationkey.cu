@@ -27,12 +27,12 @@ namespace heongpu
         ks_base_bit_ = context->ks_base_bit_;
 
         storage_type_ =
-            store_in_gpu ? storage_type::DEVICE : storage_type::HOST;
+            store_in_gpu ? storage_type::device : storage_type::host;
     }
 
     void Bootstrappingkey<Scheme::TFHE>::store_in_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -63,13 +63,13 @@ namespace heongpu
                 // pass
             }
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 
     void Bootstrappingkey<Scheme::TFHE>::store_in_host(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             if (boot_key_generated_)
             {
@@ -115,7 +115,7 @@ namespace heongpu
                 // pass
             }
 
-            storage_type_ = storage_type::HOST;
+            storage_type_ = storage_type::host;
         }
         else
         {
@@ -125,7 +125,7 @@ namespace heongpu
 
     void Bootstrappingkey<Scheme::TFHE>::copy_to_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -150,13 +150,13 @@ namespace heongpu
                 // pass
             }
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 
     void Bootstrappingkey<Scheme::TFHE>::remove_from_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             boot_key_device_location_.resize(0, stream);
             boot_key_device_location_.shrink_to_fit(stream);
@@ -167,7 +167,7 @@ namespace heongpu
             switch_key_device_location_b_.resize(0, stream);
             switch_key_device_location_b_.shrink_to_fit(stream);
 
-            storage_type_ = storage_type::HOST;
+            storage_type_ = storage_type::host;
         }
         else
         {
@@ -177,7 +177,7 @@ namespace heongpu
 
     void Bootstrappingkey<Scheme::TFHE>::remove_from_host()
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -192,7 +192,7 @@ namespace heongpu
             switch_key_host_location_b_.resize(0);
             switch_key_host_location_b_.shrink_to_fit();
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 

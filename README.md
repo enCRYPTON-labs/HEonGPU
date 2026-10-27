@@ -522,14 +522,14 @@ In HEonGPU, Fully Homomorphic Encryption (FHE) operations rely on an efficient s
 
 The `ExecutionOptions` struct in HEonGPU determines how input data is handled during and after GPU computations. Specifically:
 
-- `set_storage_type`: Defines where the output data should reside after the operation (`DEVICE` or `HOST`).
+- `set_storage_type`: Defines where the output data should reside after the operation (`storage_type::device` or `storage_type::host`).
 
 - `set_initial_location`: Determines whether the input data should return to its original location after the computation.
 
 ```c++
 // ...
 ExecutionOptions options;
-options.set_storage_type(storage_type::DEVICE)
+options.set_storage_type(storage_type::device)
        .set_initial_location(true);
 
 operators.add(input1, input2, output, options);
@@ -539,7 +539,7 @@ operators.add(input1, input2, output, options);
 - Simple case:
   - If `input1` and `input2` are initially on the `HOST`, they will be copied to the `DEVICE` for the computation.
   - After the operation, since `set_initial_location(true)` is specified, both `input1` and `input2` will return to the `HOST`.
-  - The `output` will remain on the `DEVICE`, as specified by `set_storage_type(storage_type::DEVICE)`.
+  - The `output` will remain on the `DEVICE`, as specified by `set_storage_type(storage_type::device)`.
 
 - All case:
 

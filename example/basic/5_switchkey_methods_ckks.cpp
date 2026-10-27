@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
     keygen.generate_switch_key(
         switch_key1_to_key2, secret_key2, secret_key,
         heongpu::ExecutionOptions().set_storage_type(
-            heongpu::storage_type::HOST)); // generate_switch_key is stored in
+            heongpu::storage_type::host)); // generate_switch_key is stored in
                                            // HOST
 
     heongpu::HEEncoder<Scheme> encoder(context);

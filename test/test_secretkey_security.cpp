@@ -150,7 +150,7 @@ TYPED_TEST(RNSSecretKey, PrivateRandomnessExactWeightCopyAndSerialization)
     generator.generate_secret_key(
         host_key,
         heongpu::ExecutionOptions().set_stream(stream).set_storage_type(
-            heongpu::storage_type::HOST));
+            heongpu::storage_type::host));
     EXPECT_FALSE(host_key.is_on_device());
     heongpu::Secretkey<S> loaded_host(context);
     std::stringstream host_input(save(host_key));
@@ -275,7 +275,7 @@ TEST(SecretKeySecurity, TFHEIndependentCompleteBinaryKeysAndHostTransfers)
     second.set_context(context);
     generator.generate_secret_key(
         first, heongpu::ExecutionOptions().set_stream(stream).set_storage_type(
-                   heongpu::storage_type::HOST));
+                   heongpu::storage_type::host));
     generator.generate_secret_key(
         second, heongpu::ExecutionOptions().set_stream(stream));
     EXPECT_FALSE(first.is_on_device());
@@ -314,7 +314,7 @@ TEST(SecretKeySecurity,
     heongpu::Secretkey<S> key(context);
     generator.generate_secret_key(key,
                                   heongpu::ExecutionOptions().set_storage_type(
-                                      heongpu::storage_type::HOST));
+                                      heongpu::storage_type::host));
     auto secret = read(key.lwe_data(), key.lwe_size(), false);
     heongpu::HEEncryptor<S> encryptor(context, key);
     heongpu::HEDecryptor<S> decryptor(context, key);

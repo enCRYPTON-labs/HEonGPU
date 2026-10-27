@@ -24,13 +24,13 @@ namespace heongpu
         plain_size_ = context->n;
         depth_ = 0;
         scale_ = 0;
-        encoding_ = encoding::SLOT;
+        encoding_ = encoding::slot;
         storage_type_ = options.storage_;
     }
 
     void Plaintext<Scheme::CKKS>::store_in_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -48,13 +48,13 @@ namespace heongpu
                 host_locations_.shrink_to_fit();
             }
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 
     void Plaintext<Scheme::CKKS>::store_in_host(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             if (memory_size() == 0)
             {
@@ -73,7 +73,7 @@ namespace heongpu
                 device_locations_.shrink_to_fit(stream);
             }
 
-            storage_type_ = storage_type::HOST;
+            storage_type_ = storage_type::host;
         }
         else
         {
@@ -83,7 +83,7 @@ namespace heongpu
 
     Data64* Plaintext<Scheme::CKKS>::data()
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             return device_locations_.data();
         }
@@ -119,7 +119,7 @@ namespace heongpu
 
             os.write((char*) &storage_type_, sizeof(storage_type_));
 
-            if (storage_type_ == storage_type::DEVICE)
+            if (storage_type_ == storage_type::device)
             {
                 HostVector<Data64> host_locations_temp(plain_size_);
                 cudaMemcpy(host_locations_temp.data(), device_locations_.data(),
@@ -186,7 +186,7 @@ namespace heongpu
 
             is.read((char*) &storage_type_, sizeof(storage_type_));
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
             plaintext_generated_ = true;
 
             uint32_t plaintext_memory_size;
@@ -223,7 +223,7 @@ namespace heongpu
 
     int Plaintext<Scheme::CKKS>::memory_size()
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             return device_locations_.size();
         }
@@ -251,7 +251,7 @@ namespace heongpu
     void Plaintext<Scheme::CKKS>::memory_set(
         DeviceVector<Data64>&& new_device_vector)
     {
-        storage_type_ = storage_type::DEVICE;
+        storage_type_ = storage_type::device;
         device_locations_ = std::move(new_device_vector);
 
         if (host_locations_.size() > 0)
@@ -263,7 +263,7 @@ namespace heongpu
 
     void Plaintext<Scheme::CKKS>::copy_to_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -279,18 +279,18 @@ namespace heongpu
                     DeviceVector<Data64>(host_locations_, stream);
             }
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 
     void Plaintext<Scheme::CKKS>::remove_from_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             device_locations_.resize(0, stream);
             device_locations_.shrink_to_fit(stream);
 
-            storage_type_ = storage_type::HOST;
+            storage_type_ = storage_type::host;
         }
         else
         {
@@ -300,7 +300,7 @@ namespace heongpu
 
     void Plaintext<Scheme::CKKS>::remove_from_host()
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -309,7 +309,7 @@ namespace heongpu
             host_locations_.resize(0);
             host_locations_.shrink_to_fit();
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 

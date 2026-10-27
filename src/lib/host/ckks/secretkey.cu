@@ -28,7 +28,7 @@ namespace heongpu
         hamming_weight_ = ring_size_ >> 1; // default
         in_ntt_domain_ = false;
 
-        storage_type_ = storage_type::DEVICE;
+        storage_type_ = storage_type::device;
     }
 
     __host__ Secretkey<Scheme::CKKS>::Secretkey(HEContext<Scheme::CKKS> context,
@@ -57,7 +57,7 @@ namespace heongpu
 
         in_ntt_domain_ = false;
 
-        storage_type_ = storage_type::DEVICE;
+        storage_type_ = storage_type::device;
     }
 
     __host__
@@ -128,7 +128,7 @@ namespace heongpu
 
         HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
         in_ntt_domain_ = true;
-        storage_type_ = storage_type::DEVICE;
+        storage_type_ = storage_type::device;
         secret_key_generated_ = true;
     }
 
@@ -198,13 +198,13 @@ namespace heongpu
 
         HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
         in_ntt_domain_ = true;
-        storage_type_ = storage_type::DEVICE;
+        storage_type_ = storage_type::device;
         secret_key_generated_ = true;
     }
 
     Data64* Secretkey<Scheme::CKKS>::data()
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             return device_locations_.data();
         }
@@ -216,7 +216,7 @@ namespace heongpu
 
     void Secretkey<Scheme::CKKS>::store_in_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -235,13 +235,13 @@ namespace heongpu
                 host_locations_.shrink_to_fit();
             }
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 
     void Secretkey<Scheme::CKKS>::store_in_host(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             HEONGPU_CUDA_CHECK(
                 cudaStreamSynchronize(device_locations_.stream()));
@@ -263,7 +263,7 @@ namespace heongpu
                 device_locations_.shrink_to_fit(stream);
             }
 
-            storage_type_ = storage_type::HOST;
+            storage_type_ = storage_type::host;
         }
         else
         {
@@ -300,7 +300,7 @@ namespace heongpu
 
             os.write((char*) &storage_type_, sizeof(storage_type_));
 
-            if (storage_type_ == storage_type::DEVICE)
+            if (storage_type_ == storage_type::device)
             {
                 uint32_t secretkey_memory_size =
                     coeff_modulus_count_ * ring_size_;
@@ -382,8 +382,8 @@ namespace heongpu
             size != expected_size || ntt != 1 || generated != 1 ||
             temporary.hamming_weight_ <= 0 ||
             temporary.hamming_weight_ > temporary.ring_size_ ||
-            (serialized_storage != storage_type::DEVICE &&
-             serialized_storage != storage_type::HOST))
+            (serialized_storage != storage_type::device &&
+             serialized_storage != storage_type::host))
             throw std::runtime_error("Invalid Secretkey binary parameters!");
         if (context_ &&
             (temporary.ring_size_ != context_->n ||
@@ -472,7 +472,7 @@ namespace heongpu
              memory_size() != ring_size_ * coeff_modulus_count_))
             throw std::invalid_argument("Invalid Secretkey storage!");
         // Keys may have been generated on a nonblocking stream.
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
             HEONGPU_CUDA_CHECK(
                 cudaStreamSynchronize(device_locations_.stream()));
     }
@@ -483,7 +483,7 @@ namespace heongpu
         const size_t size =
             static_cast<size_t>(ring_size_) * coeff_modulus_count_;
         detail::PrivateRandomBuffer<Data64> data(size);
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             HEONGPU_CUDA_CHECK(
                 cudaStreamSynchronize(device_locations_.stream()));
@@ -537,7 +537,7 @@ namespace heongpu
 
     int Secretkey<Scheme::CKKS>::memory_size()
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             return device_locations_.size();
         }
@@ -565,7 +565,7 @@ namespace heongpu
     void Secretkey<Scheme::CKKS>::memory_set(
         DeviceVector<Data64>&& new_device_vector)
     {
-        storage_type_ = storage_type::DEVICE;
+        storage_type_ = storage_type::device;
         device_locations_ = std::move(new_device_vector);
 
         if (host_locations_.size() > 0)
@@ -577,7 +577,7 @@ namespace heongpu
 
     void Secretkey<Scheme::CKKS>::copy_to_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -594,18 +594,18 @@ namespace heongpu
                 HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
             }
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 
     void Secretkey<Scheme::CKKS>::remove_from_device(cudaStream_t stream)
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             device_locations_.resize(0, stream);
             device_locations_.shrink_to_fit(stream);
 
-            storage_type_ = storage_type::HOST;
+            storage_type_ = storage_type::host;
         }
         else
         {
@@ -615,7 +615,7 @@ namespace heongpu
 
     void Secretkey<Scheme::CKKS>::remove_from_host()
     {
-        if (storage_type_ == storage_type::DEVICE)
+        if (storage_type_ == storage_type::device)
         {
             // pass
         }
@@ -624,7 +624,7 @@ namespace heongpu
             host_locations_.resize(0);
             host_locations_.shrink_to_fit();
 
-            storage_type_ = storage_type::DEVICE;
+            storage_type_ = storage_type::device;
         }
     }
 

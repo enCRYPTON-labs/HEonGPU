@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
 
     heongpu::Plaintext<Scheme> coeff_plain(context);
     encoder.encode(coeff_plain, coeff_message, scale, heongpu::ExecutionOptions(),
-                   heongpu::encoding::COEFFICIENT);
+                   heongpu::encoding::coefficient);
 
     heongpu::Ciphertext<Scheme> coeff_cipher(context);
     encryptor.encrypt(coeff_cipher, coeff_plain);
@@ -77,8 +77,8 @@ int main(int argc, char* argv[])
     std::vector<heongpu::Ciphertext<Scheme>> slot_pair =
         operators.coeff_to_slot(coeff_cipher, galois_key, transform_context);
 
-    if ((slot_pair[0].encoding_type() != heongpu::encoding::SLOT) ||
-        (slot_pair[1].encoding_type() != heongpu::encoding::SLOT))
+    if ((slot_pair[0].encoding_type() != heongpu::encoding::slot) ||
+        (slot_pair[1].encoding_type() != heongpu::encoding::slot))
     {
         std::cerr << "coeff_to_slot output is not slot-encoded." << std::endl;
         return EXIT_FAILURE;
@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
     std::cout << "Max abs error (roundtrip)      : " << max_abs_error
               << std::endl;
 
-    if (coeff_roundtrip.encoding_type() != heongpu::encoding::COEFFICIENT)
+    if (coeff_roundtrip.encoding_type() != heongpu::encoding::coefficient)
     {
         std::cerr << "slot_to_coeff output is not coefficient-encoded."
                   << std::endl;

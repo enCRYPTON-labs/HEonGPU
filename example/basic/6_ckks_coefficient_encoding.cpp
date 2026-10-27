@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 
     heongpu::Plaintext<Scheme> coeff_plain(context);
     encoder.encode(coeff_plain, coeff_message, scale, heongpu::ExecutionOptions(),
-                   heongpu::encoding::COEFFICIENT);
+                   heongpu::encoding::coefficient);
 
     // Encrypt -> decrypt -> decode and compare with the original coefficients.
     heongpu::Ciphertext<Scheme> coeff_cipher(context);

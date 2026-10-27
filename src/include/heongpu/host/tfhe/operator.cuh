@@ -124,7 +124,7 @@ namespace heongpu
                                                 input1.alpha_max_;
                                             output.ciphertext_generated_ = true;
                                             output.storage_type_ =
-                                                storage_type::DEVICE;
+                                                storage_type::device;
 
                                             key_switching(temp_cipher2, output,
                                                           boot_key,
@@ -224,7 +224,7 @@ namespace heongpu
                                                 input1.alpha_max_;
                                             output.ciphertext_generated_ = true;
                                             output.storage_type_ =
-                                                storage_type::DEVICE;
+                                                storage_type::device;
 
                                             key_switching(temp_cipher2, output,
                                                           boot_key,
@@ -324,7 +324,7 @@ namespace heongpu
                                                 input1.alpha_max_;
                                             output.ciphertext_generated_ = true;
                                             output.storage_type_ =
-                                                storage_type::DEVICE;
+                                                storage_type::device;
 
                                             key_switching(temp_cipher2, output,
                                                           boot_key,
@@ -424,7 +424,7 @@ namespace heongpu
                                                 input1.alpha_max_;
                                             output.ciphertext_generated_ = true;
                                             output.storage_type_ =
-                                                storage_type::DEVICE;
+                                                storage_type::device;
 
                                             key_switching(temp_cipher2, output,
                                                           boot_key,
@@ -524,7 +524,7 @@ namespace heongpu
                                                 input1.alpha_max_;
                                             output.ciphertext_generated_ = true;
                                             output.storage_type_ =
-                                                storage_type::DEVICE;
+                                                storage_type::device;
 
                                             key_switching(temp_cipher2, output,
                                                           boot_key,
@@ -624,7 +624,7 @@ namespace heongpu
                                                 input1.alpha_max_;
                                             output.ciphertext_generated_ = true;
                                             output.storage_type_ =
-                                                storage_type::DEVICE;
+                                                storage_type::device;
 
                                             key_switching(temp_cipher2, output,
                                                           boot_key,
@@ -679,7 +679,7 @@ namespace heongpu
                             output.alpha_min_ = input1.alpha_min_;
                             output.alpha_max_ = input1.alpha_max_;
                             output.ciphertext_generated_ = true;
-                            output.storage_type_ = storage_type::DEVICE;
+                            output.storage_type_ = storage_type::device;
 
                             NOT_computation(input1, output, options.stream_);
                         },
@@ -813,7 +813,7 @@ namespace heongpu
                                                 input1.alpha_max_;
                                             output.ciphertext_generated_ = true;
                                             output.storage_type_ =
-                                                storage_type::DEVICE;
+                                                storage_type::device;
 
                                             key_switching(temp_cipher5, output,
                                                           boot_key,

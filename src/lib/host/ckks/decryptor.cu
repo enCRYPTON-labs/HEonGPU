@@ -32,7 +32,7 @@ namespace heongpu
         seed_ = gen();
         offset_ = gen();
 
-        if (secret_key.storage_type_ == storage_type::DEVICE)
+        if (secret_key.storage_type_ == storage_type::device)
         {
             secret_key_ = secret_key.device_locations_;
             HEONGPU_CUDA_CHECK(cudaStreamSynchronize(secret_key_.stream()));

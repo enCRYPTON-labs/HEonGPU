@@ -42,7 +42,7 @@ namespace heongpu
                                       config.eval_mod_config_.sine_deg_);
         switch (type)
         {
-            case arithmetic_bootstrapping_type::REGULAR_BOOTSTRAPPING:
+            case arithmetic_bootstrapping_type::regular:
             {
                 BootstrappingLevels levels;
                 levels.coeff_to_slot = config.CtoS_piece_;
@@ -53,7 +53,7 @@ namespace heongpu
                     config.cts_config_.level_start_ - levels.depth();
                 return levels;
             }
-            case arithmetic_bootstrapping_type::SLIM_BOOTSTRAPPING:
+            case arithmetic_bootstrapping_type::slim:
                 return levels_with_slot_to_coeff_first(config, eval_mod);
             default:
                 throw ParameterError("Invalid arithmetic bootstrapping type!");
@@ -68,10 +68,10 @@ namespace heongpu
         int period;
         switch (type)
         {
-            case logic_bootstrapping_type::BIT_BOOTSTRAPPING:
+            case logic_bootstrapping_type::bit:
                 period = 2;
                 break;
-            case logic_bootstrapping_type::GATE_BOOTSTRAPPING:
+            case logic_bootstrapping_type::gate:
                 period = 3;
                 break;
             default:
@@ -158,8 +158,7 @@ namespace heongpu
                 0xfffffffff00001,   0xffffffffd80001,   0x1000000002a0001};
 
             CKKSBootstrappingPreset preset = example_preset({});
-            preset.arithmetic_type =
-                arithmetic_bootstrapping_type::REGULAR_BOOTSTRAPPING;
+            preset.arithmetic_type = arithmetic_bootstrapping_type::regular;
             preset.coeff_modulus_bit_sizes.clear();
             preset.special_modulus_bit_sizes.clear();
             preset.special_modulus = {0x1fffffffffe00001, 0x1fffffffffc80001,
@@ -201,8 +200,7 @@ namespace heongpu
             // directly; a larger message ratio keeps sin(x) ~ x accurate.
             CKKSBootstrappingPreset preset =
                 slot_to_coeff_first(levels, 8, 1024.0);
-            preset.arithmetic_type =
-                arithmetic_bootstrapping_type::SLIM_BOOTSTRAPPING;
+            preset.arithmetic_type = arithmetic_bootstrapping_type::slim;
             return preset;
         }
 
@@ -210,7 +208,7 @@ namespace heongpu
         {
             CKKSBootstrappingPreset preset =
                 slot_to_coeff_first(levels, 9, 256.0);
-            preset.logic_type = logic_bootstrapping_type::BIT_BOOTSTRAPPING;
+            preset.logic_type = logic_bootstrapping_type::bit;
             return preset;
         }
 
@@ -218,7 +216,7 @@ namespace heongpu
         {
             CKKSBootstrappingPreset preset =
                 slot_to_coeff_first(levels, 10, 256.0);
-            preset.logic_type = logic_bootstrapping_type::GATE_BOOTSTRAPPING;
+            preset.logic_type = logic_bootstrapping_type::gate;
             return preset;
         }
 
@@ -337,7 +335,7 @@ namespace heongpu
 
     BootstrappingLevels CKKSBootstrappingPreset::levels() const
     {
-        if (arithmetic_type != arithmetic_bootstrapping_type::NONE)
+        if (arithmetic_type != arithmetic_bootstrapping_type::none)
         {
             return bootstrapping_levels(config, arithmetic_type);
         }

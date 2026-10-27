@@ -46,7 +46,7 @@ namespace heongpu
          */
         bool is_on_device() const noexcept
         {
-            if (storage_type_ == storage_type::DEVICE)
+            if (storage_type_ == storage_type::device)
             {
                 return true;
             }
@@ -138,7 +138,7 @@ namespace heongpu
             HEONGPU_CUDA_CHECK(cudaStreamSynchronize(copy.stream()));
             if (copy.boot_key_generated_)
             {
-                if (copy.storage_type_ == storage_type::DEVICE)
+                if (copy.storage_type_ == storage_type::device)
                 {
                     boot_key_device_location_.resize(
                         copy.boot_key_device_location_.size(),
@@ -331,7 +331,7 @@ namespace heongpu
         std::vector<double> switch_key_variances_;
 
         bool boot_key_generated_ = false;
-        storage_type storage_type_ = storage_type::DEVICE;
+        storage_type storage_type_ = storage_type::device;
 
         void copy_to_device(cudaStream_t stream);
         void remove_from_device(cudaStream_t stream);

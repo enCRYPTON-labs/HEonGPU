@@ -61,8 +61,8 @@ TEST(HEonGPU, CKKS_To_String)
     encoder.encode(plaintext, std::vector<double>(degree / 2, 0.5),
                    pow(2.0, 30));
     EXPECT_EQ(plaintext.to_string(),
-              "Plaintext<CKKS>(size=12288, depth=0, scale=2^30, SLOT, NTT "
-              "domain, DEVICE)");
+              "Plaintext<CKKS>(size=12288, depth=0, scale=2^30, slot, NTT "
+              "domain, device)");
     EXPECT_EQ(streamed(plaintext), plaintext.to_string());
 
     heongpu::Ciphertext<S> ciphertext;
@@ -70,14 +70,14 @@ TEST(HEonGPU, CKKS_To_String)
     encryptor.encrypt(ciphertext, plaintext);
     EXPECT_EQ(ciphertext.to_string(),
               "Ciphertext<CKKS>(N=4096, size=2, level=2, depth=0, "
-              "scale=2^30, SLOT, NTT domain, DEVICE)");
+              "scale=2^30, slot, NTT domain, device)");
     EXPECT_EQ(streamed(ciphertext), ciphertext.to_string());
 
     heongpu::Ciphertext<S> product;
     operators.multiply(ciphertext, ciphertext, product);
     EXPECT_EQ(product.to_string(),
               "Ciphertext<CKKS>(N=4096, size=3, level=2, depth=0, "
-              "scale=2^60, SLOT, NTT domain, DEVICE, rescale required, "
+              "scale=2^60, slot, NTT domain, device, rescale required, "
               "relinearization required)");
 }
 
@@ -108,13 +108,13 @@ TEST(HEonGPU, BFV_To_String)
     heongpu::Plaintext<S> plaintext(context);
     encoder.encode(plaintext, std::vector<uint64_t>(degree, 3));
     EXPECT_EQ(plaintext.to_string(),
-              "Plaintext<BFV>(size=4096, coefficient domain, DEVICE)");
+              "Plaintext<BFV>(size=4096, coefficient domain, device)");
 
     heongpu::Ciphertext<S> ciphertext(context);
     encryptor.encrypt(ciphertext, plaintext);
     EXPECT_EQ(ciphertext.to_string(),
               "Ciphertext<BFV>(N=4096, size=2, moduli=2, coefficient domain, "
-              "DEVICE)");
+              "device)");
     EXPECT_EQ(streamed(ciphertext), ciphertext.to_string());
 }
 
