@@ -170,10 +170,15 @@ namespace heongpu
                 user.begin() + std::min<std::size_t>(levels, user.size()));
             if (levels > static_cast<int>(user.size()))
             {
-                std::vector<Data64> excluded = q0;
-                excluded.insert(excluded.end(), user.begin(), user.end());
-                excluded.insert(excluded.end(), bootstrapping.begin(),
-                                bootstrapping.end());
+                std::vector<Data64> excluded;
+                excluded.reserve(q0.size() + user.size() +
+                                 bootstrapping.size());
+                for (const std::vector<Data64>* primes :
+                     {&q0, &user, &bootstrapping})
+                {
+                    excluded.insert(excluded.end(), primes->begin(),
+                                    primes->end());
+                }
                 std::vector<Data64> more =
                     generate_primes_around(preset.poly_modulus_degree, 40,
                                            levels - user.size(), excluded);
