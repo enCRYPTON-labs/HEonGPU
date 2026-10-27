@@ -13,6 +13,12 @@
 #include <sstream>
 #include <thread>
 
+// The format v1, deprecated; its writing is tested until 2.0 removes it.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+static constexpr auto format_v1 = heongpu::serialization_format::v1;
+#pragma GCC diagnostic pop
+
 namespace
 {
     using heongpu::CudaException;
@@ -100,7 +106,7 @@ namespace
     {
         std::stringstream stream;
         // BinaryCiphertext parses the field layout of the format v1.
-        ciphertext.save(stream, heongpu::serialization_format::v1);
+        ciphertext.save(stream, format_v1);
         return stream.str();
     }
 

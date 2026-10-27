@@ -117,7 +117,8 @@ namespace heongpu
         NONE = 0x0,
         // Earlier versions used it for one P prime. It is method II with
         // digits of one prime; data with it loads as KEYSWITCHING_METHOD_II.
-        KEYSWITCHING_METHOD_I = 0x1,
+        KEYSWITCHING_METHOD_I
+        [[deprecated("Every context uses KEYSWITCHING_METHOD_II.")]] = 0x1,
         // Hybrid key switching, used by every context.
         KEYSWITCHING_METHOD_II = 0x2,
     };
@@ -157,8 +158,9 @@ namespace heongpu
     enum class serialization_format : std::uint8_t
     {
         // The fields only, as written by HEonGPU 1.2 and earlier. Readable by
-        // every HEonGPU version.
-        v1 = 0x1,
+        // every HEonGPU version. Writing it ends with 2.0; reading it stays.
+        v1 [[deprecated("Use serialization_format::v2; HEonGPU 2.0 no "
+                        "longer writes v1.")]] = 0x1,
 
         // A header with a magic number, the format version, the object type,
         // the scheme and the context identity before the fields. Readable by

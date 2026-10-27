@@ -10,6 +10,12 @@
 #include <string>
 #include <type_traits>
 
+// The format v1, deprecated; its writing is tested until 2.0 removes it.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+static constexpr auto format_v1 = heongpu::serialization_format::v1;
+#pragma GCC diagnostic pop
+
 namespace
 {
     constexpr auto scheme = heongpu::Scheme::CKKS;
@@ -222,7 +228,7 @@ TEST_F(CKKSErrors, SerializationError_Reports_The_Scheme)
     heongpu::Plaintext<scheme> plaintext(context);
     encoder.encode(plaintext, std::vector<double>(degree / 2, 0.5), scale);
     std::stringstream stream;
-    plaintext.save(stream, heongpu::serialization_format::v1);
+    plaintext.save(stream, format_v1);
     std::string binary = stream.str();
     binary[0] = static_cast<char>(heongpu::scheme_type::bfv);
 

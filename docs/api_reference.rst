@@ -32,7 +32,7 @@ Core Enumerations
 
         namespace heongpu {
             enum class keyswitching_type {
-                KEYSWITCHING_METHOD_I,  // Earlier versions, for one P prime
+                KEYSWITCHING_METHOD_I,  // Earlier versions, for one P prime; deprecated
                 KEYSWITCHING_METHOD_II, // Hybrid method, used by every context
             };
         }

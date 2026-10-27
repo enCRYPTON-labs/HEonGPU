@@ -34,7 +34,8 @@ namespace heongpu
             {
                 case keyswitching_type::NONE:
                     return "NONE";
-                case keyswitching_type::KEYSWITCHING_METHOD_I:
+                // KEYSWITCHING_METHOD_I, deprecated.
+                case static_cast<keyswitching_type>(0x1):
                     return "KEYSWITCHING_METHOD_I";
                 case keyswitching_type::KEYSWITCHING_METHOD_II:
                     return "KEYSWITCHING_METHOD_II";

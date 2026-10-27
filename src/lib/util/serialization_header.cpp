@@ -66,10 +66,14 @@ namespace heongpu
                                         scheme_type scheme,
                                         std::uint64_t context_id)
         {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+            // Deprecated, written until 2.0.
             if (format == serialization_format::v1)
             {
                 return;
             }
+#pragma GCC diagnostic pop
             if (format != serialization_format::v2)
             {
                 throw ParameterError(error_message(

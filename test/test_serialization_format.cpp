@@ -11,6 +11,12 @@
 #include <string>
 #include <vector>
 
+// The format v1, deprecated; its writing is tested until 2.0 removes it.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+static constexpr auto format_v1 = heongpu::serialization_format::v1;
+#pragma GCC diagnostic pop
+
 // The rotation is rotate for CKKS and rotate_rows for BFV.
 template <heongpu::Scheme S>
 static void rotate(heongpu::HEArithmeticOperator<S>& operators,
@@ -186,8 +192,7 @@ namespace
                             uint64_t context_id)
         {
             const std::string v2 = save(object);
-            const std::string v1 =
-                save(object, heongpu::serialization_format::v1);
+            const std::string v1 = save(object, format_v1);
             ASSERT_GT(v2.size(), header_size);
             EXPECT_EQ(v2.substr(0, 4), "HEGP");
             EXPECT_EQ(static_cast<unsigned char>(v2[4]), 2);
@@ -227,8 +232,7 @@ TYPED_TEST(SerializationFormat, V1_And_V2_Data_Load)
     constexpr auto S = TestFixture::S;
     auto& a = this->a;
     auto ciphertext = a.encrypt();
-    for (auto format :
-         {heongpu::serialization_format::v1, heongpu::serialization_format::v2})
+    for (auto format : {format_v1, heongpu::serialization_format::v2})
     {
         heongpu::Ciphertext<S> loaded;
         load(loaded, save(ciphertext, format));

@@ -600,7 +600,7 @@ HEonGPU follows [semantic versioning](https://semver.org/):
 
 APIs that will be removed are first marked `[[deprecated]]`, with the replacement in the warning, for at least one minor version, and removed in the next major version.
 
-Serialized data stays readable: HEonGPU 1.x reads the data written by every earlier 1.x version. A newer version can write data that older versions cannot read; `save(stream, heongpu::serialization_format::v1)` writes data for HEonGPU 1.2 and earlier until 2.0.
+Serialized data stays readable: HEonGPU 1.x reads the data written by every earlier 1.x version. A newer version can write data that older versions cannot read; `save(stream, heongpu::serialization_format::v1)` writes data for HEonGPU 1.2 and earlier until 2.0; it is deprecated since 1.7.0, and 2.0 keeps reading such data.
 
 Supported toolchain: CUDA 12.8 or newer, a C++20 compiler (tested with GCC 11.4) and CMake 4.0 or newer.
 

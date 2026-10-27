@@ -246,7 +246,7 @@ Since HEonGPU 1.3, ``save`` writes the binary format version 2 by default. It st
 .. code-block:: cpp
 
     ciphertext.save(stream);                                        // version 2
-    ciphertext.save(stream, heongpu::serialization_format::v1);   // version 1
+    ciphertext.save(stream, heongpu::serialization_format::v1);   // version 1, deprecated
 
 Error Handling
 --------------

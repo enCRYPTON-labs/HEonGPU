@@ -8,6 +8,12 @@
 #include <sstream>
 #include <cstring>
 
+// The format v1, deprecated; its writing is tested until 2.0 removes it.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+static constexpr auto format_v1 = heongpu::serialization_format::v1;
+#pragma GCC diagnostic pop
+
 #ifdef HEONGPU_TEST_WRAP_RAND_PRIV_BYTES
 #include <dlfcn.h>
 
@@ -65,7 +71,7 @@ namespace
     {
         std::stringstream stream;
         // The checks below parse the field layout of the format v1.
-        key.save(stream, heongpu::serialization_format::v1);
+        key.save(stream, format_v1);
         return stream.str();
     }
     template <typename T> std::vector<T> read(T* data, size_t size, bool device)
