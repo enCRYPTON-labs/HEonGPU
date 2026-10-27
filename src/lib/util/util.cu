@@ -4,6 +4,7 @@
 // Developer: Alişah Özcan
 
 #include <heongpu/util/util.cuh>
+#include <heongpu/util/secstdparams.h>
 #include <algorithm>
 #include <map>
 
@@ -390,6 +391,21 @@ namespace heongpu
         }
 
         return all_primes;
+    }
+
+    int max_coeff_bit_count(sec_level_type level, size_t poly_modulus_degree)
+    {
+        switch (level)
+        {
+            case sec_level_type::sec128:
+                return heongpu_128bit_std_parms(poly_modulus_degree);
+            case sec_level_type::sec192:
+                return heongpu_192bit_std_parms(poly_modulus_degree);
+            case sec_level_type::sec256:
+                return heongpu_256bit_std_parms(poly_modulus_degree);
+            default:
+                return 0;
+        }
     }
 
     namespace

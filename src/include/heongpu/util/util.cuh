@@ -59,6 +59,13 @@ namespace heongpu
     bool coefficient_validator(const std::vector<int>& log_Q_bases_bit_sizes,
                                const std::vector<int>& log_P_bases_bit_sizes);
 
+    /**
+     * @brief Returns the largest total bit size of the Q and P primes that
+     * level allows for the ring size poly_modulus_degree, the limit the
+     * contexts check; 0 for sec_level_type::none and unsupported ring sizes.
+     */
+    int max_coeff_bit_count(sec_level_type level, size_t poly_modulus_degree);
+
     // Makes sure the per-thread kernel stack size is at least `bytes`, keeping
     // a larger limit set by the application. A smaller limit is raised when
     // `raise` is true and reported with StateError otherwise.

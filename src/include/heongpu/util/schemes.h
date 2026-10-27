@@ -67,6 +67,10 @@ namespace heongpu
 
     template <Scheme S> class HEMultiPartyManager;
 
+    template <Scheme S> struct HEParams;
+
+    template <Scheme S> struct HEParameterSet;
+
     // Describes the type of encryption scheme to be used.
     enum class scheme_type : std::uint8_t
     {

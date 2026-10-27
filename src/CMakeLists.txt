@@ -218,6 +218,7 @@ set(HEONGPU_HOST_CKKS_SOURCES
     lib/host/ckks/keygenerator.cu
     lib/host/ckks/mpcmanager.cu
     lib/host/ckks/operator.cu
+    lib/host/ckks/parameters.cu
     lib/host/ckks/plaintext.cu
     lib/host/ckks/precision.cu
     lib/host/ckks/publickey.cu
