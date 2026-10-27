@@ -121,10 +121,10 @@ namespace heongpu
         pk.memory_set(std::move(output_memory));
     }
 
-    __host__ void HEMultiPartyManager<Scheme::CKKS>::
-        generate_ckks_relin_key_method_II_stage_1(
-            MultipartyRelinkey<Scheme::CKKS>& rk, Secretkey<Scheme::CKKS>& sk,
-            const ExecutionOptions& options)
+    __host__ void
+    HEMultiPartyManager<Scheme::CKKS>::generate_ckks_relin_key_stage_1(
+        MultipartyRelinkey<Scheme::CKKS>& rk, Secretkey<Scheme::CKKS>& sk,
+        const ExecutionOptions& options)
     {
         sk.validate_context(context_);
         if (!sk.secret_key_generated_)
@@ -242,11 +242,11 @@ namespace heongpu
             options, false);
     }
 
-    __host__ void HEMultiPartyManager<Scheme::CKKS>::
-        generate_ckks_relin_key_method_II_stage_3(
-            MultipartyRelinkey<Scheme::CKKS>& rk_stage_1,
-            MultipartyRelinkey<Scheme::CKKS>& rk_stage_2,
-            Secretkey<Scheme::CKKS>& sk, const ExecutionOptions& options)
+    __host__ void
+    HEMultiPartyManager<Scheme::CKKS>::generate_ckks_relin_key_stage_3(
+        MultipartyRelinkey<Scheme::CKKS>& rk_stage_1,
+        MultipartyRelinkey<Scheme::CKKS>& rk_stage_2,
+        Secretkey<Scheme::CKKS>& sk, const ExecutionOptions& options)
     {
         sk.validate_context(context_);
         if (!sk.secret_key_generated_)
@@ -388,18 +388,7 @@ namespace heongpu
         }
 
         int dimension;
-        switch (static_cast<int>(rk.key_type))
-        {
-            case 2: // KEYSWITCHING_METHOD_II
-                dimension = rk.d_;
-                break;
-            default:
-                throw ParameterError(
-                    error_message("Invalid Key Switching Type ",
-                                  static_cast<int>(rk.key_type),
-                                  "! Expected KEYSWITCHING_METHOD_II (2)."));
-                break;
-        }
+        dimension = rk.d_;
 
         input_vector_storage_manager(
             all_rk,
@@ -469,18 +458,7 @@ namespace heongpu
         }
 
         int dimension;
-        switch (static_cast<int>(rk.key_type))
-        {
-            case 2: // KEYSWITCHING_METHOD_II
-                dimension = rk.d_;
-                break;
-            default:
-                throw ParameterError(
-                    error_message("Invalid Key Switching Type ",
-                                  static_cast<int>(rk.key_type),
-                                  "! Expected KEYSWITCHING_METHOD_II (2)."));
-                break;
-        }
+        dimension = rk.d_;
 
         input_vector_storage_manager(
             all_rk,
@@ -533,7 +511,7 @@ namespace heongpu
     }
 
     __host__ void
-    HEMultiPartyManager<Scheme::CKKS>::generate_galois_key_method_II_stage_1(
+    HEMultiPartyManager<Scheme::CKKS>::generate_galois_key_stage_1(
         MultipartyGaloiskey<Scheme::CKKS>& gk, Secretkey<Scheme::CKKS>& sk,
         const ExecutionOptions& options)
     {
@@ -893,18 +871,7 @@ namespace heongpu
         }
 
         int dimension;
-        switch (static_cast<int>(gk.key_type))
-        {
-            case 2: // KEYSWITCHING_METHOD_II
-                dimension = gk.d_;
-                break;
-            default:
-                throw ParameterError(
-                    error_message("Invalid Key Switching Type ",
-                                  static_cast<int>(gk.key_type),
-                                  "! Expected KEYSWITCHING_METHOD_II (2)."));
-                break;
-        }
+        dimension = gk.d_;
 
         for (auto& galois : gk.galois_elt)
         {

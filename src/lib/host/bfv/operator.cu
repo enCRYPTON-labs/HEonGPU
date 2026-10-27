@@ -553,8 +553,7 @@ namespace heongpu
         output.memory_set(std::move(output_memory));
     }
 
-    __host__ void
-    HEOperator<Scheme::BFV>::relinearize_external_product_method2_inplace(
+    __host__ void HEOperator<Scheme::BFV>::relinearize_external_product_inplace(
         Ciphertext<Scheme::BFV>& input1, Relinkey<Scheme::BFV>& relin_key,
         const cudaStream_t stream)
     {
@@ -674,10 +673,11 @@ namespace heongpu
         HEONGPU_CUDA_CHECK(cudaGetLastError());
     }
 
-    __host__ void HEOperator<Scheme::BFV>::rotate_method_II(
-        Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& output,
-        Galoiskey<Scheme::BFV>& galois_key, int shift,
-        const cudaStream_t stream)
+    __host__ void
+    HEOperator<Scheme::BFV>::rotate_bfv(Ciphertext<Scheme::BFV>& input1,
+                                        Ciphertext<Scheme::BFV>& output,
+                                        Galoiskey<Scheme::BFV>& galois_key,
+                                        int shift, const cudaStream_t stream)
     {
         int galoiselt =
             steps_to_galois_elt(shift, context_->n, galois_key.group_order_);
@@ -688,8 +688,7 @@ namespace heongpu
                                 galois_key.host_location_.end());
         if (key_exist)
         {
-            apply_galois_method_II(input1, output, galois_key, galoiselt,
-                                   stream);
+            apply_galois_bfv(input1, output, galois_key, galoiselt, stream);
         }
         else
         {
@@ -719,8 +718,8 @@ namespace heongpu
             Ciphertext<Scheme::BFV>* current_input = &input1;
             for (auto& galois_elt : required_galoiselt)
             {
-                apply_galois_method_II(*current_input, output, galois_key,
-                                       galois_elt, stream);
+                apply_galois_bfv(*current_input, output, galois_key, galois_elt,
+                                 stream);
                 current_input = &output;
             }
         }
@@ -906,7 +905,7 @@ namespace heongpu
         output.memory_set(std::move(output_memory));
     }
 
-    __host__ void HEOperator<Scheme::BFV>::apply_galois_method_II(
+    __host__ void HEOperator<Scheme::BFV>::apply_galois_bfv(
         Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& output,
         Galoiskey<Scheme::BFV>& galois_key, int galois_elt,
         const cudaStream_t stream)
@@ -917,7 +916,7 @@ namespace heongpu
                                 galois_elt, stream);
     }
 
-    __host__ void HEOperator<Scheme::BFV>::rotate_columns_method_II(
+    __host__ void HEOperator<Scheme::BFV>::rotate_columns_bfv(
         Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& output,
         Galoiskey<Scheme::BFV>& galois_key, const cudaStream_t stream)
     {
@@ -1017,7 +1016,7 @@ namespace heongpu
         output.memory_set(std::move(output_memory));
     }
 
-    __host__ void HEOperator<Scheme::BFV>::switchkey_method_II(
+    __host__ void HEOperator<Scheme::BFV>::switchkey_bfv(
         Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& output,
         Switchkey<Scheme::BFV>& switch_key, const cudaStream_t stream)
     {

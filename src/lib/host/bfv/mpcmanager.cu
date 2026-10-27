@@ -109,7 +109,7 @@ namespace heongpu
     //
 
     __host__ void
-    HEMultiPartyManager<Scheme::BFV>::generate_bfv_relin_key_method_II_stage_1(
+    HEMultiPartyManager<Scheme::BFV>::generate_bfv_relin_key_stage_1(
         MultipartyRelinkey<Scheme::BFV>& rk, Secretkey<Scheme::BFV>& sk,
         const ExecutionOptions& options)
     {
@@ -223,7 +223,7 @@ namespace heongpu
     }
 
     __host__ void
-    HEMultiPartyManager<Scheme::BFV>::generate_bfv_relin_key_method_II_stage_3(
+    HEMultiPartyManager<Scheme::BFV>::generate_bfv_relin_key_stage_3(
         MultipartyRelinkey<Scheme::BFV>& rk_stage_1,
         MultipartyRelinkey<Scheme::BFV>& rk_stage_2, Secretkey<Scheme::BFV>& sk,
         const ExecutionOptions& options)
@@ -359,18 +359,7 @@ namespace heongpu
         }
 
         int dimension;
-        switch (static_cast<int>(rk.key_type))
-        {
-            case 2: // KEYSWITCHING_METHOD_II
-                dimension = rk.d_;
-                break;
-            default:
-                throw ParameterError(
-                    error_message("Invalid Key Switching Type ",
-                                  static_cast<int>(rk.key_type),
-                                  "! Expected KEYSWITCHING_METHOD_II (2)."));
-                break;
-        }
+        dimension = rk.d_;
 
         input_vector_storage_manager(
             all_rk,
@@ -440,18 +429,7 @@ namespace heongpu
         }
 
         int dimension;
-        switch (static_cast<int>(rk.key_type))
-        {
-            case 2: // KEYSWITCHING_METHOD_II
-                dimension = rk.d_;
-                break;
-            default:
-                throw ParameterError(
-                    error_message("Invalid Key Switching Type ",
-                                  static_cast<int>(rk.key_type),
-                                  "! Expected KEYSWITCHING_METHOD_II (2)."));
-                break;
-        }
+        dimension = rk.d_;
 
         input_vector_storage_manager(
             all_rk,
@@ -505,8 +483,7 @@ namespace heongpu
 
     //
 
-    __host__ void
-    HEMultiPartyManager<Scheme::BFV>::generate_galois_key_method_II_stage_1(
+    __host__ void HEMultiPartyManager<Scheme::BFV>::generate_galois_key_stage_1(
         MultipartyGaloiskey<Scheme::BFV>& gk, Secretkey<Scheme::BFV>& sk,
         const ExecutionOptions& options)
     {
@@ -848,18 +825,7 @@ namespace heongpu
         }
 
         int dimension;
-        switch (static_cast<int>(gk.key_type))
-        {
-            case 2: // KEYSWITCHING_METHOD_II
-                dimension = gk.d_;
-                break;
-            default:
-                throw ParameterError(
-                    error_message("Invalid Key Switching Type ",
-                                  static_cast<int>(gk.key_type),
-                                  "! Expected KEYSWITCHING_METHOD_II (2)."));
-                break;
-        }
+        dimension = gk.d_;
 
         for (auto& galois : gk.galois_elt)
         {

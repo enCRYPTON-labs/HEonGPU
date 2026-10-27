@@ -484,94 +484,71 @@ namespace heongpu
 
             //////////////////////////////////
 
-            switch (static_cast<int>(keyswitching_type_))
+            KeySwitchParameterGenerator pool_ckks(n, base_q, P_size, scheme_);
+
+            m_leveled = pool_ckks.m;
+            l_leveled = std::make_shared<std::vector<int>>(pool_ckks.level_Q_);
+            l_tilda_leveled =
+                std::make_shared<std::vector<int>>(pool_ckks.level_Qtilda_);
+
+            d_leveled = std::make_shared<std::vector<int>>(pool_ckks.level_d_);
+
+            std::vector<std::vector<Data64>>
+                base_change_matrix_D_to_Qtilda_vec =
+                    pool_ckks.level_base_change_matrix_D_to_Qtilda();
+
+            std::vector<std::vector<Data64>> Mi_inv_D_to_Qtilda_vec =
+                pool_ckks.level_Mi_inv_D_to_Qtilda();
+
+            std::vector<std::vector<Data64>> prod_D_to_Qtilda_vec =
+                pool_ckks.level_prod_D_to_Qtilda();
+
+            std::vector<std::vector<int>> I_j_vec = pool_ckks.level_I_j();
+
+            std::vector<std::vector<int>> I_location_vec =
+                pool_ckks.level_I_location();
+
+            std::vector<std::vector<int>> Sk_pair_new_vec =
+                pool_ckks.level_sk_pair();
+
+            base_change_matrix_D_to_Qtilda_leveled =
+                std::make_shared<std::vector<DeviceVector<Data64>>>();
+            Mi_inv_D_to_Qtilda_leveled =
+                std::make_shared<std::vector<DeviceVector<Data64>>>();
+            prod_D_to_Qtilda_leveled =
+                std::make_shared<std::vector<DeviceVector<Data64>>>();
+            I_j_leveled = std::make_shared<std::vector<DeviceVector<int>>>();
+            I_location_leveled =
+                std::make_shared<std::vector<DeviceVector<int>>>();
+            Sk_pair_leveled =
+                std::make_shared<std::vector<DeviceVector<int>>>();
+
+            for (int pool_lp = 0;
+                 pool_lp < base_change_matrix_D_to_Qtilda_vec.size(); pool_lp++)
             {
-                case 2: // KEYSWITCHING_METHOD_II
-                {
-                    KeySwitchParameterGenerator pool_ckks(
-                        n, base_q, P_size, scheme_, keyswitching_type_);
+                DeviceVector<Data64>
+                    base_change_matrix_D_to_Qtilda_leveled_inner(
+                        base_change_matrix_D_to_Qtilda_vec[pool_lp]);
+                DeviceVector<Data64> Mi_inv_D_to_Qtilda_leveled_inner(
+                    Mi_inv_D_to_Qtilda_vec[pool_lp]);
+                DeviceVector<Data64> prod_D_to_Qtilda_leveled_inner(
+                    prod_D_to_Qtilda_vec[pool_lp]);
 
-                    m_leveled = pool_ckks.m;
-                    l_leveled =
-                        std::make_shared<std::vector<int>>(pool_ckks.level_Q_);
-                    l_tilda_leveled = std::make_shared<std::vector<int>>(
-                        pool_ckks.level_Qtilda_);
+                base_change_matrix_D_to_Qtilda_leveled->push_back(
+                    std::move(base_change_matrix_D_to_Qtilda_leveled_inner));
+                Mi_inv_D_to_Qtilda_leveled->push_back(
+                    std::move(Mi_inv_D_to_Qtilda_leveled_inner));
+                prod_D_to_Qtilda_leveled->push_back(
+                    std::move(prod_D_to_Qtilda_leveled_inner));
 
-                    d_leveled =
-                        std::make_shared<std::vector<int>>(pool_ckks.level_d_);
+                DeviceVector<int> I_j_vec_inner(I_j_vec[pool_lp]);
+                DeviceVector<int> I_location_vec_inner(I_location_vec[pool_lp]);
+                DeviceVector<int> Sk_pair_new_vec_inner(
+                    Sk_pair_new_vec[pool_lp]);
 
-                    std::vector<std::vector<Data64>>
-                        base_change_matrix_D_to_Qtilda_vec =
-                            pool_ckks.level_base_change_matrix_D_to_Qtilda();
-
-                    std::vector<std::vector<Data64>> Mi_inv_D_to_Qtilda_vec =
-                        pool_ckks.level_Mi_inv_D_to_Qtilda();
-
-                    std::vector<std::vector<Data64>> prod_D_to_Qtilda_vec =
-                        pool_ckks.level_prod_D_to_Qtilda();
-
-                    std::vector<std::vector<int>> I_j_vec =
-                        pool_ckks.level_I_j();
-
-                    std::vector<std::vector<int>> I_location_vec =
-                        pool_ckks.level_I_location();
-
-                    std::vector<std::vector<int>> Sk_pair_new_vec =
-                        pool_ckks.level_sk_pair();
-
-                    base_change_matrix_D_to_Qtilda_leveled =
-                        std::make_shared<std::vector<DeviceVector<Data64>>>();
-                    Mi_inv_D_to_Qtilda_leveled =
-                        std::make_shared<std::vector<DeviceVector<Data64>>>();
-                    prod_D_to_Qtilda_leveled =
-                        std::make_shared<std::vector<DeviceVector<Data64>>>();
-                    I_j_leveled =
-                        std::make_shared<std::vector<DeviceVector<int>>>();
-                    I_location_leveled =
-                        std::make_shared<std::vector<DeviceVector<int>>>();
-                    Sk_pair_leveled =
-                        std::make_shared<std::vector<DeviceVector<int>>>();
-
-                    for (int pool_lp = 0;
-                         pool_lp < base_change_matrix_D_to_Qtilda_vec.size();
-                         pool_lp++)
-                    {
-                        DeviceVector<Data64>
-                            base_change_matrix_D_to_Qtilda_leveled_inner(
-                                base_change_matrix_D_to_Qtilda_vec[pool_lp]);
-                        DeviceVector<Data64> Mi_inv_D_to_Qtilda_leveled_inner(
-                            Mi_inv_D_to_Qtilda_vec[pool_lp]);
-                        DeviceVector<Data64> prod_D_to_Qtilda_leveled_inner(
-                            prod_D_to_Qtilda_vec[pool_lp]);
-
-                        base_change_matrix_D_to_Qtilda_leveled->push_back(
-                            std::move(
-                                base_change_matrix_D_to_Qtilda_leveled_inner));
-                        Mi_inv_D_to_Qtilda_leveled->push_back(
-                            std::move(Mi_inv_D_to_Qtilda_leveled_inner));
-                        prod_D_to_Qtilda_leveled->push_back(
-                            std::move(prod_D_to_Qtilda_leveled_inner));
-
-                        DeviceVector<int> I_j_vec_inner(I_j_vec[pool_lp]);
-                        DeviceVector<int> I_location_vec_inner(
-                            I_location_vec[pool_lp]);
-                        DeviceVector<int> Sk_pair_new_vec_inner(
-                            Sk_pair_new_vec[pool_lp]);
-
-                        I_j_leveled->push_back(std::move(I_j_vec_inner));
-                        I_location_leveled->push_back(
-                            std::move(I_location_vec_inner));
-                        Sk_pair_leveled->push_back(
-                            std::move(Sk_pair_new_vec_inner));
-                    }
-                }
-                break;
-                default:
-                    throw ParameterError(error_message(
-                        "Invalid Key Switching Type ",
-                        static_cast<int>(keyswitching_type_),
-                        "! Expected KEYSWITCHING_METHOD_II (2)."));
-                    break;
+                I_j_leveled->push_back(std::move(I_j_vec_inner));
+                I_location_leveled->push_back(std::move(I_location_vec_inner));
+                Sk_pair_leveled->push_back(std::move(Sk_pair_new_vec_inner));
             }
             context_id_ = context_identity(static_cast<int>(scheme_), n,
                                            prime_vector_, 0);

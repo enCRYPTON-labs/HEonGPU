@@ -183,8 +183,7 @@ namespace heongpu
             options, false);
     }
 
-    __host__ void
-    HEKeyGenerator<Scheme::CKKS>::generate_ckks_relin_key_method_II(
+    __host__ void HEKeyGenerator<Scheme::CKKS>::generate_ckks_relin_key(
         Relinkey<Scheme::CKKS>& rk, Secretkey<Scheme::CKKS>& sk,
         const ExecutionOptions& options)
     {
@@ -276,8 +275,7 @@ namespace heongpu
             options, false);
     }
 
-    __host__ void
-    HEKeyGenerator<Scheme::CKKS>::generate_ckks_galois_key_method_II(
+    __host__ void HEKeyGenerator<Scheme::CKKS>::generate_ckks_galois_key(
         Galoiskey<Scheme::CKKS>& gk, Secretkey<Scheme::CKKS>& sk,
         const ExecutionOptions& options)
     {
@@ -579,8 +577,7 @@ namespace heongpu
             options, false);
     }
 
-    __host__ void
-    HEKeyGenerator<Scheme::CKKS>::generate_ckks_switch_key_method_II(
+    __host__ void HEKeyGenerator<Scheme::CKKS>::generate_ckks_switch_key(
         Switchkey<Scheme::CKKS>& swk, Secretkey<Scheme::CKKS>& new_sk,
         Secretkey<Scheme::CKKS>& old_sk, const ExecutionOptions& options)
     {

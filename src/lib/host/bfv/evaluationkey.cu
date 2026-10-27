@@ -26,17 +26,8 @@ namespace heongpu
         Q_prime_size_ = context->Q_prime_size;
         Q_size_ = context->Q_size;
 
-        switch (static_cast<int>(context->keyswitching_type_))
-        {
-            case 2: // KEYSWITCHING_METHOD_II
-            {
-                d_ = context->d;
-                relinkey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
-            }
-            break;
-            default:
-                break;
-        }
+        d_ = context->d;
+        relinkey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
     }
 
     void Relinkey<Scheme::BFV>::store_in_device(cudaStream_t stream)
@@ -342,33 +333,19 @@ namespace heongpu
 
         group_order_ = 3;
 
-        switch (static_cast<int>(context->keyswitching_type_))
+        for (int i = 0; i <= max_shift; i++)
         {
-            case 2: // KEYSWITCHING_METHOD_II
-            {
-                for (int i = 0; i <= max_shift; i++)
-                {
-                    int power = pow(2, i);
-                    galois_elt[power] =
-                        steps_to_galois_elt(power, ring_size, group_order_);
-                    galois_elt[(-power)] =
-                        steps_to_galois_elt((-power), ring_size, group_order_);
-                }
-
-                galois_elt_zero =
-                    steps_to_galois_elt(0, ring_size, group_order_);
-
-                d_ = context->d;
-                galoiskey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
-            }
-            break;
-            default:
-                throw ParameterError(
-                    error_message("Invalid Key Switching Type ",
-                                  static_cast<int>(context->keyswitching_type_),
-                                  "! Expected KEYSWITCHING_METHOD_II (2)."));
-                break;
+            int power = pow(2, i);
+            galois_elt[power] =
+                steps_to_galois_elt(power, ring_size, group_order_);
+            galois_elt[(-power)] =
+                steps_to_galois_elt((-power), ring_size, group_order_);
         }
+
+        galois_elt_zero = steps_to_galois_elt(0, ring_size, group_order_);
+
+        d_ = context->d;
+        galoiskey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
     }
 
     __host__ Galoiskey<Scheme::BFV>::Galoiskey(HEContext<Scheme::BFV> context,
@@ -394,30 +371,16 @@ namespace heongpu
 
         group_order_ = 3;
 
-        switch (static_cast<int>(context->keyswitching_type_))
+        for (int shift : shift_vec)
         {
-            case 2: // KEYSWITCHING_METHOD_II
-            {
-                for (int shift : shift_vec)
-                {
-                    galois_elt[shift] =
-                        steps_to_galois_elt(shift, ring_size, group_order_);
-                }
-
-                galois_elt_zero =
-                    steps_to_galois_elt(0, ring_size, group_order_);
-
-                d_ = context->d;
-                galoiskey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
-            }
-            break;
-            default:
-                throw ParameterError(
-                    error_message("Invalid Key Switching Type ",
-                                  static_cast<int>(context->keyswitching_type_),
-                                  "! Expected KEYSWITCHING_METHOD_II (2)."));
-                break;
+            galois_elt[shift] =
+                steps_to_galois_elt(shift, ring_size, group_order_);
         }
+
+        galois_elt_zero = steps_to_galois_elt(0, ring_size, group_order_);
+
+        d_ = context->d;
+        galoiskey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
     }
 
     __host__
@@ -444,24 +407,10 @@ namespace heongpu
 
         group_order_ = 3;
 
-        switch (static_cast<int>(context->keyswitching_type_))
-        {
-            case 2: // KEYSWITCHING_METHOD_II
-            {
-                d_ = context->d;
-                galois_elt_zero =
-                    steps_to_galois_elt(0, ring_size, group_order_);
-                galoiskey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
-                custom_galois_elt = galois_elts;
-            }
-            break;
-            default:
-                throw ParameterError(
-                    error_message("Invalid Key Switching Type ",
-                                  static_cast<int>(context->keyswitching_type_),
-                                  "! Expected KEYSWITCHING_METHOD_II (2)."));
-                break;
-        }
+        d_ = context->d;
+        galois_elt_zero = steps_to_galois_elt(0, ring_size, group_order_);
+        galoiskey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
+        custom_galois_elt = galois_elts;
     }
 
     void Galoiskey<Scheme::BFV>::store_in_device(cudaStream_t stream)
@@ -803,21 +752,8 @@ namespace heongpu
         Q_prime_size_ = context->Q_prime_size;
         Q_size_ = context->Q_size;
 
-        switch (static_cast<int>(context->keyswitching_type_))
-        {
-            case 2: // KEYSWITCHING_METHOD_II
-            {
-                d_ = context->d;
-                switchkey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
-            }
-            break;
-            default:
-                throw ParameterError(
-                    error_message("Invalid Key Switching Type ",
-                                  static_cast<int>(context->keyswitching_type_),
-                                  "! Expected KEYSWITCHING_METHOD_II (2)."));
-                break;
-        }
+        d_ = context->d;
+        switchkey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
     }
 
     void Switchkey<Scheme::BFV>::store_in_device(cudaStream_t stream)

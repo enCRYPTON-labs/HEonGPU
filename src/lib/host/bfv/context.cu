@@ -691,55 +691,38 @@ namespace heongpu
 
             //////////////////////////
 
-            switch (static_cast<int>(keyswitching_type_))
-            {
-                case 2: // KEYSWITCHING_METHOD_II
-                {
-                    KeySwitchParameterGenerator pool(n, base_q, P_size, scheme_,
-                                                     keyswitching_type_);
+            KeySwitchParameterGenerator pool(n, base_q, P_size, scheme_);
 
-                    m = pool.m;
-                    l = pool.first_Q_;
-                    l_tilda = pool.first_Qtilda_;
+            m = pool.m;
+            l = pool.first_Q_;
+            l_tilda = pool.first_Qtilda_;
 
-                    d = pool.d_;
+            d = pool.d_;
 
-                    std::vector<Data64> base_change_matrix_D_to_Q_tilda_inner =
-                        pool.base_change_matrix_D_to_Qtilda();
-                    base_change_matrix_D_to_Q_tilda_ =
-                        std::make_shared<DeviceVector<Data64>>(
-                            base_change_matrix_D_to_Q_tilda_inner);
+            std::vector<Data64> base_change_matrix_D_to_Q_tilda_inner =
+                pool.base_change_matrix_D_to_Qtilda();
+            base_change_matrix_D_to_Q_tilda_ =
+                std::make_shared<DeviceVector<Data64>>(
+                    base_change_matrix_D_to_Q_tilda_inner);
 
-                    std::vector<Data64> Mi_inv_D_to_Q_tilda_inner =
-                        pool.Mi_inv_D_to_Qtilda();
-                    Mi_inv_D_to_Q_tilda_ =
-                        std::make_shared<DeviceVector<Data64>>(
-                            Mi_inv_D_to_Q_tilda_inner);
+            std::vector<Data64> Mi_inv_D_to_Q_tilda_inner =
+                pool.Mi_inv_D_to_Qtilda();
+            Mi_inv_D_to_Q_tilda_ = std::make_shared<DeviceVector<Data64>>(
+                Mi_inv_D_to_Q_tilda_inner);
 
-                    std::vector<Data64> prod_D_to_Q_tilda_inner =
-                        pool.prod_D_to_Qtilda();
-                    prod_D_to_Q_tilda_ = std::make_shared<DeviceVector<Data64>>(
-                        prod_D_to_Q_tilda_inner);
+            std::vector<Data64> prod_D_to_Q_tilda_inner =
+                pool.prod_D_to_Qtilda();
+            prod_D_to_Q_tilda_ =
+                std::make_shared<DeviceVector<Data64>>(prod_D_to_Q_tilda_inner);
 
-                    std::vector<int> I_j_inner = pool.I_j();
-                    I_j_ = std::make_shared<DeviceVector<int>>(I_j_inner);
+            std::vector<int> I_j_inner = pool.I_j();
+            I_j_ = std::make_shared<DeviceVector<int>>(I_j_inner);
 
-                    std::vector<int> I_location_inner = pool.I_location();
-                    I_location_ =
-                        std::make_shared<DeviceVector<int>>(I_location_inner);
+            std::vector<int> I_location_inner = pool.I_location();
+            I_location_ = std::make_shared<DeviceVector<int>>(I_location_inner);
 
-                    std::vector<int> Sk_pair_inner = pool.sk_pair();
-                    Sk_pair_ =
-                        std::make_shared<DeviceVector<int>>(Sk_pair_inner);
-                }
-                break;
-                default:
-                    throw ParameterError(error_message(
-                        "Invalid Key Switching Type ",
-                        static_cast<int>(keyswitching_type_),
-                        "! Expected KEYSWITCHING_METHOD_II (2)."));
-                    break;
-            }
+            std::vector<int> Sk_pair_inner = pool.sk_pair();
+            Sk_pair_ = std::make_shared<DeviceVector<int>>(Sk_pair_inner);
 
             context_id_ = context_identity(static_cast<int>(scheme_), n,
                                            prime_vector_, plain_modulus_.value);

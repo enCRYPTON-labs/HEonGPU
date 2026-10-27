@@ -165,18 +165,7 @@ namespace heongpu
             MultipartyRelinkey<Scheme::CKKS>& rk, Secretkey<Scheme::CKKS>& sk,
             const ExecutionOptions& options = ExecutionOptions())
         {
-            switch (static_cast<int>(rk.key_type))
-            {
-                case 2: // KEYSWITCHING_METHOD_II
-                    generate_ckks_relin_key_method_II_stage_1(rk, sk, options);
-                    break;
-                default:
-                    throw ParameterError(error_message(
-                        "Invalid Key Switching Type ",
-                        static_cast<int>(rk.key_type),
-                        "! Expected KEYSWITCHING_METHOD_II (2)."));
-                    break;
-            }
+            generate_ckks_relin_key_stage_1(rk, sk, options);
         }
 
         /**
@@ -206,19 +195,8 @@ namespace heongpu
                 throw std::invalid_argument("Invalid relinkey parameters!");
             }
 
-            switch (static_cast<int>(rk_s1_common.key_type))
-            {
-                case 2: // KEYSWITCHING_METHOD_II
-                    generate_ckks_relin_key_method_II_stage_3(
-                        rk_s1_common, rk_new, sk, options);
-                    break;
-                default:
-                    throw ParameterError(error_message(
-                        "Invalid Key Switching Type ",
-                        static_cast<int>(rk_s1_common.key_type),
-                        "! Expected KEYSWITCHING_METHOD_II (2)."));
-                    break;
-            }
+            generate_ckks_relin_key_stage_3(
+                rk_s1_common, rk_new, sk, options);
         }
 
         /**
@@ -278,18 +256,7 @@ namespace heongpu
             MultipartyGaloiskey<Scheme::CKKS>& gk, Secretkey<Scheme::CKKS>& sk,
             const ExecutionOptions& options = ExecutionOptions())
         {
-            switch (static_cast<int>(gk.key_type))
-            {
-                case 2: // KEYSWITCHING_METHOD_II
-                    generate_galois_key_method_II_stage_1(gk, sk, options);
-                    break;
-                default:
-                    throw ParameterError(error_message(
-                        "Invalid Key Switching Type ",
-                        static_cast<int>(gk.key_type),
-                        "! Expected KEYSWITCHING_METHOD_II (2)."));
-                    break;
-            }
+            generate_galois_key_stage_1(gk, sk, options);
         }
 
         /**
@@ -602,11 +569,11 @@ namespace heongpu
             std::vector<MultipartyPublickey<Scheme::CKKS>>& all_pk,
             Publickey<Scheme::CKKS>& pk, const cudaStream_t stream);
 
-        __host__ void generate_ckks_relin_key_method_II_stage_1(
+        __host__ void generate_ckks_relin_key_stage_1(
             MultipartyRelinkey<Scheme::CKKS>& rk, Secretkey<Scheme::CKKS>& sk,
             const ExecutionOptions& options);
 
-        __host__ void generate_ckks_relin_key_method_II_stage_3(
+        __host__ void generate_ckks_relin_key_stage_3(
             MultipartyRelinkey<Scheme::CKKS>& rk_stage_1,
             MultipartyRelinkey<Scheme::CKKS>& rk_stage_2,
             Secretkey<Scheme::CKKS>& sk, const ExecutionOptions& options);
@@ -621,7 +588,7 @@ namespace heongpu
             MultipartyRelinkey<Scheme::CKKS>& rk_common_stage1,
             Relinkey<Scheme::CKKS>& rk, const ExecutionOptions& options);
 
-        __host__ void generate_galois_key_method_II_stage_1(
+        __host__ void generate_galois_key_stage_1(
             MultipartyGaloiskey<Scheme::CKKS>& gk, Secretkey<Scheme::CKKS>& sk,
             const ExecutionOptions& options);
 

@@ -1218,7 +1218,7 @@ namespace heongpu
     }
 
     __host__ void
-    HEOperator<Scheme::CKKS>::relinearize_external_product_method2_inplace_ckks(
+    HEOperator<Scheme::CKKS>::relinearize_external_product_inplace_ckks(
         Ciphertext<Scheme::CKKS>& input1, Relinkey<Scheme::CKKS>& relin_key,
         const cudaStream_t stream)
     {
@@ -1595,10 +1595,11 @@ namespace heongpu
         HEONGPU_CUDA_CHECK(cudaGetLastError());
     }
 
-    __host__ void HEOperator<Scheme::CKKS>::rotate_ckks_method_II(
-        Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& output,
-        Galoiskey<Scheme::CKKS>& galois_key, int shift,
-        const cudaStream_t stream)
+    __host__ void
+    HEOperator<Scheme::CKKS>::rotate_ckks(Ciphertext<Scheme::CKKS>& input1,
+                                          Ciphertext<Scheme::CKKS>& output,
+                                          Galoiskey<Scheme::CKKS>& galois_key,
+                                          int shift, const cudaStream_t stream)
     {
         int galoiselt =
             steps_to_galois_elt(shift, context_->n, galois_key.group_order_);
@@ -1609,8 +1610,7 @@ namespace heongpu
                                 galois_key.host_location_.end());
         if (key_exist)
         {
-            apply_galois_ckks_method_II(input1, output, galois_key, galoiselt,
-                                        stream);
+            apply_galois_ckks(input1, output, galois_key, galoiselt, stream);
         }
         else
         {
@@ -1646,8 +1646,8 @@ namespace heongpu
             Ciphertext<Scheme::CKKS>* current_input = &input1;
             for (auto& galois_elt : required_galoiselt)
             {
-                apply_galois_ckks_method_II(*current_input, output, galois_key,
-                                            galois_elt, stream);
+                apply_galois_ckks(*current_input, output, galois_key,
+                                  galois_elt, stream);
                 current_input = &output;
             }
         }
@@ -1922,7 +1922,7 @@ namespace heongpu
         output.ciphertext_generated_ = true;
     }
 
-    __host__ void HEOperator<Scheme::CKKS>::apply_galois_ckks_method_II(
+    __host__ void HEOperator<Scheme::CKKS>::apply_galois_ckks(
         Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& output,
         Galoiskey<Scheme::CKKS>& galois_key, int galois_elt,
         const cudaStream_t stream)
@@ -1933,7 +1933,7 @@ namespace heongpu
                                 galois_elt, stream);
     }
 
-    __host__ void HEOperator<Scheme::CKKS>::switchkey_ckks_method_II(
+    __host__ void HEOperator<Scheme::CKKS>::switchkey_ckks(
         Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& output,
         Switchkey<Scheme::CKKS>& switch_key, const cudaStream_t stream)
     {
@@ -2127,7 +2127,7 @@ namespace heongpu
         output.memory_set(std::move(output_memory));
     }
 
-    __host__ void HEOperator<Scheme::CKKS>::conjugate_ckks_method_II(
+    __host__ void HEOperator<Scheme::CKKS>::conjugate_ckks(
         Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& output,
         Galoiskey<Scheme::CKKS>& conjugate_key, const cudaStream_t stream)
     {
@@ -2575,14 +2575,6 @@ namespace heongpu
     HEOperator<Scheme::CKKS>::encode_V_matrixs(Vandermonde& vandermonde,
                                                int start_level)
     {
-        if (context_->keyswitching_type_ !=
-            keyswitching_type::KEYSWITCHING_METHOD_II)
-        {
-            throw std::invalid_argument(
-                "CoeffToSlot/SlotToCoeff require KEYSWITCHING_METHOD_II "
-                "(more than one P prime)!");
-        }
-
         std::vector<heongpu::DeviceVector<Data64>> result;
 
         int rns_count_base = start_level + 2 - vandermonde.StoC_piece_;
@@ -2644,14 +2636,6 @@ namespace heongpu
     HEOperator<Scheme::CKKS>::encode_V_inv_matrixs(Vandermonde& vandermonde,
                                                    int start_level)
     {
-        if (context_->keyswitching_type_ !=
-            keyswitching_type::KEYSWITCHING_METHOD_II)
-        {
-            throw std::invalid_argument(
-                "CoeffToSlot/SlotToCoeff require KEYSWITCHING_METHOD_II "
-                "(more than one P prime)!");
-        }
-
         std::vector<heongpu::DeviceVector<Data64>> result;
 
         int rns_count_base = start_level + 2 - vandermonde.CtoS_piece_;
@@ -3450,8 +3434,8 @@ namespace heongpu
         {
             cipher_after_ks =
                 operator_ciphertext(cipher.scale(), options.stream_);
-            switchkey_ckks_method_II(cipher, cipher_after_ks,
-                                     *swk_dense_to_sparse, options.stream_);
+            switchkey_ckks(cipher, cipher_after_ks, *swk_dense_to_sparse,
+                           options.stream_);
         }
         else
         {
@@ -3502,8 +3486,8 @@ namespace heongpu
 
         if (swk_sparse_to_dense != nullptr)
         {
-            switchkey_ckks_method_II(c_raised, c_raised, *swk_sparse_to_dense,
-                                     options.stream_);
+            switchkey_ckks(c_raised, c_raised, *swk_sparse_to_dense,
+                           options.stream_);
         }
 
         c_raised.encoding_ = cipher.encoding_;

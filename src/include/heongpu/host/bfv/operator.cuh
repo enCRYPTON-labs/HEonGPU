@@ -575,27 +575,14 @@ namespace heongpu
                 input1,
                 [&](Ciphertext<Scheme::BFV>& input1_)
                 {
-                    switch (static_cast<int>(relin_key.key_type))
+                    if (input1_.in_ntt_domain_ != false)
                     {
-                        case 2: // KEYSWITCHING_METHOD_II
-
-                            if (input1_.in_ntt_domain_ != false)
-                            {
-                                throw std::invalid_argument(
-                                    "Ciphertext should be in intt domain");
-                            }
-
-                            relinearize_external_product_method2_inplace(
-                                input1_, relin_key, options.stream_);
-
-                            break;
-                        default:
-                            throw ParameterError(error_message(
-                                "Invalid Key Switching Type ",
-                                static_cast<int>(relin_key.key_type),
-                                "! Expected KEYSWITCHING_METHOD_II (2)."));
-                            break;
+                        throw std::invalid_argument(
+                            "Ciphertext should be in intt domain");
                     }
+
+                    relinearize_external_product_inplace(input1_, relin_key,
+                                                         options.stream_);
 
                     input1_.relinearization_required_ = false;
                 },
@@ -650,30 +637,15 @@ namespace heongpu
                         output,
                         [&](Ciphertext<Scheme::BFV>& output_)
                         {
-                            switch (static_cast<int>(galois_key.key_type))
+                            if (input1_.in_ntt_domain_ != false)
                             {
-                                case 2: // KEYSWITCHING_METHOD_II
-
-                                    if (input1_.in_ntt_domain_ != false)
-                                    {
-                                        throw std::invalid_argument(
-                                            "Ciphertext should be in intt "
-                                            "domain");
-                                    }
-
-                                    rotate_method_II(input1_, output_,
-                                                     galois_key, shift,
-                                                     options.stream_);
-
-                                    break;
-                                default:
-                                    throw ParameterError(error_message(
-                                        "Invalid Key Switching Type ",
-                                        static_cast<int>(galois_key.key_type),
-                                        "! Expected KEYSWITCHING_METHOD_II "
-                                        "(2)."));
-                                    break;
+                                throw std::invalid_argument(
+                                    "Ciphertext should be in intt "
+                                    "domain");
                             }
+
+                            rotate_bfv(input1_, output_, galois_key, shift,
+                                       options.stream_);
 
                             output_.scheme_ = context_->scheme_;
                             output_.context_id_ = context_->context_id_;
@@ -752,23 +724,8 @@ namespace heongpu
                         output,
                         [&](Ciphertext<Scheme::BFV>& output_)
                         {
-                            switch (static_cast<int>(galois_key.key_type))
-                            {
-                                case 2: // KEYSWITCHING_METHOD_II
-
-                                    rotate_columns_method_II(input1_, output_,
-                                                             galois_key,
-                                                             options.stream_);
-
-                                    break;
-                                default:
-                                    throw ParameterError(error_message(
-                                        "Invalid Key Switching Type ",
-                                        static_cast<int>(galois_key.key_type),
-                                        "! Expected KEYSWITCHING_METHOD_II "
-                                        "(2)."));
-                                    break;
-                            }
+                            rotate_columns_bfv(input1_, output_, galois_key,
+                                               options.stream_);
 
                             output_.scheme_ = context_->scheme_;
                             output_.context_id_ = context_->context_id_;
@@ -827,30 +784,15 @@ namespace heongpu
                         output,
                         [&](Ciphertext<Scheme::BFV>& output_)
                         {
-                            switch (static_cast<int>(galois_key.key_type))
+                            if (input1_.in_ntt_domain_ != false)
                             {
-                                case 2: // KEYSWITCHING_METHOD_II
-
-                                    if (input1_.in_ntt_domain_ != false)
-                                    {
-                                        throw std::invalid_argument(
-                                            "Ciphertext should be in intt "
-                                            "domain");
-                                    }
-
-                                    apply_galois_method_II(
-                                        input1_, output_, galois_key,
-                                        galois_elt, options.stream_);
-
-                                    break;
-                                default:
-                                    throw ParameterError(error_message(
-                                        "Invalid Key Switching Type ",
-                                        static_cast<int>(galois_key.key_type),
-                                        "! Expected KEYSWITCHING_METHOD_II "
-                                        "(2)."));
-                                    break;
+                                throw std::invalid_argument(
+                                    "Ciphertext should be in intt "
+                                    "domain");
                             }
+
+                            apply_galois_bfv(input1_, output_, galois_key,
+                                             galois_elt, options.stream_);
 
                             output_.scheme_ = context_->scheme_;
                             output_.context_id_ = context_->context_id_;
@@ -927,30 +869,15 @@ namespace heongpu
                         output,
                         [&](Ciphertext<Scheme::BFV>& output_)
                         {
-                            switch (static_cast<int>(switch_key.key_type))
+                            if (input1_.in_ntt_domain_ != false)
                             {
-                                case 2: // KEYSWITCHING_METHOD_II
-
-                                    if (input1_.in_ntt_domain_ != false)
-                                    {
-                                        throw std::invalid_argument(
-                                            "Ciphertext should be in intt "
-                                            "domain");
-                                    }
-
-                                    switchkey_method_II(input1_, output_,
-                                                        switch_key,
-                                                        options.stream_);
-
-                                    break;
-                                default:
-                                    throw ParameterError(error_message(
-                                        "Invalid Key Switching Type ",
-                                        static_cast<int>(switch_key.key_type),
-                                        "! Expected KEYSWITCHING_METHOD_II "
-                                        "(2)."));
-                                    break;
+                                throw std::invalid_argument(
+                                    "Ciphertext should be in intt "
+                                    "domain");
                             }
+
+                            switchkey_bfv(input1_, output_, switch_key,
+                                          options.stream_);
 
                             output_.scheme_ = context_->scheme_;
                             output_.context_id_ = context_->context_id_;
@@ -1456,9 +1383,10 @@ namespace heongpu
 
         ///////////////////////////////////////////////////
 
-        __host__ void relinearize_external_product_method2_inplace(
-            Ciphertext<Scheme::BFV>& input1, Relinkey<Scheme::BFV>& relin_key,
-            const cudaStream_t stream);
+        __host__ void
+        relinearize_external_product_inplace(Ciphertext<Scheme::BFV>& input1,
+                                             Relinkey<Scheme::BFV>& relin_key,
+                                             const cudaStream_t stream);
 
         ///////////////////////////////////////////////////
 
@@ -1502,31 +1430,32 @@ namespace heongpu
 
                                           cudaStream_t stream);
 
-        __host__ void rotate_method_II(Ciphertext<Scheme::BFV>& input1,
+        __host__ void rotate_bfv(Ciphertext<Scheme::BFV>& input1,
+                                 Ciphertext<Scheme::BFV>& output,
+                                 Galoiskey<Scheme::BFV>& galois_key, int shift,
+                                 const cudaStream_t stream);
+
+        ///////////////////////////////////////////////////
+
+        __host__ void apply_galois_bfv(Ciphertext<Scheme::BFV>& input1,
                                        Ciphertext<Scheme::BFV>& output,
                                        Galoiskey<Scheme::BFV>& galois_key,
-                                       int shift, const cudaStream_t stream);
+                                       int galois_elt,
+                                       const cudaStream_t stream);
 
         ///////////////////////////////////////////////////
 
-        __host__ void apply_galois_method_II(Ciphertext<Scheme::BFV>& input1,
-                                             Ciphertext<Scheme::BFV>& output,
-                                             Galoiskey<Scheme::BFV>& galois_key,
-                                             int galois_elt,
-                                             const cudaStream_t stream);
+        __host__ void rotate_columns_bfv(Ciphertext<Scheme::BFV>& input1,
+                                         Ciphertext<Scheme::BFV>& output,
+                                         Galoiskey<Scheme::BFV>& galois_key,
+                                         const cudaStream_t stream);
 
         ///////////////////////////////////////////////////
 
-        __host__ void rotate_columns_method_II(
-            Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& output,
-            Galoiskey<Scheme::BFV>& galois_key, const cudaStream_t stream);
-
-        ///////////////////////////////////////////////////
-
-        __host__ void switchkey_method_II(Ciphertext<Scheme::BFV>& input1,
-                                          Ciphertext<Scheme::BFV>& output,
-                                          Switchkey<Scheme::BFV>& switch_key,
-                                          const cudaStream_t stream);
+        __host__ void switchkey_bfv(Ciphertext<Scheme::BFV>& input1,
+                                    Ciphertext<Scheme::BFV>& output,
+                                    Switchkey<Scheme::BFV>& switch_key,
+                                    const cudaStream_t stream);
 
         ///////////////////////////////////////////////////
 

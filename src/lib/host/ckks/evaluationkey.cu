@@ -27,17 +27,8 @@ namespace heongpu
         Q_prime_size_ = context->Q_prime_size;
         Q_size_ = context->Q_size;
 
-        switch (static_cast<int>(context->keyswitching_type_))
-        {
-            case 2: // KEYSWITCHING_METHOD_II
-            {
-                d_ = context->d_leveled->operator[](0);
-                relinkey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
-            }
-            break;
-            default:
-                break;
-        }
+        d_ = context->d_leveled->operator[](0);
+        relinkey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
     }
 
     void Relinkey<Scheme::CKKS>::store_in_device(cudaStream_t stream)
@@ -431,33 +422,19 @@ namespace heongpu
 
         group_order_ = 5;
 
-        switch (static_cast<int>(context->keyswitching_type_))
+        for (int i = 0; i < MAX_SHIFT; i++)
         {
-            case 2: // KEYSWITCHING_METHOD_II
-            {
-                for (int i = 0; i < MAX_SHIFT; i++)
-                {
-                    int power = pow(2, i);
-                    galois_elt[power] =
-                        steps_to_galois_elt(power, ring_size, group_order_);
-                    galois_elt[(-power)] =
-                        steps_to_galois_elt((-power), ring_size, group_order_);
-                }
-
-                galois_elt_zero =
-                    steps_to_galois_elt(0, ring_size, group_order_);
-
-                d_ = context->d_leveled->operator[](0);
-                galoiskey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
-            }
-            break;
-            default:
-                throw ParameterError(
-                    error_message("Invalid Key Switching Type ",
-                                  static_cast<int>(context->keyswitching_type_),
-                                  "! Expected KEYSWITCHING_METHOD_II (2)."));
-                break;
+            int power = pow(2, i);
+            galois_elt[power] =
+                steps_to_galois_elt(power, ring_size, group_order_);
+            galois_elt[(-power)] =
+                steps_to_galois_elt((-power), ring_size, group_order_);
         }
+
+        galois_elt_zero = steps_to_galois_elt(0, ring_size, group_order_);
+
+        d_ = context->d_leveled->operator[](0);
+        galoiskey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
 
         set_rotation_limits();
     }
@@ -491,33 +468,19 @@ namespace heongpu
 
         group_order_ = 5;
 
-        switch (static_cast<int>(context->keyswitching_type_))
+        for (int i = 0; i < max_shift + 1; i++)
         {
-            case 2: // KEYSWITCHING_METHOD_II
-            {
-                for (int i = 0; i < max_shift + 1; i++)
-                {
-                    int power = pow(2, i);
-                    galois_elt[power] =
-                        steps_to_galois_elt(power, ring_size, group_order_);
-                    galois_elt[(-power)] =
-                        steps_to_galois_elt((-power), ring_size, group_order_);
-                }
-
-                galois_elt_zero =
-                    steps_to_galois_elt(0, ring_size, group_order_);
-
-                d_ = context->d_leveled->operator[](0);
-                galoiskey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
-            }
-            break;
-            default:
-                throw ParameterError(
-                    error_message("Invalid Key Switching Type ",
-                                  static_cast<int>(context->keyswitching_type_),
-                                  "! Expected KEYSWITCHING_METHOD_II (2)."));
-                break;
+            int power = pow(2, i);
+            galois_elt[power] =
+                steps_to_galois_elt(power, ring_size, group_order_);
+            galois_elt[(-power)] =
+                steps_to_galois_elt((-power), ring_size, group_order_);
         }
+
+        galois_elt_zero = steps_to_galois_elt(0, ring_size, group_order_);
+
+        d_ = context->d_leveled->operator[](0);
+        galoiskey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
 
         set_rotation_limits();
     }
@@ -545,30 +508,16 @@ namespace heongpu
 
         group_order_ = 5;
 
-        switch (static_cast<int>(context->keyswitching_type_))
+        for (int shift : shift_vec)
         {
-            case 2: // KEYSWITCHING_METHOD_II
-            {
-                for (int shift : shift_vec)
-                {
-                    galois_elt[shift] =
-                        steps_to_galois_elt(shift, ring_size, group_order_);
-                }
-
-                galois_elt_zero =
-                    steps_to_galois_elt(0, ring_size, group_order_);
-
-                d_ = context->d_leveled->operator[](0);
-                galoiskey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
-            }
-            break;
-            default:
-                throw ParameterError(
-                    error_message("Invalid Key Switching Type ",
-                                  static_cast<int>(context->keyswitching_type_),
-                                  "! Expected KEYSWITCHING_METHOD_II (2)."));
-                break;
+            galois_elt[shift] =
+                steps_to_galois_elt(shift, ring_size, group_order_);
         }
+
+        galois_elt_zero = steps_to_galois_elt(0, ring_size, group_order_);
+
+        d_ = context->d_leveled->operator[](0);
+        galoiskey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
 
         set_rotation_limits();
     }
@@ -597,24 +546,10 @@ namespace heongpu
 
         group_order_ = 5;
 
-        switch (static_cast<int>(context->keyswitching_type_))
-        {
-            case 2: // KEYSWITCHING_METHOD_II
-            {
-                d_ = context->d_leveled->operator[](0);
-                galois_elt_zero =
-                    steps_to_galois_elt(0, ring_size, group_order_);
-                galoiskey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
-                custom_galois_elt = galois_elts;
-            }
-            break;
-            default:
-                throw ParameterError(
-                    error_message("Invalid Key Switching Type ",
-                                  static_cast<int>(context->keyswitching_type_),
-                                  "! Expected KEYSWITCHING_METHOD_II (2)."));
-                break;
-        }
+        d_ = context->d_leveled->operator[](0);
+        galois_elt_zero = steps_to_galois_elt(0, ring_size, group_order_);
+        galoiskey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
+        custom_galois_elt = galois_elts;
 
         set_rotation_limits();
     }
@@ -974,21 +909,8 @@ namespace heongpu
         Q_prime_size_ = context->Q_prime_size;
         Q_size_ = context->Q_size;
 
-        switch (static_cast<int>(context->keyswitching_type_))
-        {
-            case 2: // KEYSWITCHING_METHOD_II
-            {
-                d_ = context->d_leveled->operator[](0);
-                switchkey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
-            }
-            break;
-            default:
-                throw ParameterError(
-                    error_message("Invalid Key Switching Type ",
-                                  static_cast<int>(context->keyswitching_type_),
-                                  "! Expected KEYSWITCHING_METHOD_II (2)."));
-                break;
-        }
+        d_ = context->d_leveled->operator[](0);
+        switchkey_size_ = 2 * d_ * Q_prime_size_ * ring_size;
     }
 
     void Switchkey<Scheme::CKKS>::store_in_device(cudaStream_t stream)

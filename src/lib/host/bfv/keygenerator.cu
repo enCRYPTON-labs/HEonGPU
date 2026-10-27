@@ -185,7 +185,7 @@ namespace heongpu
             options, false);
     }
 
-    __host__ void HEKeyGenerator<Scheme::BFV>::generate_bfv_relin_key_method_II(
+    __host__ void HEKeyGenerator<Scheme::BFV>::generate_bfv_relin_key(
         Relinkey<Scheme::BFV>& rk, Secretkey<Scheme::BFV>& sk,
         const ExecutionOptions& options)
     {
@@ -267,8 +267,7 @@ namespace heongpu
             options, false);
     }
 
-    __host__ void
-    HEKeyGenerator<Scheme::BFV>::generate_bfv_galois_key_method_II(
+    __host__ void HEKeyGenerator<Scheme::BFV>::generate_bfv_galois_key(
         Galoiskey<Scheme::BFV>& gk, Secretkey<Scheme::BFV>& sk,
         const ExecutionOptions& options)
     {
@@ -533,8 +532,7 @@ namespace heongpu
             options, false);
     }
 
-    __host__ void
-    HEKeyGenerator<Scheme::BFV>::generate_bfv_switch_key_method_II(
+    __host__ void HEKeyGenerator<Scheme::BFV>::generate_bfv_switch_key(
         Switchkey<Scheme::BFV>& swk, Secretkey<Scheme::BFV>& new_sk,
         Secretkey<Scheme::BFV>& old_sk, const ExecutionOptions& options)
     {
