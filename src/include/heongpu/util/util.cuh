@@ -257,6 +257,30 @@ namespace heongpu
     std::vector<Modulus64> generate_internal_primes(size_t poly_modulus_degree,
                                                     const int prime_count);
 
+    /**
+     * @brief Returns the count largest primes p = 1 (mod 2 *
+     * poly_modulus_degree) below 2^bit_size that are not in excluded, largest
+     * first. All of them have bit_size bits. Throws ParameterError if there
+     * are not enough of them.
+     */
+    std::vector<Data64>
+    generate_primes_below(size_t poly_modulus_degree, int bit_size,
+                          size_t count,
+                          const std::vector<Data64>& excluded = {});
+
+    /**
+     * @brief Returns the count primes p = 1 (mod 2 * poly_modulus_degree)
+     * closest to 2^bit_size that are not in excluded, alternately below and
+     * above it, starting below. The ones below have bit_size bits, the ones
+     * above bit_size + 1. Used for CKKS scaling primes: rescaling by them in
+     * turn keeps the scale around 2^bit_size instead of drifting in one
+     * direction. Throws ParameterError if there are not enough of them.
+     */
+    std::vector<Data64>
+    generate_primes_around(size_t poly_modulus_degree, int bit_size,
+                           size_t count,
+                           const std::vector<Data64>& excluded = {});
+
     bool is_primitive_root(Data64 root, size_t degree, Modulus64& modulus);
 
     bool find_primitive_root(size_t degree, Modulus64& modulus,

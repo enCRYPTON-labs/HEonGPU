@@ -66,6 +66,7 @@ set(EXECUTABLES
     bootstrapping_presets_testcases test_bootstrapping_presets.cpp
     rotate_hoisted_testcases test_rotate_hoisted.cpp
     ckks_decrypt_depth_testcases test_ckks_decrypt_depth.cpp
+    prime_generation_testcases test_prime_generation.cpp
 )
 
 function(add_test exe source)

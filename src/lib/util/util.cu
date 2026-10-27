@@ -4,6 +4,7 @@
 // Developer: Alişah Özcan
 
 #include <heongpu/util/util.cuh>
+#include <algorithm>
 #include <map>
 
 namespace heongpu
@@ -389,6 +390,124 @@ namespace heongpu
         }
 
         return all_primes;
+    }
+
+    namespace
+    {
+        // Walks the values 1 (mod factor) from start towards end, which is
+        // excluded, and returns the next prime not in excluded, or 0.
+        class PrimeWalk
+        {
+          public:
+            PrimeWalk(Data64 start, Data64 end, Data64 factor,
+                      const std::vector<Data64>& excluded)
+                : value_(start), end_(end), factor_(factor), up_(start < end),
+                  excluded_(excluded)
+            {
+            }
+
+            Data64 next()
+            {
+                while (up_ ? (value_ < end_) : (value_ > end_))
+                {
+                    Data64 candidate = value_;
+                    value_ = up_ ? value_ + factor_ : value_ - factor_;
+                    if (is_prime(candidate) &&
+                        std::find(excluded_.begin(), excluded_.end(),
+                                  candidate) == excluded_.end())
+                    {
+                        return candidate;
+                    }
+                }
+                return 0;
+            }
+
+          private:
+            Data64 value_;
+            Data64 end_;
+            Data64 factor_;
+            bool up_;
+            const std::vector<Data64>& excluded_;
+        };
+
+        void check_prime_request(size_t poly_modulus_degree, int bit_size,
+                                 int max_bit_size)
+        {
+            if (!is_power_of_two(poly_modulus_degree) ||
+                (poly_modulus_degree > MAX_POLY_DEGREE) ||
+                (poly_modulus_degree < MIN_POLY_DEGREE))
+            {
+                throw ParameterError(error_message(
+                    "Invalid poly modulus degree ", poly_modulus_degree,
+                    "! Expected a power of two from ", MIN_POLY_DEGREE, " to ",
+                    MAX_POLY_DEGREE, "."));
+            }
+            if ((bit_size < MIN_USER_DEFINED_MOD_BIT_COUNT) ||
+                (bit_size > max_bit_size))
+            {
+                throw ParameterError(error_message(
+                    "Invalid prime bit size ", bit_size, "! Expected ",
+                    MIN_USER_DEFINED_MOD_BIT_COUNT, " to ", max_bit_size, "."));
+            }
+        }
+
+        [[noreturn]] void throw_not_enough_primes(size_t count, int bit_size,
+                                                  size_t poly_modulus_degree)
+        {
+            throw ParameterError(error_message(
+                "Not enough primes 1 mod ", 2 * poly_modulus_degree,
+                " around 2^", bit_size, " for ", count, " moduli!"));
+        }
+    } // namespace
+
+    std::vector<Data64>
+    generate_primes_below(size_t poly_modulus_degree, int bit_size,
+                          size_t count, const std::vector<Data64>& excluded)
+    {
+        check_prime_request(poly_modulus_degree, bit_size, MAX_MOD_BIT_COUNT);
+
+        Data64 factor = Data64(2) * Data64(poly_modulus_degree);
+        Data64 power = Data64(1) << bit_size;
+        PrimeWalk below(power - factor + 1, power >> 1, factor, excluded);
+
+        std::vector<Data64> primes;
+        while (primes.size() < count)
+        {
+            Data64 prime = below.next();
+            if (prime == 0)
+            {
+                throw_not_enough_primes(count, bit_size, poly_modulus_degree);
+            }
+            primes.push_back(prime);
+        }
+        return primes;
+    }
+
+    std::vector<Data64>
+    generate_primes_around(size_t poly_modulus_degree, int bit_size,
+                           size_t count, const std::vector<Data64>& excluded)
+    {
+        // The primes above 2^bit_size have one more bit.
+        check_prime_request(poly_modulus_degree, bit_size,
+                            MAX_MOD_BIT_COUNT - 1);
+
+        Data64 factor = Data64(2) * Data64(poly_modulus_degree);
+        Data64 power = Data64(1) << bit_size;
+        PrimeWalk below(power - factor + 1, power >> 1, factor, excluded);
+        PrimeWalk above(power + 1, power << 1, factor, excluded);
+
+        std::vector<Data64> primes;
+        while (primes.size() < count)
+        {
+            Data64 prime =
+                (primes.size() % 2 == 0) ? below.next() : above.next();
+            if (prime == 0)
+            {
+                throw_not_enough_primes(count, bit_size, poly_modulus_degree);
+            }
+            primes.push_back(prime);
+        }
+        return primes;
     }
 
     bool is_primitive_root(Data64 root, size_t degree, Modulus64& modulus)
