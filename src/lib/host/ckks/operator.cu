@@ -5116,7 +5116,7 @@ namespace heongpu
     }
 
     __host__ Ciphertext<Scheme::CKKS>
-    HEArithmeticOperator<Scheme::CKKS>::regular_bootstrapping(
+    HEArithmeticOperator<Scheme::CKKS>::regular_bootstrapping_ckks(
         Ciphertext<Scheme::CKKS>& input1, Galoiskey<Scheme::CKKS>& galois_key,
         Relinkey<Scheme::CKKS>& relin_key,
         Switchkey<Scheme::CKKS>* swk_dense_to_sparse,
@@ -5142,9 +5142,9 @@ namespace heongpu
             {
                 mod_drop_inplace(dropped, options);
             }
-            return regular_bootstrapping(dropped, galois_key, relin_key,
-                                         swk_dense_to_sparse,
-                                         swk_sparse_to_dense, options);
+            return regular_bootstrapping_ckks(dropped, galois_key, relin_key,
+                                              swk_dense_to_sparse,
+                                              swk_sparse_to_dense, options);
         }
 
         // Raise modulus
@@ -5214,7 +5214,7 @@ namespace heongpu
     }
 
     __host__ Ciphertext<Scheme::CKKS>
-    HEArithmeticOperator<Scheme::CKKS>::slim_bootstrapping(
+    HEArithmeticOperator<Scheme::CKKS>::slim_bootstrapping_ckks(
         Ciphertext<Scheme::CKKS>& input1, Galoiskey<Scheme::CKKS>& galois_key,
         Relinkey<Scheme::CKKS>& relin_key,
         Switchkey<Scheme::CKKS>* swk_dense_to_sparse,
@@ -5240,9 +5240,9 @@ namespace heongpu
             {
                 mod_drop_inplace(dropped, options);
             }
-            return slim_bootstrapping(dropped, galois_key, relin_key,
-                                      swk_dense_to_sparse, swk_sparse_to_dense,
-                                      options);
+            return slim_bootstrapping_ckks(dropped, galois_key, relin_key,
+                                           swk_dense_to_sparse,
+                                           swk_sparse_to_dense, options);
         }
 
         int current_decomp_count = context_->Q_size - input1.depth_;
@@ -5476,7 +5476,7 @@ namespace heongpu
     }
 
     __host__ Ciphertext<Scheme::CKKS>
-    HELogicOperator<Scheme::CKKS>::bit_bootstrapping(
+    HELogicOperator<Scheme::CKKS>::bit_bootstrapping_ckks(
         Ciphertext<Scheme::CKKS>& input1, Galoiskey<Scheme::CKKS>& galois_key,
         Relinkey<Scheme::CKKS>& relin_key,
         Switchkey<Scheme::CKKS>* swk_dense_to_sparse,
