@@ -68,10 +68,220 @@ namespace heongpu
         special_ifft_roots_table_ = encoder.special_ifft_roots_table_;
     }
 
+    namespace
+    {
+        // The ManualScope objects of this thread.
+        thread_local int manual_scopes = 0;
+
+        bool same_scale(double scale, double expected)
+        {
+            return std::abs(scale - expected) <= 1e-9 * expected;
+        }
+    } // namespace
+
+    HEOperator<Scheme::CKKS>::ManualScope::ManualScope()
+    {
+        manual_scopes++;
+    }
+
+    HEOperator<Scheme::CKKS>::ManualScope::~ManualScope()
+    {
+        manual_scopes--;
+    }
+
+    bool HEOperator<Scheme::CKKS>::automatic() const
+    {
+        return (context_->rescale_mode_ == rescale_mode::automatic) &&
+               !manual_only_ && (manual_scopes == 0);
+    }
+
+    void HEOperator<Scheme::CKKS>::require_manual(const char* operation) const
+    {
+        if (automatic())
+        {
+            throw StateError(error_message(
+                operation,
+                " does not support the automatic rescale mode! Use a context "
+                "in rescale_mode::manual."));
+        }
+    }
+
+    Ciphertext<Scheme::CKKS>&
+    HEOperator<Scheme::CKKS>::rescaled(Ciphertext<Scheme::CKKS>& input,
+                                       Ciphertext<Scheme::CKKS>& storage,
+                                       const ExecutionOptions& options)
+    {
+        if (!input.rescale_required_)
+        {
+            return input;
+        }
+        if (input.relinearization_required_)
+        {
+            throw StateError("The ciphertext needs a rescaling, which needs "
+                             "a relinearization first! Relinearize it.");
+        }
+        ManualScope manual;
+        if (&storage != &input)
+        {
+            storage = input;
+        }
+        rescale_inplace(storage, options);
+        return storage;
+    }
+
+    Ciphertext<Scheme::CKKS>& HEOperator<Scheme::CKKS>::dropped(
+        Ciphertext<Scheme::CKKS>& input, int depth,
+        Ciphertext<Scheme::CKKS>& storage, const ExecutionOptions& options)
+    {
+        if (input.depth_ == depth)
+        {
+            return input;
+        }
+        ManualScope manual;
+        if (&storage != &input)
+        {
+            storage = input;
+        }
+        while (storage.depth_ < depth - 1)
+        {
+            mod_drop_inplace(storage, options);
+        }
+
+        // Rescaling from the level above divides by its prime.
+        int level = context_->Q_size - 1 - depth;
+        double target = context_->level_scales_[level];
+        double prime =
+            static_cast<double>(context_->prime_vector_[level + 1].value);
+        scale_up(storage, std::round(target * prime / storage.scale_), storage,
+                 options);
+        storage.rescale_required_ = true;
+        rescale_inplace(storage, options);
+        // The integer leaves a relative difference of about 1 / prime.
+        storage.scale_ = target;
+        return storage;
+    }
+
+    void HEOperator<Scheme::CKKS>::check_level_scale(
+        const Ciphertext<Scheme::CKKS>& input) const
+    {
+        double expected = context_->level_scales_[input.level()];
+        if (input.rescale_required_)
+        {
+            expected = expected * expected;
+        }
+        if (!same_scale(input.scale_, expected))
+        {
+            throw ParameterError(error_message(
+                "The ciphertext at level ", input.level(), " has the scale ",
+                input.scale_, ", the automatic rescale mode expects ", expected,
+                "! Encode messages without a scale, with "
+                "HEEncoder::encode(message) or encode(message, depth)."));
+        }
+    }
+
+    void HEOperator<Scheme::CKKS>::check_level_scale(
+        const Plaintext<Scheme::CKKS>& input) const
+    {
+        int level = context_->Q_size - 1 - input.depth_;
+        double expected = context_->level_scales_[level];
+        if (!same_scale(input.scale_, expected))
+        {
+            throw ParameterError(error_message(
+                "The plaintext at depth ", input.depth_, " has the scale ",
+                input.scale_, ", the automatic rescale mode expects ", expected,
+                " at its level! Encode it with HEEncoder::encode(message, "
+                "depth) for the depth of the ciphertext."));
+        }
+    }
+
+    void HEOperator<Scheme::CKKS>::prepare(Ciphertext<Scheme::CKKS>*& input1,
+                                           Ciphertext<Scheme::CKKS>*& input2,
+                                           Ciphertext<Scheme::CKKS>& storage1,
+                                           Ciphertext<Scheme::CKKS>& storage2,
+                                           bool keep_rescale,
+                                           const ExecutionOptions& options)
+    {
+        bool both_rescale = input1->rescale_required_ &&
+                            input2->rescale_required_ &&
+                            (input1->depth_ == input2->depth_);
+        if (!(keep_rescale && both_rescale))
+        {
+            input1 = &rescaled(*input1, storage1, options);
+            input2 = &rescaled(*input2, storage2, options);
+        }
+        if (input1->depth_ < input2->depth_)
+        {
+            input1 = &dropped(*input1, input2->depth_, storage1, options);
+        }
+        else if (input2->depth_ < input1->depth_)
+        {
+            input2 = &dropped(*input2, input1->depth_, storage2, options);
+        }
+        check_level_scale(*input1);
+        check_level_scale(*input2);
+    }
+
+    void HEOperator<Scheme::CKKS>::prepare(Ciphertext<Scheme::CKKS>*& input1,
+                                           Plaintext<Scheme::CKKS>*& input2,
+                                           Ciphertext<Scheme::CKKS>& storage1,
+                                           Plaintext<Scheme::CKKS>& storage2,
+                                           const ExecutionOptions& options)
+    {
+        input1 = &rescaled(*input1, storage1, options);
+        if (input1->depth_ < input2->depth_)
+        {
+            input1 = &dropped(*input1, input2->depth_, storage1, options);
+        }
+        else if (input2->depth_ < input1->depth_)
+        {
+            ManualScope manual;
+            storage2 = *input2;
+            while (storage2.depth_ < input1->depth_)
+            {
+                mod_drop_inplace(storage2, options);
+            }
+            input2 = &storage2;
+        }
+        check_level_scale(*input1);
+        check_level_scale(*input2);
+    }
+
+    Ciphertext<Scheme::CKKS>&
+    HEOperator<Scheme::CKKS>::automatic_input(Ciphertext<Scheme::CKKS>& input,
+                                              Ciphertext<Scheme::CKKS>& storage,
+                                              const ExecutionOptions& options)
+    {
+        if (!automatic())
+        {
+            return input;
+        }
+        Ciphertext<Scheme::CKKS>& first = rescaled(input, storage, options);
+        check_level_scale(first);
+        return first;
+    }
+
+    double HEOperator<Scheme::CKKS>::automatic_target(
+        const Ciphertext<Scheme::CKKS>& input, int depth) const
+    {
+        if (!automatic())
+        {
+            return 0.0;
+        }
+        return context_->level_scales_[input.level() - depth];
+    }
+
     __host__ void HEOperator<Scheme::CKKS>::add(
         Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& input2,
         Ciphertext<Scheme::CKKS>& output, const ExecutionOptions& options)
     {
+        if (run_automatic(input1, input2, true, options,
+                          [&](Ciphertext<Scheme::CKKS>& first,
+                              Ciphertext<Scheme::CKKS>& second)
+                          { add(first, second, output, options); }))
+        {
+            return;
+        }
+
         input1.validate_context(context_);
         input2.validate_context(context_);
 
@@ -174,6 +384,14 @@ namespace heongpu
         Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& input2,
         Ciphertext<Scheme::CKKS>& output, const ExecutionOptions& options)
     {
+        if (run_automatic(input1, input2, true, options,
+                          [&](Ciphertext<Scheme::CKKS>& first,
+                              Ciphertext<Scheme::CKKS>& second)
+                          { sub(first, second, output, options); }))
+        {
+            return;
+        }
+
         input1.validate_context(context_);
         input2.validate_context(context_);
 
@@ -318,7 +536,7 @@ namespace heongpu
                         output_.cipher_size_ = cipher_size;
                         output_.depth_ = input1_.depth_;
                         output_.in_ntt_domain_ = input1_.in_ntt_domain_;
-                                output_.encoding_ = input1_.encoding_;
+                        output_.encoding_ = input1_.encoding_;
                         output_.scale_ = input1_.scale_;
                         output_.rescale_required_ = input1_.rescale_required_;
                         output_.relinearization_required_ =
@@ -1440,6 +1658,16 @@ namespace heongpu
         Ciphertext<Scheme::CKKS>& input1, Galoiskey<Scheme::CKKS>& galois_key,
         const std::vector<int>& shifts, const ExecutionOptions& options)
     {
+        std::vector<Ciphertext<Scheme::CKKS>> rotated;
+        if (run_automatic(input1, options,
+                          [&](Ciphertext<Scheme::CKKS>& first) {
+                              rotated = rotate_rows_hoisted(first, galois_key,
+                                                            shifts, options);
+                          }))
+        {
+            return rotated;
+        }
+
         input1.validate_context(context_);
         galois_key.validate_context(context_);
 
@@ -2505,7 +2733,7 @@ namespace heongpu
         int first_rns_mod_count = Q_prime_size;
         cudaStream_t stream = options.stream_;
 
-        for (int m = (matrix_count - 1); -1 < m; m--)
+        for (int m = (matrix_count - 1); - 1 < m; m--)
         {
             int current_level = result.depth_;
             int current_decomp_count = Q_size - current_level;
@@ -2940,7 +3168,7 @@ namespace heongpu
 
             // Rescale
             double scale = static_cast<double>(
-                context_->prime_vector_[current_decomp_count-1].value);
+                context_->prime_vector_[current_decomp_count - 1].value);
             result.scale_ = result.scale_ * scale;
             result.rescale_required_ = true;
             rescale_inplace(result, options);
@@ -2955,6 +3183,8 @@ namespace heongpu
         CKKSEncodingTransformContext& transform_context,
         const ExecutionOptions& options)
     {
+        require_manual("coeff_to_slot");
+
         cipher.validate_context(context_);
 
         if (!transform_context.generated_)
@@ -3090,6 +3320,8 @@ namespace heongpu
         CKKSEncodingTransformContext& transform_context,
         const ExecutionOptions& options)
     {
+        require_manual("slot_to_coeff");
+
         cipher0.validate_context(context_);
         cipher1.validate_context(context_);
 
@@ -3733,7 +3965,8 @@ namespace heongpu
     HEOperator<Scheme::CKKS>::evaluate_in_basis(
         Ciphertext<Scheme::CKKS>& input1,
         const std::vector<double>& coefficients, PolyType type,
-        Relinkey<Scheme::CKKS>& relin_key, const ExecutionOptions& options)
+        Relinkey<Scheme::CKKS>& relin_key, const ExecutionOptions& options,
+        double target_scale)
     {
         std::vector<Complex64> coeffs(coefficients.size());
         for (size_t i = 0; i < coefficients.size(); i++)
@@ -3745,8 +3978,12 @@ namespace heongpu
 
         // evaluate_poly moves its input to the stream of options.
         Ciphertext<Scheme::CKKS> input = input1;
-        return evaluate_poly(input, input1.scale_, input1.scale_, pol,
-                             relin_key, options);
+        if (target_scale == 0.0)
+        {
+            target_scale = input1.scale_;
+        }
+        return evaluate_poly(input, target_scale, input1.scale_, pol, relin_key,
+                             options);
     }
 
     __host__ Ciphertext<Scheme::CKKS>
@@ -3756,17 +3993,22 @@ namespace heongpu
         Relinkey<Scheme::CKKS>& relin_key, const ExecutionOptions& options)
     {
         input1.validate_context(context_);
+        Ciphertext<Scheme::CKKS> storage;
+        Ciphertext<Scheme::CKKS>& input =
+            automatic_input(input1, storage, options);
         int degree = static_cast<int>(coefficients.size()) - 1;
         int depth = polynomial_depth(degree);
-        if (input1.level() < depth)
+        if (input.level() < depth)
         {
             throw LevelMismatchError(error_message(
                 "A polynomial of degree ", degree, " needs ", depth,
-                " levels, but the ciphertext has ", input1.level(), "."));
+                " levels, but the ciphertext has ", input.level(), "."));
         }
 
-        return evaluate_in_basis(input1, coefficients, PolyType::MONOMIAL,
-                                 relin_key, options);
+        double target_scale = automatic_target(input, depth);
+        ManualScope manual;
+        return evaluate_in_basis(input, coefficients, PolyType::MONOMIAL,
+                                 relin_key, options, target_scale);
     }
 
     __host__ Ciphertext<Scheme::CKKS>
@@ -3776,6 +4018,9 @@ namespace heongpu
         Relinkey<Scheme::CKKS>& relin_key, const ExecutionOptions& options)
     {
         input1.validate_context(context_);
+        Ciphertext<Scheme::CKKS> storage;
+        Ciphertext<Scheme::CKKS>& input =
+            automatic_input(input1, storage, options);
         if (!(a < b))
         {
             throw ParameterError(
@@ -3783,32 +4028,34 @@ namespace heongpu
         }
         int degree = static_cast<int>(coefficients.size()) - 1;
         int depth = polynomial_depth(degree, true, a, b);
-        if (input1.level() < depth)
+        if (input.level() < depth)
         {
             throw LevelMismatchError(error_message(
                 "A Chebyshev series of degree ", degree, " on [", a, ", ", b,
                 "] needs ", depth, " levels, but the ciphertext has ",
-                input1.level(), "."));
+                input.level(), "."));
         }
 
+        double target_scale = automatic_target(input, depth);
+        ManualScope manual;
         if (a == -1.0 && b == 1.0)
         {
-            return evaluate_in_basis(input1, coefficients, PolyType::CHEBYSHEV,
-                                     relin_key, options);
+            return evaluate_in_basis(input, coefficients, PolyType::CHEBYSHEV,
+                                     relin_key, options, target_scale);
         }
 
         // Maps [a, b] to [-1, 1]. The constant is encoded with the scale of
         // the prime that rescale divides by, so the scale stays the same.
         Ciphertext<Scheme::CKKS> mapped(context_, options);
         double prime =
-            static_cast<double>(context_->prime_vector_[input1.level()].value);
-        multiply_plain(input1, 2.0 / (b - a), mapped, prime, options);
+            static_cast<double>(context_->prime_vector_[input.level()].value);
+        multiply_plain(input, 2.0 / (b - a), mapped, prime, options);
         rescale_inplace(mapped, options);
-        mapped.scale_ = input1.scale_;
+        mapped.scale_ = input.scale_;
         add_plain_inplace(mapped, -(a + b) / (b - a), options);
 
         return evaluate_in_basis(mapped, coefficients, PolyType::CHEBYSHEV,
-                                 relin_key, options);
+                                 relin_key, options, target_scale);
     }
 
     __host__ Ciphertext<Scheme::CKKS>
@@ -4637,6 +4884,8 @@ namespace heongpu
         CKKSEncodingTransformContext& transform_context,
         const CKKSEncodingTransformConfig& config)
     {
+        require_manual("generate_encoding_transform_context");
+
         if (config.CtoS_piece_ < 2 || config.CtoS_piece_ > 5)
         {
             throw std::out_of_range("CtoS_piece must be in range [2, 5]");
@@ -4723,6 +4972,8 @@ namespace heongpu
         const double scale, const BootstrappingConfig& config,
         const arithmetic_bootstrapping_type& boot_type)
     {
+        require_manual("Bootstrapping");
+
         if (!boot_context_generated_)
         {
             scale_boot_ = scale;
@@ -4854,6 +5105,8 @@ namespace heongpu
     HEArithmeticOperator<Scheme::CKKS>::generate_bootstrapping_params(
         const CKKSBootstrappingPreset& preset)
     {
+        require_manual("Bootstrapping");
+
         if (preset.arithmetic_type == arithmetic_bootstrapping_type::NONE)
         {
             throw ParameterError(
@@ -4871,6 +5124,8 @@ namespace heongpu
         Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
         const ExecutionOptions& options)
     {
+        require_manual("Bootstrapping");
+
         input1.validate_context(context_);
 
         if (!boot_context_generated_)
@@ -4967,6 +5222,8 @@ namespace heongpu
         Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
         const ExecutionOptions& options)
     {
+        require_manual("Bootstrapping");
+
         input1.validate_context(context_);
 
         if (!boot_context_generated_)
@@ -5057,6 +5314,16 @@ namespace heongpu
         double scale)
         : HEOperator<Scheme::CKKS>(context, encoder)
     {
+        // Logic operations and their bootstrapping plan their levels and
+        // scales themselves.
+        manual_only_ = true;
+        if (context_->rescale_mode_ == rescale_mode::automatic)
+        {
+            throw StateError("HELogicOperator does not support the automatic "
+                             "rescale mode! Use a context in "
+                             "rescale_mode::manual.");
+        }
+
         if (scale == 0.0)
         {
             throw std::invalid_argument(

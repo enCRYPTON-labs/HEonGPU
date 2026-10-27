@@ -203,6 +203,14 @@ namespace heongpu
                   Ciphertext<Scheme::CKKS>& output,
                   const ExecutionOptions& options = ExecutionOptions())
         {
+            if (run_automatic(input1, input2, options,
+                              [&](Ciphertext<Scheme::CKKS>& first,
+                                  Plaintext<Scheme::CKKS>& second)
+                              { add_plain(first, second, output, options); }))
+            {
+                return;
+            }
+
             input2.validate_context(context_);
 
             input1.validate_context(context_);
@@ -251,7 +259,8 @@ namespace heongpu
                                         context_->Q_size;
                                     output_.cipher_size_ = 2;
                                     output_.depth_ = input1_.depth_;
-                                    output_.in_ntt_domain_ = input1_.in_ntt_domain_;
+                                    output_.in_ntt_domain_ =
+                                        input1_.in_ntt_domain_;
                                     output_.encoding_ = input1_.encoding_;
                                     output_.scale_ = input1_.scale_;
                                     output_.rescale_required_ =
@@ -279,6 +288,20 @@ namespace heongpu
                           Plaintext<Scheme::CKKS>& input2,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            if (run_automatic(input1, input2, options,
+                              [&](Ciphertext<Scheme::CKKS>& first,
+                                  Plaintext<Scheme::CKKS>& second)
+                              {
+                                  add_plain_inplace(first, second, options);
+                                  if (&first != &input1)
+                                  {
+                                      input1 = std::move(first);
+                                  }
+                              }))
+            {
+                return;
+            }
+
             input2.validate_context(context_);
 
             input1.validate_context(context_);
@@ -363,7 +386,7 @@ namespace heongpu
                             output_.cipher_size_ = 2;
                             output_.depth_ = input1_.depth_;
                             output_.in_ntt_domain_ = input1_.in_ntt_domain_;
-                                    output_.encoding_ = input1_.encoding_;
+                            output_.encoding_ = input1_.encoding_;
                             output_.scale_ = input1_.scale_;
                             output_.rescale_required_ =
                                 input1_.rescale_required_;
@@ -421,6 +444,14 @@ namespace heongpu
                   Ciphertext<Scheme::CKKS>& output,
                   const ExecutionOptions& options = ExecutionOptions())
         {
+            if (run_automatic(input1, input2, options,
+                              [&](Ciphertext<Scheme::CKKS>& first,
+                                  Plaintext<Scheme::CKKS>& second)
+                              { sub_plain(first, second, output, options); }))
+            {
+                return;
+            }
+
             input2.validate_context(context_);
 
             input1.validate_context(context_);
@@ -469,7 +500,8 @@ namespace heongpu
                                         context_->Q_size;
                                     output_.cipher_size_ = 2;
                                     output_.depth_ = input1_.depth_;
-                                    output_.in_ntt_domain_ = input1_.in_ntt_domain_;
+                                    output_.in_ntt_domain_ =
+                                        input1_.in_ntt_domain_;
                                     output_.encoding_ = input1_.encoding_;
                                     output_.scale_ = input1_.scale_;
                                     output_.rescale_required_ =
@@ -497,6 +529,20 @@ namespace heongpu
                           Plaintext<Scheme::CKKS>& input2,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            if (run_automatic(input1, input2, options,
+                              [&](Ciphertext<Scheme::CKKS>& first,
+                                  Plaintext<Scheme::CKKS>& second)
+                              {
+                                  sub_plain_inplace(first, second, options);
+                                  if (&first != &input1)
+                                  {
+                                      input1 = std::move(first);
+                                  }
+                              }))
+            {
+                return;
+            }
+
             input2.validate_context(context_);
 
             input1.validate_context(context_);
@@ -580,7 +626,7 @@ namespace heongpu
                             output_.cipher_size_ = 2;
                             output_.depth_ = input1_.depth_;
                             output_.in_ntt_domain_ = input1_.in_ntt_domain_;
-                                    output_.encoding_ = input1_.encoding_;
+                            output_.encoding_ = input1_.encoding_;
                             output_.scale_ = input1_.scale_;
                             output_.rescale_required_ =
                                 input1_.rescale_required_;
@@ -685,6 +731,14 @@ namespace heongpu
                  Ciphertext<Scheme::CKKS>& output,
                  const ExecutionOptions& options = ExecutionOptions())
         {
+            if (run_automatic(input1, input2, false, options,
+                              [&](Ciphertext<Scheme::CKKS>& first,
+                                  Ciphertext<Scheme::CKKS>& second)
+                              { multiply(first, second, output, options); }))
+            {
+                return;
+            }
+
             input1.validate_context(context_);
             input2.validate_context(context_);
 
@@ -733,7 +787,8 @@ namespace heongpu
                                         context_->Q_size;
                                     output_.cipher_size_ = 3;
                                     output_.depth_ = input1_.depth_;
-                                    output_.in_ntt_domain_ = input1_.in_ntt_domain_;
+                                    output_.in_ntt_domain_ =
+                                        input1_.in_ntt_domain_;
                                     output_.encoding_ = input1_.encoding_;
                                     output_.relinearization_required_ = true;
                                     output_.ciphertext_generated_ = true;
@@ -779,6 +834,16 @@ namespace heongpu
                        Ciphertext<Scheme::CKKS>& output,
                        const ExecutionOptions& options = ExecutionOptions())
         {
+            if (run_automatic(input1, input2, options,
+                              [&](Ciphertext<Scheme::CKKS>& first,
+                                  Plaintext<Scheme::CKKS>& second) {
+                                  multiply_plain(first, second, output,
+                                                 options);
+                              }))
+            {
+                return;
+            }
+
             input2.validate_context(context_);
 
             input1.validate_context(context_);
@@ -843,7 +908,8 @@ namespace heongpu
                                         context_->Q_size;
                                     output_.cipher_size_ = 2;
                                     output_.depth_ = input1_.depth_;
-                                    output_.in_ntt_domain_ = input1_.in_ntt_domain_;
+                                    output_.in_ntt_domain_ =
+                                        input1_.in_ntt_domain_;
                                     output_.encoding_ = input1_.encoding_;
                                     output_.relinearization_required_ =
                                         input1_.relinearization_required_;
@@ -889,6 +955,21 @@ namespace heongpu
                        Ciphertext<Scheme::CKKS>& output, double scale,
                        const ExecutionOptions& options = ExecutionOptions())
         {
+            // The constant gets the scale of the level, so that the
+            // rescaled product has the scale of the next level.
+            if (run_automatic(input1, options,
+                              [&](Ciphertext<Scheme::CKKS>& first)
+                              {
+                                  check_level_scale(first);
+                                  multiply_plain(
+                                      first, input2, output,
+                                      context_->level_scales_[first.level()],
+                                      options);
+                              }))
+            {
+                return;
+            }
+
             input1.validate_context(context_);
 
             if (input1.relinearization_required_)
@@ -928,7 +1009,7 @@ namespace heongpu
                             output_.cipher_size_ = 2;
                             output_.depth_ = input1_.depth_;
                             output_.in_ntt_domain_ = input1_.in_ntt_domain_;
-                                    output_.encoding_ = input1_.encoding_;
+                            output_.encoding_ = input1_.encoding_;
                             output_.relinearization_required_ =
                                 input1_.relinearization_required_;
                             output_.ciphertext_generated_ = true;
@@ -1080,7 +1161,7 @@ namespace heongpu
                                 input1_.relinearization_required_ ? 3 : 2;
                             output_.depth_ = input1_.depth_;
                             output_.in_ntt_domain_ = input1_.in_ntt_domain_;
-                                    output_.encoding_ = input1_.encoding_;
+                            output_.encoding_ = input1_.encoding_;
                             output_.scale_ = input1_.scale_;
                             output_.rescale_required_ =
                                 input1_.rescale_required_;
@@ -1125,7 +1206,7 @@ namespace heongpu
                                 input1_.relinearization_required_ ? 3 : 2;
                             output_.depth_ = input1_.depth_;
                             output_.in_ntt_domain_ = input1_.in_ntt_domain_;
-                                    output_.encoding_ = input1_.encoding_;
+                            output_.encoding_ = input1_.encoding_;
                             output_.scale_ = input1_.scale_;
                             output_.rescale_required_ =
                                 input1_.rescale_required_;
@@ -1209,6 +1290,15 @@ namespace heongpu
                     Galoiskey<Scheme::CKKS>& galois_key, int shift,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            if (run_automatic(input1, options,
+                              [&](Ciphertext<Scheme::CKKS>& first) {
+                                  rotate_rows(first, output, galois_key, shift,
+                                              options);
+                              }))
+            {
+                return;
+            }
+
             galois_key.validate_context(context_);
 
             input1.validate_context(context_);
@@ -1310,6 +1400,15 @@ namespace heongpu
                      Galoiskey<Scheme::CKKS>& galois_key, int galois_elt,
                      const ExecutionOptions& options = ExecutionOptions())
         {
+            if (run_automatic(input1, options,
+                              [&](Ciphertext<Scheme::CKKS>& first) {
+                                  apply_galois(first, output, galois_key,
+                                               galois_elt, options);
+                              }))
+            {
+                return;
+            }
+
             galois_key.validate_context(context_);
 
             input1.validate_context(context_);
@@ -1364,7 +1463,7 @@ namespace heongpu
                             output_.depth_ = input1_.depth_;
                             output_.scale_ = input1_.scale_;
                             output_.in_ntt_domain_ = input1_.in_ntt_domain_;
-                                    output_.encoding_ = input1_.encoding_;
+                            output_.encoding_ = input1_.encoding_;
                             output_.rescale_required_ =
                                 input1_.rescale_required_;
                             output_.relinearization_required_ =
@@ -1412,6 +1511,14 @@ namespace heongpu
                   Switchkey<Scheme::CKKS>& switch_key,
                   const ExecutionOptions& options = ExecutionOptions())
         {
+            if (run_automatic(input1, options,
+                              [&](Ciphertext<Scheme::CKKS>& first) {
+                                  keyswitch(first, output, switch_key, options);
+                              }))
+            {
+                return;
+            }
+
             switch_key.validate_context(context_);
 
             input1.validate_context(context_);
@@ -1466,7 +1573,7 @@ namespace heongpu
                             output_.depth_ = input1_.depth_;
                             output_.scale_ = input1_.scale_;
                             output_.in_ntt_domain_ = input1_.in_ntt_domain_;
-                                    output_.encoding_ = input1_.encoding_;
+                            output_.encoding_ = input1_.encoding_;
                             output_.rescale_required_ =
                                 input1_.rescale_required_;
                             output_.relinearization_required_ =
@@ -1493,6 +1600,15 @@ namespace heongpu
                   Galoiskey<Scheme::CKKS>& conjugate_key,
                   const ExecutionOptions& options = ExecutionOptions())
         {
+            if (run_automatic(input1, options,
+                              [&](Ciphertext<Scheme::CKKS>& first) {
+                                  conjugate(first, output, conjugate_key,
+                                            options);
+                              }))
+            {
+                return;
+            }
+
             conjugate_key.validate_context(context_);
 
             input1.validate_context(context_);
@@ -1548,7 +1664,7 @@ namespace heongpu
                             output_.depth_ = input1_.depth_;
                             output_.scale_ = input1_.scale_;
                             output_.in_ntt_domain_ = input1_.in_ntt_domain_;
-                                    output_.encoding_ = input1_.encoding_;
+                            output_.encoding_ = input1_.encoding_;
                             output_.rescale_required_ =
                                 input1_.rescale_required_;
                             output_.relinearization_required_ =
@@ -1570,6 +1686,13 @@ namespace heongpu
         rescale_inplace(Ciphertext<Scheme::CKKS>& input1,
                         const ExecutionOptions& options = ExecutionOptions())
         {
+            // The automatic mode rescales when needed; code written for the
+            // manual mode can rescale anyway.
+            if (automatic() && !input1.rescale_required_)
+            {
+                return;
+            }
+
             input1.validate_context(context_);
 
             if ((!input1.rescale_required_) || input1.relinearization_required_)
@@ -1616,6 +1739,18 @@ namespace heongpu
                  Ciphertext<Scheme::CKKS>& output,
                  const ExecutionOptions& options = ExecutionOptions())
         {
+            // The automatic mode keeps the scale of the level.
+            if (run_automatic(input1, options,
+                              [&](Ciphertext<Scheme::CKKS>& first)
+                              {
+                                  Ciphertext<Scheme::CKKS> storage;
+                                  output = dropped(first, first.depth_ + 1,
+                                                   storage, options);
+                              }))
+            {
+                return;
+            }
+
             input1.validate_context(context_);
 
             if (input1.rescale_required_ || input1.relinearization_required_)
@@ -1754,6 +1889,14 @@ namespace heongpu
         mod_drop_inplace(Ciphertext<Scheme::CKKS>& input1,
                          const ExecutionOptions& options = ExecutionOptions())
         {
+            if (automatic())
+            {
+                Ciphertext<Scheme::CKKS> output;
+                mod_drop(input1, output, options);
+                input1 = std::move(output);
+                return;
+            }
+
             input1.validate_context(context_);
 
             int current_decomp_count = context_->Q_size - input1.depth_;
@@ -2256,6 +2399,140 @@ namespace heongpu
       protected:
         HEContext<Scheme::CKKS> context_;
 
+        // The operators of HELogicOperator always work as in
+        // rescale_mode::manual.
+        bool manual_only_ = false;
+
+        // True in rescale_mode::automatic (see
+        // HEContextImpl<Scheme::CKKS>::set_rescale_mode), unless the operator
+        // is manual_only_ or a ManualScope exists on this thread.
+        bool automatic() const;
+
+        // While it exists, the operations on this thread work as in
+        // rescale_mode::manual. The operations built from other operations
+        // plan their levels and scales themselves.
+        class ManualScope
+        {
+          public:
+            ManualScope();
+            ~ManualScope();
+            ManualScope(const ManualScope&) = delete;
+            ManualScope& operator=(const ManualScope&) = delete;
+        };
+
+        // Throws StateError in rescale_mode::automatic, for the operations
+        // it does not support.
+        void require_manual(const char* operation) const;
+
+        // Returns input rescaled if it needs a rescaling: input itself, or
+        // storage holding the rescaled copy.
+        Ciphertext<Scheme::CKKS>& rescaled(Ciphertext<Scheme::CKKS>& input,
+                                           Ciphertext<Scheme::CKKS>& storage,
+                                           const ExecutionOptions& options);
+
+        // Returns input, which does not need a rescaling, brought down to
+        // depth with the scale of that level: it is dropped to the level
+        // above, multiplied by the integer closest to the target scale times
+        // the prime of that level over its scale, and rescaled. Returns input
+        // itself if it is at depth, else storage.
+        Ciphertext<Scheme::CKKS>& dropped(Ciphertext<Scheme::CKKS>& input,
+                                          int depth,
+                                          Ciphertext<Scheme::CKKS>& storage,
+                                          const ExecutionOptions& options);
+
+        // Throws ParameterError unless input has the scale of its level, or
+        // its square if input needs a rescaling.
+        void check_level_scale(const Ciphertext<Scheme::CKKS>& input) const;
+        void check_level_scale(const Plaintext<Scheme::CKKS>& input) const;
+
+        // Brings two operands to the same level and to the scales of that
+        // level. Both are rescaled first if they need it, unless both need
+        // it at the same level and keep_rescale is true.
+        void prepare(Ciphertext<Scheme::CKKS>*& input1,
+                     Ciphertext<Scheme::CKKS>*& input2,
+                     Ciphertext<Scheme::CKKS>& storage1,
+                     Ciphertext<Scheme::CKKS>& storage2, bool keep_rescale,
+                     const ExecutionOptions& options);
+
+        // Brings a ciphertext and a plaintext to the same level and checks
+        // their scales; the ciphertext is rescaled first if it needs it.
+        void prepare(Ciphertext<Scheme::CKKS>*& input1,
+                     Plaintext<Scheme::CKKS>*& input2,
+                     Ciphertext<Scheme::CKKS>& storage1,
+                     Plaintext<Scheme::CKKS>& storage2,
+                     const ExecutionOptions& options);
+
+        // The input of an operation that plans its own levels: in
+        // rescale_mode::automatic, input rescaled if it needs it, with the
+        // scale of its level.
+        Ciphertext<Scheme::CKKS>&
+        automatic_input(Ciphertext<Scheme::CKKS>& input,
+                        Ciphertext<Scheme::CKKS>& storage,
+                        const ExecutionOptions& options);
+
+        // The scale of the level depth levels below input in
+        // rescale_mode::automatic; 0 otherwise.
+        double automatic_target(const Ciphertext<Scheme::CKKS>& input,
+                                int depth) const;
+
+        // In rescale_mode::automatic, runs operation on the prepared operands
+        // as in rescale_mode::manual and returns true; returns false
+        // otherwise.
+        template <typename Operation>
+        bool run_automatic(Ciphertext<Scheme::CKKS>& input1,
+                           Ciphertext<Scheme::CKKS>& input2, bool keep_rescale,
+                           const ExecutionOptions& options, Operation operation)
+        {
+            if (!automatic())
+            {
+                return false;
+            }
+            Ciphertext<Scheme::CKKS> storage1, storage2;
+            Ciphertext<Scheme::CKKS>* first = &input1;
+            Ciphertext<Scheme::CKKS>* second = &input2;
+            prepare(first, second, storage1, storage2, keep_rescale, options);
+            ManualScope manual;
+            operation(*first, *second);
+            return true;
+        }
+
+        template <typename Operation>
+        bool run_automatic(Ciphertext<Scheme::CKKS>& input1,
+                           Plaintext<Scheme::CKKS>& input2,
+                           const ExecutionOptions& options, Operation operation)
+        {
+            if (!automatic())
+            {
+                return false;
+            }
+            Ciphertext<Scheme::CKKS> storage1;
+            Plaintext<Scheme::CKKS> storage2;
+            Ciphertext<Scheme::CKKS>* first = &input1;
+            Plaintext<Scheme::CKKS>* second = &input2;
+            prepare(first, second, storage1, storage2, options);
+            ManualScope manual;
+            operation(*first, *second);
+            return true;
+        }
+
+        // For operations of one ciphertext, which is rescaled first if it
+        // needs it.
+        template <typename Operation>
+        bool run_automatic(Ciphertext<Scheme::CKKS>& input1,
+                           const ExecutionOptions& options, Operation operation)
+        {
+            if (!automatic())
+            {
+                return false;
+            }
+            Ciphertext<Scheme::CKKS> storage;
+            Ciphertext<Scheme::CKKS>& first =
+                rescaled(input1, storage, options);
+            ManualScope manual;
+            operation(first);
+            return true;
+        }
+
         // Temp(to avoid allocation time)
         DeviceVector<int> new_prime_locations_;
         DeviceVector<int> new_input_locations_;
@@ -2556,10 +2833,13 @@ namespace heongpu
         // Evaluates the polynomial in the given basis on input1 for
         // evaluate_polynomial and evaluate_chebyshev.
         __host__ Ciphertext<Scheme::CKKS>
+        // Evaluates the polynomial with the result at target_scale; 0 for the
+        // scale of input1.
         evaluate_in_basis(Ciphertext<Scheme::CKKS>& input1,
                           const std::vector<double>& coefficients,
                           PolyType type, Relinkey<Scheme::CKKS>& relin_key,
-                          const ExecutionOptions& options);
+                          const ExecutionOptions& options,
+                          double target_scale = 0.0);
 
         // base_scale is the scale of the computation: intermediate results
         // with at least half of it are rescaled.
@@ -2628,8 +2908,9 @@ namespace heongpu
             return key_indexs_;
         }
 
-        [[deprecated("Use bootstrapping_key_indices() instead.")]]
-        __host__ std::vector<int> bootstrapping_key_indexs()
+        [[deprecated("Use bootstrapping_key_indices() instead.")]] __host__
+            std::vector<int>
+            bootstrapping_key_indexs()
         {
             return bootstrapping_key_indices();
         }
@@ -3787,8 +4068,9 @@ namespace heongpu
             return key_indexs_;
         }
 
-        [[deprecated("Use bootstrapping_key_indices() instead.")]]
-        __host__ std::vector<int> bootstrapping_key_indexs()
+        [[deprecated("Use bootstrapping_key_indices() instead.")]] __host__
+            std::vector<int>
+            bootstrapping_key_indexs()
         {
             return bootstrapping_key_indices();
         }

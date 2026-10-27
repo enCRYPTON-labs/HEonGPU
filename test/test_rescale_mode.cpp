@@ -158,3 +158,290 @@ TEST(RescaleMode, Encoding_With_The_Scales_Of_The_Levels)
     EXPECT_THROW(encoder.encode(x, depth + 1), heongpu::ParameterError);
     EXPECT_THROW(encoder.encode(x, -1), heongpu::ParameterError);
 }
+
+namespace
+{
+    // Keys and operators for a context of depth 8 in one of the modes.
+    struct Environment
+    {
+        explicit Environment(Mode mode)
+        {
+            context = params(depth, mode).make_context();
+            context->generate();
+            generator = std::make_unique<heongpu::HEKeyGenerator<S>>(context);
+            secret_key = std::make_unique<heongpu::Secretkey<S>>(
+                generator->secret_key());
+            auto public_key = generator->public_key(*secret_key);
+            relin_key = std::make_unique<heongpu::Relinkey<S>>(
+                generator->relin_key(*secret_key));
+            galois_key = std::make_unique<heongpu::Galoiskey<S>>(
+                generator->galois_key(*secret_key));
+            encoder = std::make_unique<heongpu::HEEncoder<S>>(context);
+            encryptor =
+                std::make_unique<heongpu::HEEncryptor<S>>(context, public_key);
+            decryptor =
+                std::make_unique<heongpu::HEDecryptor<S>>(context, *secret_key);
+            operators = std::make_unique<heongpu::HEArithmeticOperator<S>>(
+                context, *encoder);
+            slots = context->get_poly_modulus_degree() / 2;
+        }
+
+        std::vector<double> values(double offset)
+        {
+            std::vector<double> x(slots);
+            for (int i = 0; i < slots; i++)
+            {
+                x[i] = std::sin(0.001 * i + offset);
+            }
+            return x;
+        }
+
+        heongpu::Ciphertext<S> encrypt(const std::vector<double>& x)
+        {
+            auto plaintext = encoder->encode(x, std::pow(2.0, 40));
+            return encryptor->encrypt(plaintext);
+        }
+
+        std::vector<double> decrypt(heongpu::Ciphertext<S>& ciphertext)
+        {
+            auto plaintext = decryptor->decrypt(ciphertext);
+            return encoder->decode(plaintext);
+        }
+
+        static constexpr int depth = 8;
+        int slots;
+        heongpu::HEContext<S> context;
+        std::unique_ptr<heongpu::HEKeyGenerator<S>> generator;
+        std::unique_ptr<heongpu::Secretkey<S>> secret_key;
+        std::unique_ptr<heongpu::Relinkey<S>> relin_key;
+        std::unique_ptr<heongpu::Galoiskey<S>> galois_key;
+        std::unique_ptr<heongpu::HEEncoder<S>> encoder;
+        std::unique_ptr<heongpu::HEEncryptor<S>> encryptor;
+        std::unique_ptr<heongpu::HEDecryptor<S>> decryptor;
+        std::unique_ptr<heongpu::HEArithmeticOperator<S>> operators;
+    };
+
+    double max_error(const std::vector<double>& expected,
+                     const std::vector<double>& values)
+    {
+        double error = 0.0;
+        for (size_t i = 0; i < expected.size(); i++)
+        {
+            error = std::max(error, std::abs(expected[i] - values[i]));
+        }
+        return error;
+    }
+} // namespace
+
+TEST(RescaleMode, Manual_Code_Gives_The_Same_Results)
+{
+    // Multiplications, relinearizations and rescalings written for the manual
+    // mode work the same in the automatic mode.
+    std::vector<std::vector<double>> results;
+    for (Mode mode : {Mode::manual, Mode::automatic})
+    {
+        Environment setup(mode);
+        auto x = setup.encrypt(setup.values(0.0));
+        auto y = setup.encrypt(setup.values(1.0));
+        auto& ops = *setup.operators;
+        for (int level = 0; level < 4; level++)
+        {
+            ops.multiply_inplace(x, y);
+            ops.relinearize_inplace(x, *setup.relin_key);
+            ops.rescale_inplace(x);
+            ops.mod_drop_inplace(y);
+        }
+        EXPECT_EQ(x.level(), Environment::depth - 4);
+        results.push_back(setup.decrypt(x));
+    }
+    EXPECT_LT(max_error(results[0], results[1]), 1e-5);
+}
+
+TEST(RescaleMode, Rescales_When_Needed)
+{
+    Environment setup(Mode::automatic);
+    auto& ops = *setup.operators;
+    auto xs = setup.values(0.0), ys = setup.values(1.0);
+    auto x = setup.encrypt(xs);
+    auto y = setup.encrypt(ys);
+
+    // x^2 * y: the square is rescaled before the next multiplication, and y
+    // is brought down to its level.
+    auto square = ops.multiply(x, x);
+    ops.relinearize_inplace(square, *setup.relin_key);
+    EXPECT_TRUE(square.rescale_required());
+    auto product = ops.multiply(square, y);
+    ops.relinearize_inplace(product, *setup.relin_key);
+    EXPECT_EQ(product.level(), Environment::depth - 1);
+    EXPECT_TRUE(product.rescale_required());
+
+    // The inputs are not changed.
+    EXPECT_TRUE(square.rescale_required());
+    EXPECT_EQ(square.level(), Environment::depth);
+    EXPECT_EQ(y.level(), Environment::depth);
+    EXPECT_EQ(y.scale(), setup.context->get_level_scale(Environment::depth));
+
+    // A rotation rescales too.
+    auto rotated = ops.rotate_rows(product, *setup.galois_key, 1);
+    EXPECT_FALSE(rotated.rescale_required());
+    EXPECT_EQ(rotated.level(), Environment::depth - 2);
+    EXPECT_EQ(rotated.scale(),
+              setup.context->get_level_scale(Environment::depth - 2));
+
+    std::vector<double> expected(setup.slots), expected_rotated(setup.slots);
+    for (int i = 0; i < setup.slots; i++)
+    {
+        expected[i] = xs[i] * xs[i] * ys[i];
+    }
+    for (int i = 0; i < setup.slots; i++)
+    {
+        expected_rotated[i] = expected[(i + 1) % setup.slots];
+    }
+    EXPECT_LT(max_error(expected, setup.decrypt(product)), 1e-6);
+    EXPECT_LT(max_error(expected_rotated, setup.decrypt(rotated)), 1e-6);
+}
+
+TEST(RescaleMode, Adds_Ciphertexts_Of_Different_Levels)
+{
+    Environment setup(Mode::automatic);
+    auto& ops = *setup.operators;
+    auto xs = setup.values(0.0), ys = setup.values(1.0);
+    auto x = setup.encrypt(xs);
+    auto y = setup.encrypt(ys);
+
+    // x^4 + x^2 + y, each at another level; the sum of two products that
+    // both need a rescaling is not rescaled.
+    auto square = ops.multiply(x, x);
+    ops.relinearize_inplace(square, *setup.relin_key);
+    auto fourth = ops.multiply(square, square);
+    ops.relinearize_inplace(fourth, *setup.relin_key);
+    auto both = ops.add(square, square);
+    EXPECT_TRUE(both.rescale_required());
+    auto sum = ops.add(fourth, square);
+    sum = ops.add(sum, y);
+    EXPECT_FALSE(sum.rescale_required());
+    EXPECT_EQ(sum.level(), Environment::depth - 2);
+    EXPECT_EQ(sum.scale(),
+              setup.context->get_level_scale(Environment::depth - 2));
+
+    // mod_drop keeps the scale of the level.
+    auto dropped = ops.mod_drop(y);
+    EXPECT_EQ(dropped.scale(),
+              setup.context->get_level_scale(Environment::depth - 1));
+    auto difference = ops.sub(dropped, y);
+
+    std::vector<double> expected(setup.slots), zero(setup.slots, 0.0);
+    for (int i = 0; i < setup.slots; i++)
+    {
+        double x2 = xs[i] * xs[i];
+        expected[i] = x2 * x2 + x2 + ys[i];
+    }
+    EXPECT_LT(max_error(expected, setup.decrypt(sum)), 1e-6);
+    EXPECT_LT(max_error(zero, setup.decrypt(difference)), 1e-6);
+}
+
+TEST(RescaleMode, Plaintexts_And_Constants)
+{
+    Environment setup(Mode::automatic);
+    auto& ops = *setup.operators;
+    auto xs = setup.values(0.0), ws = setup.values(2.0);
+    auto x = setup.encrypt(xs);
+    auto square = ops.multiply(x, x);
+    ops.relinearize_inplace(square, *setup.relin_key);
+
+    // The plaintext is encoded at the depth of the rescaled square.
+    auto w = setup.encoder->encode(ws, 1);
+    auto weighted = ops.multiply_plain(square, w);
+    auto halved = ops.multiply_plain(weighted, 0.5, 0.0);
+    // halved is rescaled to depth 3 for the addition.
+    auto w3 = setup.encoder->encode(ws, 3);
+    auto result = ops.add_plain(halved, w3);
+    ops.add_plain_inplace(result, 0.25);
+    EXPECT_EQ(result.depth(), 3);
+
+    std::vector<double> expected(setup.slots);
+    for (int i = 0; i < setup.slots; i++)
+    {
+        expected[i] = 0.5 * xs[i] * xs[i] * ws[i] + ws[i] + 0.25;
+    }
+    EXPECT_LT(max_error(expected, setup.decrypt(result)), 1e-6);
+
+    // A plaintext of depth 1 brought down to depth 3 keeps the scale of
+    // depth 1.
+    EXPECT_THROW(ops.add_plain(halved, w), heongpu::ParameterError);
+
+    // A plaintext at the depth of the ciphertext but of another scale.
+    auto other = setup.encoder->encode(ws, 1.5 * std::pow(2.0, 40), 1);
+    EXPECT_THROW(ops.multiply_plain(square, other), heongpu::ParameterError);
+}
+
+TEST(RescaleMode, Errors)
+{
+    Environment setup(Mode::automatic);
+    auto& ops = *setup.operators;
+    auto x = setup.encrypt(setup.values(0.0));
+
+    // A ciphertext of another scale at the same level.
+    auto plaintext =
+        setup.encoder->encode(setup.values(1.0), 1.001 * std::pow(2.0, 40));
+    auto other = setup.encryptor->encrypt(plaintext);
+    EXPECT_THROW(ops.add(x, other), heongpu::ParameterError);
+
+    // At another level its scale is corrected.
+    auto square = ops.multiply(x, x);
+    ops.relinearize_inplace(square, *setup.relin_key);
+    EXPECT_NO_THROW(ops.add(square, other));
+
+    // A rescaling needs a relinearization first.
+    auto unrelinearized = ops.multiply(x, x);
+    EXPECT_THROW(ops.multiply(unrelinearized, x), heongpu::StateError);
+
+    // Bootstrapping and logic operations need the manual mode.
+    EXPECT_THROW(ops.generate_bootstrapping_params(
+                     heongpu::CKKSBootstrappingPreset::regular()),
+                 heongpu::StateError);
+    EXPECT_THROW(heongpu::HELogicOperator<S>(setup.context, *setup.encoder,
+                                             std::pow(2.0, 40)),
+                 heongpu::StateError);
+}
+
+TEST(RescaleMode, Polynomials)
+{
+    Environment setup(Mode::automatic);
+    auto& ops = *setup.operators;
+    auto xs = setup.values(0.0);
+    auto x = setup.encrypt(xs);
+    auto square = ops.multiply(x, x);
+    ops.relinearize_inplace(square, *setup.relin_key);
+
+    // 1 + t + t^2 / 2 + t^3 / 6 of t = x^2, which still needs a rescaling.
+    std::vector<double> coefficients = {1.0, 1.0, 0.5, 1.0 / 6.0};
+    auto result =
+        ops.evaluate_polynomial(square, coefficients, *setup.relin_key);
+    int level = Environment::depth - 1 -
+                heongpu::HEArithmeticOperator<S>::polynomial_depth(3);
+    EXPECT_EQ(result.level(), level);
+    EXPECT_EQ(result.scale(), setup.context->get_level_scale(level));
+
+    std::vector<double> expected(setup.slots);
+    for (int i = 0; i < setup.slots; i++)
+    {
+        double t = xs[i] * xs[i];
+        expected[i] = 1.0 + t + t * t / 2.0 + t * t * t / 6.0;
+    }
+    EXPECT_LT(max_error(expected, setup.decrypt(result)), 1e-5);
+
+    // The result adds to ciphertexts of other levels.
+    auto sum = ops.add(result, x);
+    for (int i = 0; i < setup.slots; i++)
+    {
+        expected[i] += xs[i];
+    }
+    EXPECT_LT(max_error(expected, setup.decrypt(sum)), 1e-5);
+
+    auto chebyshev = ops.evaluate_chebyshev(
+        x, [](double v) { return std::exp(v); }, -2.0, 2.0, 7,
+        *setup.relin_key);
+    EXPECT_EQ(chebyshev.scale(),
+              setup.context->get_level_scale(chebyshev.level()));
+}
