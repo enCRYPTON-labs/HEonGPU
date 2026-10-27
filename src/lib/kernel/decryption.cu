@@ -319,7 +319,7 @@ namespace heongpu
 
             if (idx < offset_in &&
                 biginteger::is_greater(big_integer_input, big_integer_temp,
-                                      coeff_modulus_count))
+                                       coeff_modulus_count))
             {
                 biginteger::set(big_integer_input, coeff_modulus_count,
                                 big_integer_temp);

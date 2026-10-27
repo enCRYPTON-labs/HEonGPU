@@ -232,8 +232,8 @@ namespace heongpu
         DeviceVector<double> message_gpu(context_->n, stream);
         if (message.size() < static_cast<std::size_t>(context_->n))
         {
-            cudaMemsetAsync(message_gpu.data(), 0,
-                            context_->n * sizeof(double), stream);
+            cudaMemsetAsync(message_gpu.data(), 0, context_->n * sizeof(double),
+                            stream);
         }
         cudaMemcpyAsync(message_gpu.data(), message.data(),
                         message.size() * sizeof(double), cudaMemcpyHostToDevice,
@@ -242,8 +242,9 @@ namespace heongpu
 
         encode_kernel_coeff_ckks_conversion<<<dim3((context_->n >> 8), 1, 1),
                                               256, 0, stream>>>(
-            output_memory.data(), message_gpu.data(), context_->modulus_->data(),
-            context_->Q_size, two_pow_64, scale, context_->n_power);
+            output_memory.data(), message_gpu.data(),
+            context_->modulus_->data(), context_->Q_size, two_pow_64, scale,
+            context_->n_power);
         HEONGPU_CUDA_CHECK(cudaGetLastError());
 
         gpuntt::ntt_rns_configuration<Data64> cfg_ntt = {
@@ -273,8 +274,8 @@ namespace heongpu
         DeviceVector<double> message_gpu(context_->n, stream);
         if (message.size() < static_cast<std::size_t>(context_->n))
         {
-            cudaMemsetAsync(message_gpu.data(), 0,
-                            context_->n * sizeof(double), stream);
+            cudaMemsetAsync(message_gpu.data(), 0, context_->n * sizeof(double),
+                            stream);
         }
         cudaMemcpyAsync(message_gpu.data(), message.data(),
                         message.size() * sizeof(double), cudaMemcpyHostToDevice,
@@ -283,8 +284,9 @@ namespace heongpu
 
         encode_kernel_coeff_ckks_conversion<<<dim3((context_->n >> 8), 1, 1),
                                               256, 0, stream>>>(
-            output_memory.data(), message_gpu.data(), context_->modulus_->data(),
-            context_->Q_size, two_pow_64, scale, context_->n_power);
+            output_memory.data(), message_gpu.data(),
+            context_->modulus_->data(), context_->Q_size, two_pow_64, scale,
+            context_->n_power);
         HEONGPU_CUDA_CHECK(cudaGetLastError());
 
         gpuntt::ntt_rns_configuration<Data64> cfg_ntt = {

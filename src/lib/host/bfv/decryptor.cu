@@ -250,10 +250,10 @@ namespace heongpu
                     n_power); // TODO: merge with above kernel if possible
                 HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                HEONGPU_CUDA_CHECK(cudaMemcpyAsync(
-                    max_norm_memory.data(), temp_memory.data(),
-                    Q_size * sizeof(Data64), cudaMemcpyDeviceToHost,
-                    options.stream_));
+                HEONGPU_CUDA_CHECK(
+                    cudaMemcpyAsync(max_norm_memory.data(), temp_memory.data(),
+                                    Q_size * sizeof(Data64),
+                                    cudaMemcpyDeviceToHost, options.stream_));
                 HEONGPU_CUDA_CHECK(cudaStreamSynchronize(options.stream_));
             },
             options, false);

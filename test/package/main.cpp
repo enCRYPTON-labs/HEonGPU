@@ -15,8 +15,7 @@
 int main()
 {
     constexpr auto scheme = heongpu::Scheme::CKKS;
-    auto context =
-        heongpu::GenHEContext<scheme>(heongpu::sec_level_type::none);
+    auto context = heongpu::GenHEContext<scheme>(heongpu::sec_level_type::none);
     context->set_poly_modulus_degree(4096);
     context->set_coeff_modulus_bit_sizes({40, 30, 30}, {40});
     context->generate();

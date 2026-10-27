@@ -195,8 +195,7 @@ namespace heongpu
                 throw std::invalid_argument("Invalid relinkey parameters!");
             }
 
-            generate_ckks_relin_key_stage_3(
-                rk_s1_common, rk_new, sk, options);
+            generate_ckks_relin_key_stage_3(rk_s1_common, rk_new, sk, options);
         }
 
         /**
@@ -502,9 +501,9 @@ namespace heongpu
             {
                 throw std::invalid_argument("No ciphertext to bootstrap!");
             }
-            const size_t share_size = size_t(context_->n) *
-                                      (2 * size_t(context_->Q_size) -
-                                       common.depth_);
+            const size_t share_size =
+                size_t(context_->n) *
+                (2 * size_t(context_->Q_size) - common.depth_);
             for (auto& ciphertext : ciphertexts)
             {
                 ciphertext.validate_context(context_);
@@ -569,9 +568,10 @@ namespace heongpu
             std::vector<MultipartyPublickey<Scheme::CKKS>>& all_pk,
             Publickey<Scheme::CKKS>& pk, const cudaStream_t stream);
 
-        __host__ void generate_ckks_relin_key_stage_1(
-            MultipartyRelinkey<Scheme::CKKS>& rk, Secretkey<Scheme::CKKS>& sk,
-            const ExecutionOptions& options);
+        __host__ void
+        generate_ckks_relin_key_stage_1(MultipartyRelinkey<Scheme::CKKS>& rk,
+                                        Secretkey<Scheme::CKKS>& sk,
+                                        const ExecutionOptions& options);
 
         __host__ void generate_ckks_relin_key_stage_3(
             MultipartyRelinkey<Scheme::CKKS>& rk_stage_1,
@@ -588,9 +588,10 @@ namespace heongpu
             MultipartyRelinkey<Scheme::CKKS>& rk_common_stage1,
             Relinkey<Scheme::CKKS>& rk, const ExecutionOptions& options);
 
-        __host__ void generate_galois_key_stage_1(
-            MultipartyGaloiskey<Scheme::CKKS>& gk, Secretkey<Scheme::CKKS>& sk,
-            const ExecutionOptions& options);
+        __host__ void
+        generate_galois_key_stage_1(MultipartyGaloiskey<Scheme::CKKS>& gk,
+                                    Secretkey<Scheme::CKKS>& sk,
+                                    const ExecutionOptions& options);
 
         __host__ void generate_galois_key_stage_2(
             std::vector<MultipartyGaloiskey<Scheme::CKKS>>& all_gk,

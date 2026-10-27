@@ -67,8 +67,8 @@ int main(int argc, char* argv[])
     coeff_message[7] = -0.875;
 
     heongpu::Plaintext<Scheme> coeff_plain(context);
-    encoder.encode(coeff_plain, coeff_message, scale, heongpu::ExecutionOptions(),
-                   heongpu::encoding::coefficient);
+    encoder.encode(coeff_plain, coeff_message, scale,
+                   heongpu::ExecutionOptions(), heongpu::encoding::coefficient);
 
     heongpu::Ciphertext<Scheme> coeff_cipher(context);
     encryptor.encrypt(coeff_cipher, coeff_plain);
@@ -85,9 +85,8 @@ int main(int argc, char* argv[])
     }
 
     // Convert back to coefficient encoding (roundtrip).
-    heongpu::Ciphertext<Scheme> coeff_roundtrip =
-        operators.slot_to_coeff(slot_pair[0], slot_pair[1], galois_key,
-                                transform_context);
+    heongpu::Ciphertext<Scheme> coeff_roundtrip = operators.slot_to_coeff(
+        slot_pair[0], slot_pair[1], galois_key, transform_context);
 
     heongpu::Plaintext<Scheme> ref_plain(context);
     decryptor.decrypt(ref_plain, coeff_cipher);
@@ -103,8 +102,8 @@ int main(int argc, char* argv[])
     double max_abs_error = 0.0;
     for (std::size_t i = 0; i < ref_coeff.size(); ++i)
     {
-        max_abs_error = std::max(
-            max_abs_error, std::abs(ref_coeff[i] - roundtrip_coeff[i]));
+        max_abs_error = std::max(max_abs_error,
+                                 std::abs(ref_coeff[i] - roundtrip_coeff[i]));
     }
 
     std::cout << "Input ciphertext encoding      : "
