@@ -120,6 +120,27 @@ namespace heongpu
         throw ContextMismatchError(stream.str());
     }
 
+    // Throws ContextMismatchError when a key with `key_digits` key switching
+    // digits is used with a context that splits Q into `context_digits`. The
+    // context identity does not tell them apart: BFV keys of parameters with
+    // more than two P primes, saved by HEonGPU 1.7.0 or earlier, have digits
+    // of two primes.
+    inline void validate_key_digit_count(int key_digits, int context_digits,
+                                         const char* object_name)
+    {
+        if (key_digits == context_digits)
+        {
+            return;
+        }
+        std::ostringstream stream;
+        stream << "The " << object_name << " has " << key_digits
+               << " key switching digits, but the context splits Q into "
+               << context_digits
+               << "! It was generated for another split of Q; generate it "
+                  "again with this context.";
+        throw ContextMismatchError(stream.str());
+    }
+
     enum class SineType
     {
         COS1,

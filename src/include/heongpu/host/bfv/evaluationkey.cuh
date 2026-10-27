@@ -277,6 +277,10 @@ namespace heongpu
         {
             validate_context_identity(serialized_context_id(), context,
                                       "Relinkey");
+            if (relin_key_generated_ && context && context->context_generated_)
+            {
+                validate_key_digit_count(d_, context->d, "Relinkey");
+            }
         }
 
         scheme_type scheme_;
@@ -726,6 +730,10 @@ namespace heongpu
         {
             validate_context_identity(serialized_context_id(), context,
                                       "Galoiskey");
+            if (galois_key_generated_ && context && context->context_generated_)
+            {
+                validate_key_digit_count(d_, context->d, "Galoiskey");
+            }
         }
 
         scheme_type scheme_;
@@ -888,6 +896,10 @@ namespace heongpu
         {
             validate_context_identity(serialized_context_id(), context,
                                       "Switchkey");
+            if (switch_key_generated_ && context && context->context_generated_)
+            {
+                validate_key_digit_count(d_, context->d, "Switchkey");
+            }
         }
 
         scheme_type scheme_;

@@ -6,6 +6,7 @@
 
 #include <heongpu/heongpu.hpp>
 #include <gtest/gtest.h>
+#include <cstring>
 #include <sstream>
 #include <string>
 #include <type_traits>
@@ -202,6 +203,47 @@ TEST(HEonGPU, ParameterError_Reports_The_Key_Switching_Digit)
         });
     EXPECT_TRUE(contains(message, "Q primes 0 to 1 has 70 bits")) << message;
     EXPECT_TRUE(contains(message, "60 bits of P")) << message;
+}
+
+TEST(HEonGPU, ContextMismatchError_For_A_Key_Of_Other_Digits)
+{
+    // A key whose key switching digits differ from those of the context, as
+    // BFV keys of more than two P primes saved by HEonGPU 1.7.0 or earlier.
+    constexpr auto bfv = heongpu::Scheme::BFV;
+    auto context = heongpu::GenHEContext<bfv>(heongpu::sec_level_type::none);
+    context->set_poly_modulus_degree(degree);
+    context->set_coeff_modulus_bit_sizes({36, 36, 36, 36}, {37, 37, 37});
+    context->set_plain_modulus(1032193);
+    context->generate();
+    heongpu::HEKeyGenerator<bfv> generator(context);
+    auto secret_key = generator.secret_key();
+    auto relin_key = generator.relin_key(secret_key);
+
+    // The format v1 has the fields only; the digit count follows the scheme,
+    // the key switching type and three ints.
+    std::stringstream stream;
+    relin_key.save(stream, format_v1);
+    std::string binary = stream.str();
+    int digits;
+    std::memcpy(&digits, binary.data() + 14, sizeof(int));
+    EXPECT_EQ(digits, 2);
+    digits = 3;
+    std::memcpy(binary.data() + 14, &digits, sizeof(int));
+    std::stringstream changed(binary);
+    heongpu::Relinkey<bfv> loaded;
+    loaded.load(changed);
+
+    heongpu::HEEncoder<bfv> encoder(context);
+    heongpu::HEArithmeticOperator<bfv> operators(context, encoder);
+    auto public_key = generator.public_key(secret_key);
+    heongpu::HEEncryptor<bfv> encryptor(context, public_key);
+    auto plain = encoder.encode(std::vector<uint64_t>(degree, 3));
+    auto x = encryptor.encrypt(plain);
+    auto product = operators.multiply(x, x);
+    std::string message = message_of<heongpu::ContextMismatchError>(
+        [&] { operators.relinearize_inplace(product, loaded); });
+    EXPECT_TRUE(contains(message, "has 3 key switching digits")) << message;
+    EXPECT_TRUE(contains(message, "splits Q into 2")) << message;
 }
 
 TEST(HEonGPU, KeyNotFoundError_Reports_The_Missing_Step)
