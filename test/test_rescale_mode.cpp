@@ -282,7 +282,7 @@ TEST(RescaleMode, Rescales_When_Needed)
     EXPECT_EQ(y.scale(), setup.context->get_level_scale(Environment::depth));
 
     // A rotation rescales too.
-    auto rotated = ops.rotate_rows(product, *setup.galois_key, 1);
+    auto rotated = ops.rotate(product, *setup.galois_key, 1);
     EXPECT_FALSE(rotated.rescale_required());
     EXPECT_EQ(rotated.level(), Environment::depth - 2);
     EXPECT_EQ(rotated.scale(),

@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
             encryptor.encrypt(C3, P1);
 
             cudaEventRecord(start_time);
-            operators.rotate_rows(C3, C3, galois_key, 1);
+            operators.rotate(C3, C3, galois_key, 1);
             cudaEventRecord(stop_time);
             cudaEventSynchronize(stop_time);
             cudaEventElapsedTime(&time, start_time, stop_time);

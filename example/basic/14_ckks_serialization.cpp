@@ -148,7 +148,7 @@ int main(int argc, char* argv[])
     operators.multiply_inplace(cipher2, cipher2);
     operators.relinearize_inplace(cipher2, relin_key2);
     operators.rescale_inplace(cipher2);
-    operators.rotate_rows_inplace(cipher2, galois_key2, 3);
+    operators.rotate_inplace(cipher2, galois_key2, 3);
 
     // 13. Decrypt and display result
     heongpu::Plaintext<Scheme> plain_result(loaded_context);

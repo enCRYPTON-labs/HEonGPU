@@ -33,7 +33,7 @@ The inputs are taken by non-const reference, so they have to be named objects; t
 
 For vectors packed into the slots, ``sum_slots(ciphertext, galois_key)`` puts the sum of all slots into every slot, and ``inner_product(x, y, relin_key, galois_key)`` the inner product of two ciphertexts (or of a ciphertext and a plaintext). They need the Galois keys for the steps 1, 2, 4, ... up to half the slot count, as ``Galoiskey(context, log2(slot count) - 1)`` has; for CKKS, the default ``Galoiskey`` also works, with more rotations.
 
-``rotate_rows_hoisted(ciphertext, galois_key, shifts)`` returns the rotations of one ciphertext by several shifts, with the results of ``rotate_rows``. Rotations by shifts that the Galois key has a key for share the first part of key switching, the decomposition of the ciphertext, so that 8 rotations take about a third less time than 8 calls of ``rotate_rows``. This helps where one ciphertext is rotated by many steps, as in matrix-vector products.
+``rotate_hoisted(ciphertext, galois_key, shifts)`` (``rotate_rows_hoisted`` for BFV) returns the rotations of one ciphertext by several shifts, with the results of ``rotate`` (``rotate_rows``). Rotations by shifts that the Galois key has a key for share the first part of key switching, the decomposition of the ciphertext, so that 8 rotations take about a third less time than 8 single rotations. This helps where one ciphertext is rotated by many steps, as in matrix-vector products.
 
 CKKS ciphertexts can be put through polynomials, and through functions approximated by them. The result has the scale of the input:
 

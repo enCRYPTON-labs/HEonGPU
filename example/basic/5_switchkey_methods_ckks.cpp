@@ -125,10 +125,8 @@ int main(int argc, char* argv[])
     std::cout << "Check result:" << std::endl;
     display_vector(check1);
 
-    std::cout << "Shift row +3:" << std::endl;
-    // Input is vector in CKKS, but still use rotate_rows_inplace.
-    // It will be fixed soon.
-    operators.rotate_rows_inplace(C1, galois_key, 3);
+    std::cout << "Shift +3:" << std::endl;
+    operators.rotate_inplace(C1, galois_key, 3);
 
     std::cout << "Decrypt and decode result." << std::endl;
     heongpu::Plaintext<Scheme> P3(context);

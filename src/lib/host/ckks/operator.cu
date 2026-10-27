@@ -1654,15 +1654,15 @@ namespace heongpu
     }
 
     __host__ std::vector<Ciphertext<Scheme::CKKS>>
-    HEOperator<Scheme::CKKS>::rotate_rows_hoisted(
+    HEOperator<Scheme::CKKS>::rotate_hoisted(
         Ciphertext<Scheme::CKKS>& input1, Galoiskey<Scheme::CKKS>& galois_key,
         const std::vector<int>& shifts, const ExecutionOptions& options)
     {
         std::vector<Ciphertext<Scheme::CKKS>> rotated;
         if (run_automatic(input1, options,
                           [&](Ciphertext<Scheme::CKKS>& first) {
-                              rotated = rotate_rows_hoisted(first, galois_key,
-                                                            shifts, options);
+                              rotated = rotate_hoisted(first, galois_key,
+                                                       shifts, options);
                           }))
         {
             return rotated;
@@ -1738,8 +1738,7 @@ namespace heongpu
                     }
                     else
                     {
-                        rotate_rows(input1_, output, galois_key, shift,
-                                    options);
+                        rotate(input1_, output, galois_key, shift, options);
                     }
                     results.push_back(std::move(output));
                 }

@@ -280,8 +280,8 @@ int main(int argc, char* argv[])
     operators.add(cipher_mult, ciphertext_charlie, cipher_mult_add);
 
     heongpu::Ciphertext<heongpu::Scheme::CKKS> cipher_mult_add_rotate(context);
-    operators.rotate_rows(cipher_mult_add, cipher_mult_add_rotate,
-                          common_galois_key, 1);
+    operators.rotate(cipher_mult_add, cipher_mult_add_rotate, common_galois_key,
+                     1);
 
     ///////////////////////////////////////////////////////////
     /////////////////// Alice Setup (Stage 4) /////////////////

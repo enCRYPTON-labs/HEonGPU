@@ -105,7 +105,7 @@ TEST(HEonGPU, CKKS_Galoiskey_Range_Is_Chosen_At_Run_Time)
     heongpu::Galoiskey<S> wide_key(context, 9);
     generator.generate_galois_key(wide_key, secret_key);
     heongpu::Ciphertext<S> output(context);
-    operators.rotate_rows(input, output, wide_key, large_shift);
+    operators.rotate(input, output, wide_key, large_shift);
     heongpu::Plaintext<S> result_plaintext(context);
     decryptor.decrypt(result_plaintext, output);
     std::vector<double> result;

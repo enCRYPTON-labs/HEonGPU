@@ -1276,24 +1276,24 @@ namespace heongpu
         }
 
         /**
-         * @brief Rotates the rows of a ciphertext by a given shift value and
-         * stores the result in the output.
+         * @brief Rotates the slots of a ciphertext left by shift (right for a
+         * negative shift) and stores the result in the output.
          *
          * @param input1 Input ciphertext to be rotated.
          * @param output Ciphertext where the result of the rotation is stored.
          * @param galois_key Galois key used for the rotation operation.
-         * @param shift Number of positions to shift the rows.
+         * @param shift Number of positions to shift the slots.
          */
         __host__ void
-        rotate_rows(Ciphertext<Scheme::CKKS>& input1,
-                    Ciphertext<Scheme::CKKS>& output,
-                    Galoiskey<Scheme::CKKS>& galois_key, int shift,
-                    const ExecutionOptions& options = ExecutionOptions())
+        rotate(Ciphertext<Scheme::CKKS>& input1,
+               Ciphertext<Scheme::CKKS>& output,
+               Galoiskey<Scheme::CKKS>& galois_key, int shift,
+               const ExecutionOptions& options = ExecutionOptions())
         {
             if (run_automatic(input1, options,
                               [&](Ciphertext<Scheme::CKKS>& first) {
-                                  rotate_rows(first, output, galois_key, shift,
-                                              options);
+                                  rotate(first, output, galois_key, shift,
+                                         options);
                               }))
             {
                 return;
@@ -1359,17 +1359,17 @@ namespace heongpu
         }
 
         /**
-         * @brief Rotates the rows of a ciphertext in-place by a given shift
+         * @brief Rotates the slots of a ciphertext in-place by a given shift
          * value, modifying the input ciphertext.
          *
          * @param input1 Ciphertext to be rotated.
          * @param galois_key Galois key used for the rotation operation.
-         * @param shift Number of positions to shift the rows.
+         * @param shift Number of positions to shift the slots.
          */
-        __host__ void rotate_rows_inplace(
-            Ciphertext<Scheme::CKKS>& input1,
-            Galoiskey<Scheme::CKKS>& galois_key, int shift,
-            const ExecutionOptions& options = ExecutionOptions())
+        __host__ void
+        rotate_inplace(Ciphertext<Scheme::CKKS>& input1,
+                       Galoiskey<Scheme::CKKS>& galois_key, int shift,
+                       const ExecutionOptions& options = ExecutionOptions())
         {
             galois_key.validate_context(context_);
 
@@ -1380,7 +1380,26 @@ namespace heongpu
                 return;
             }
 
-            rotate_rows(input1, input1, galois_key, shift, options);
+            rotate(input1, input1, galois_key, shift, options);
+        }
+
+        // The slots of CKKS are not split into rows; see rotate.
+        [[deprecated("Use rotate() instead.")]] __host__ void
+        rotate_rows(Ciphertext<Scheme::CKKS>& input1,
+                    Ciphertext<Scheme::CKKS>& output,
+                    Galoiskey<Scheme::CKKS>& galois_key, int shift,
+                    const ExecutionOptions& options = ExecutionOptions())
+        {
+            rotate(input1, output, galois_key, shift, options);
+        }
+
+        [[deprecated("Use rotate_inplace() instead.")]] __host__ void
+        rotate_rows_inplace(
+            Ciphertext<Scheme::CKKS>& input1,
+            Galoiskey<Scheme::CKKS>& galois_key, int shift,
+            const ExecutionOptions& options = ExecutionOptions())
+        {
+            rotate_inplace(input1, galois_key, shift, options);
         }
 
         /**
@@ -1938,7 +1957,7 @@ namespace heongpu
             for (int step = 1; step < (context_->n >> 1); step <<= 1)
             {
                 Ciphertext<Scheme::CKKS> rotated(context_, options);
-                rotate_rows(result, rotated, galois_key, step, options);
+                rotate(result, rotated, galois_key, step, options);
                 add_inplace(result, rotated, options);
             }
             return result;
@@ -1983,17 +2002,29 @@ namespace heongpu
 
         /**
          * @brief Returns input1 rotated by each of shifts: the same results as
-         * rotate_rows(input1, output, galois_key, shift) for each shift. The
+         * rotate(input1, output, galois_key, shift) for each shift. The
          * rotations by shifts that galois_key has a key for share the
          * decomposition of input1 that key switching starts with, which is
          * computed once, so each of them after the first costs less than a
-         * rotate_rows. Other shifts are composed from the power of two keys,
-         * as rotate_rows does.
+         * rotate. Other shifts are composed from the power of two keys, as
+         * rotate does.
          */
-        __host__ std::vector<Ciphertext<Scheme::CKKS>> rotate_rows_hoisted(
-            Ciphertext<Scheme::CKKS>& input1,
-            Galoiskey<Scheme::CKKS>& galois_key, const std::vector<int>& shifts,
-            const ExecutionOptions& options = ExecutionOptions());
+        __host__ std::vector<Ciphertext<Scheme::CKKS>>
+        rotate_hoisted(Ciphertext<Scheme::CKKS>& input1,
+                       Galoiskey<Scheme::CKKS>& galois_key,
+                       const std::vector<int>& shifts,
+                       const ExecutionOptions& options = ExecutionOptions());
+
+        [[deprecated("Use rotate_hoisted() instead.")]] __host__
+            std::vector<Ciphertext<Scheme::CKKS>>
+            rotate_rows_hoisted(
+                Ciphertext<Scheme::CKKS>& input1,
+                Galoiskey<Scheme::CKKS>& galois_key,
+                const std::vector<int>& shifts,
+                const ExecutionOptions& options = ExecutionOptions())
+        {
+            return rotate_hoisted(input1, galois_key, shifts, options);
+        }
 
         /**
          * @brief Returns the polynomial
@@ -2143,17 +2174,26 @@ namespace heongpu
         }
 
         /**
-         * @brief Returns input1 rotated by shift; see rotate_rows(input1,
-         * output, galois_key, shift).
+         * @brief Returns input1 rotated by shift; see rotate(input1, output,
+         * galois_key, shift).
          */
         __host__ Ciphertext<Scheme::CKKS>
-        rotate_rows(Ciphertext<Scheme::CKKS>& input1,
-                    Galoiskey<Scheme::CKKS>& galois_key, int shift,
-                    const ExecutionOptions& options = ExecutionOptions())
+        rotate(Ciphertext<Scheme::CKKS>& input1,
+               Galoiskey<Scheme::CKKS>& galois_key, int shift,
+               const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::CKKS> output(context_, options);
-            rotate_rows(input1, output, galois_key, shift, options);
+            rotate(input1, output, galois_key, shift, options);
             return output;
+        }
+
+        [[deprecated("Use rotate() instead.")]] __host__
+            Ciphertext<Scheme::CKKS>
+            rotate_rows(Ciphertext<Scheme::CKKS>& input1,
+                        Galoiskey<Scheme::CKKS>& galois_key, int shift,
+                        const ExecutionOptions& options = ExecutionOptions())
+        {
+            return rotate(input1, galois_key, shift, options);
         }
 
         /**
@@ -4413,6 +4453,8 @@ namespace heongpu
         using HEOperator<Scheme::CKKS>::keyswitch;
         using HEOperator<Scheme::CKKS>::mod_drop;
         using HEOperator<Scheme::CKKS>::mod_drop_inplace;
+        using HEOperator<Scheme::CKKS>::rotate;
+        using HEOperator<Scheme::CKKS>::rotate_inplace;
         using HEOperator<Scheme::CKKS>::rotate_rows;
         using HEOperator<Scheme::CKKS>::rotate_rows_inplace;
 

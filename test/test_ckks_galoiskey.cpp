@@ -69,7 +69,7 @@ namespace
         {
             auto input = encrypt();
             heongpu::Ciphertext<scheme> output(context);
-            operators->rotate_rows(input, output, galois_key, shift);
+            operators->rotate(input, output, galois_key, shift);
 
             heongpu::HEDecryptor<scheme> decryptor(context, secret_key);
             heongpu::Plaintext<scheme> plaintext(context);
@@ -166,14 +166,14 @@ TEST_P(CKKSGaloiskey, Missing_Shift_Is_Reported)
 
     auto input = encrypt();
     heongpu::Ciphertext<scheme> output(context);
-    EXPECT_THROW(operators->rotate_rows(input, output, galois_key, 5),
+    EXPECT_THROW(operators->rotate(input, output, galois_key, 5),
                  heongpu::KeyNotFoundError);
 
     // Negative steps need the negative power of two keys.
     std::vector<int> positive = {1};
     heongpu::Galoiskey<scheme> positive_key(context, positive);
     generator->generate_galois_key(positive_key, secret_key);
-    EXPECT_THROW(operators->rotate_rows(input, output, positive_key, -1),
+    EXPECT_THROW(operators->rotate(input, output, positive_key, -1),
                  heongpu::KeyNotFoundError);
 }
 

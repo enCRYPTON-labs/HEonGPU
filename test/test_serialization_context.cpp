@@ -10,6 +10,23 @@
 #include <string>
 #include <vector>
 
+// The rotation is rotate for CKKS and rotate_rows for BFV.
+template <heongpu::Scheme S>
+static void rotate(heongpu::HEArithmeticOperator<S>& operators,
+                   heongpu::Ciphertext<S>& input,
+                   heongpu::Ciphertext<S>& output, heongpu::Galoiskey<S>& key,
+                   int shift)
+{
+    if constexpr (S == heongpu::Scheme::CKKS)
+    {
+        operators.rotate(input, output, key, shift);
+    }
+    else
+    {
+        operators.rotate_rows(input, output, key, shift);
+    }
+}
+
 // Serialized objects remember the context they were created with: loading
 // them for, or using them with, a context with the same ring size and number
 // of moduli but different primes must fail.
@@ -173,7 +190,7 @@ TYPED_TEST(SerializationContext, Keys_Loaded_For_Another_Context)
     load(galois_key, save(this->a.galois_key));
     heongpu::Ciphertext<S> rotated(this->b.context);
     EXPECT_THROW(
-        this->b.operators.rotate_rows(ciphertext_b, rotated, galois_key, 1),
+        rotate(this->b.operators, ciphertext_b, rotated, galois_key, 1),
         std::invalid_argument);
 
     heongpu::Publickey<S> public_key;

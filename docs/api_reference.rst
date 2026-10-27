@@ -210,7 +210,8 @@ Data and Cryptographic Classes
 
             // Key-switching and modulus management operations
             void relinearize_inplace(Ciphertext<scheme_type>& ctxt, const Relinkey<scheme_type>& rlk);
-            void rotate_rows_inplace(Ciphertext<scheme_type>& ctxt, int steps, const Galoiskey<scheme_type>& gk);
+            void rotate_inplace(Ciphertext<Scheme::CKKS>& ctxt, const Galoiskey<Scheme::CKKS>& gk, int steps);  // CKKS
+            void rotate_rows_inplace(Ciphertext<Scheme::BFV>& ctxt, const Galoiskey<Scheme::BFV>& gk, int steps);  // BFV, both rows
             void rescale_inplace(Ciphertext<Scheme::CKKS>& ctxt); // CKKS only
         };
 

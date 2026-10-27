@@ -120,10 +120,10 @@ TEST(HEonGPU, CKKS_Value_Returning_Versions)
          [&](Ciphertext& r) { operators.sub_plain(x, 0.25, r); });
     same(operators.multiply_plain(x, 0.25, scale),
          [&](Ciphertext& r) { operators.multiply_plain(x, 0.25, r, scale); });
-    same(operators.rotate_rows(x, galois_key, 5),
-         [&](Ciphertext& r) { operators.rotate_rows(x, r, galois_key, 5); });
-    same(operators.rotate_rows(x, shift_key, 3),
-         [&](Ciphertext& r) { operators.rotate_rows(x, r, shift_key, 3); });
+    same(operators.rotate(x, galois_key, 5),
+         [&](Ciphertext& r) { operators.rotate(x, r, galois_key, 5); });
+    same(operators.rotate(x, shift_key, 3),
+         [&](Ciphertext& r) { operators.rotate(x, r, shift_key, 3); });
     same(operators.conjugate(x, galois_key),
          [&](Ciphertext& r) { operators.conjugate(x, r, galois_key); });
     same(operators.mod_drop(x),

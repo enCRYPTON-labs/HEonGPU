@@ -94,7 +94,7 @@ TEST(HEonGPU, CKKS_Ciphertext_Rotation_Keyswitching_Method_I_Part_I)
             heongpu::Ciphertext<heongpu::Scheme::CKKS> C1(context);
             encryptor.encrypt(C1, P1);
 
-            operators.rotate_rows(C1, C1, galois_key, shift_count);
+            operators.rotate(C1, C1, galois_key, shift_count);
 
             heongpu::Plaintext<heongpu::Scheme::CKKS> P3(context);
             decryptor.decrypt(P3, C1);
@@ -185,7 +185,7 @@ TEST(HEonGPU, CKKS_Ciphertext_Rotation_Keyswitching_Method_I_Part_I)
             heongpu::Ciphertext<heongpu::Scheme::CKKS> C1(context);
             encryptor.encrypt(C1, P1);
 
-            operators.rotate_rows(C1, C1, galois_key, shift_count);
+            operators.rotate(C1, C1, galois_key, shift_count);
 
             heongpu::Plaintext<heongpu::Scheme::CKKS> P3(context);
             decryptor.decrypt(P3, C1);
@@ -277,7 +277,7 @@ TEST(HEonGPU, CKKS_Ciphertext_Rotation_Keyswitching_Method_I_Part_I)
             heongpu::Ciphertext<heongpu::Scheme::CKKS> C1(context);
             encryptor.encrypt(C1, P1);
 
-            operators.rotate_rows(C1, C1, galois_key, shift_count);
+            operators.rotate(C1, C1, galois_key, shift_count);
 
             heongpu::Plaintext<heongpu::Scheme::CKKS> P3(context);
             decryptor.decrypt(P3, C1);
@@ -371,7 +371,7 @@ TEST(HEonGPU, CKKS_Ciphertext_Rotation_Keyswitching_Method_I_Part_I)
             heongpu::Ciphertext<heongpu::Scheme::CKKS> C1(context);
             encryptor.encrypt(C1, P1);
 
-            operators.rotate_rows(C1, C1, galois_key, shift_count);
+            operators.rotate(C1, C1, galois_key, shift_count);
 
             heongpu::Plaintext<heongpu::Scheme::CKKS> P3(context);
             decryptor.decrypt(P3, C1);
@@ -477,7 +477,7 @@ TEST(HEonGPU, CKKS_Ciphertext_Rotation_Keyswitching_Method_I_Part_I)
             heongpu::Ciphertext<heongpu::Scheme::CKKS> C1(context);
             encryptor.encrypt(C1, P1);
 
-            operators.rotate_rows(C1, C1, galois_key, shift_count);
+            operators.rotate(C1, C1, galois_key, shift_count);
 
             heongpu::Plaintext<heongpu::Scheme::CKKS> P3(context);
             decryptor.decrypt(P3, C1);

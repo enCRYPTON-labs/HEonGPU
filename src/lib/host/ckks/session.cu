@@ -185,8 +185,8 @@ namespace heongpu
             return *this;
         }
         HESession<Scheme::CKKS>::generate_rotations(session, {step});
-        return result(session.operators.rotate_rows(ciphertext_,
-                                                    *session.galois_key, step));
+        return result(
+            session.operators.rotate(ciphertext_, *session.galois_key, step));
     }
 
     CKKSCiphertext SessionCiphertext<Scheme::CKKS>::conjugate() const

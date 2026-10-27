@@ -11,6 +11,23 @@
 #include <string>
 #include <vector>
 
+// The rotation is rotate for CKKS and rotate_rows for BFV.
+template <heongpu::Scheme S>
+static void rotate(heongpu::HEArithmeticOperator<S>& operators,
+                   heongpu::Ciphertext<S>& input,
+                   heongpu::Ciphertext<S>& output, heongpu::Galoiskey<S>& key,
+                   int shift)
+{
+    if constexpr (S == heongpu::Scheme::CKKS)
+    {
+        operators.rotate(input, output, key, shift);
+    }
+    else
+    {
+        operators.rotate_rows(input, output, key, shift);
+    }
+}
+
 // The serialization_format::v2 header and the compatibility with the format
 // v1.
 
@@ -321,7 +338,7 @@ TYPED_TEST(SerializationFormat, Loaded_Keys_Give_The_Same_Results)
         },
         a.relin_key);
     expect_same([&](heongpu::Galoiskey<S>& key, Ciphertext& output)
-                { a.operators.rotate_rows(ciphertext, output, key, 1); },
+                { rotate(a.operators, ciphertext, output, key, 1); },
                 a.galois_key);
     expect_same([&](heongpu::Switchkey<S>& key, Ciphertext& output)
                 { a.operators.keyswitch(ciphertext, output, key); },
@@ -372,7 +389,7 @@ TYPED_TEST(SerializationFormat, Method_I_Data_Of_Earlier_Versions_Loads)
         },
         a.relin_key);
     expect_same([&](heongpu::Galoiskey<S>& key, Ciphertext& output)
-                { a.operators.rotate_rows(ciphertext, output, key, 1); },
+                { rotate(a.operators, ciphertext, output, key, 1); },
                 a.galois_key);
     expect_same([&](heongpu::Switchkey<S>& key, Ciphertext& output)
                 { a.operators.keyswitch(ciphertext, output, key); },
