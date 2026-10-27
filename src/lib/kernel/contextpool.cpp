@@ -76,10 +76,9 @@ namespace heongpu
             case 1: // BFV
                 n_ = poly_degree;
 
-                // Digits of one prime with one P prime, as for CKKS. With
-                // more P primes BFV keeps the digits of two primes that
-                // keys of earlier versions were generated with.
-                m = std::min(P_size, 2);
+                // Digits of P_size primes, as for CKKS: a larger P splits Q
+                // into fewer digits.
+                m = P_size;
 
                 first_Qtilda_ = modulus.size();
                 first_Q_ = first_Qtilda_ - P_size;

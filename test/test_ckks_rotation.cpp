@@ -34,8 +34,8 @@ bool fix_point_array_check(const std::vector<T>& array1,
     return true;
 }
 
-// Rotations with one and with two P primes, which split Q into digits of one
-// and of two primes.
+// Rotations with one, two and three P primes, which split Q into digits of
+// one, two and three primes.
 static void check_rotations(int p_count)
 {
     {
@@ -324,6 +324,11 @@ TEST(HEonGPU, CKKS_Ciphertext_Rotation_One_P_Prime)
 TEST(HEonGPU, CKKS_Ciphertext_Rotation_Two_P_Primes)
 {
     check_rotations(2);
+}
+
+TEST(HEonGPU, CKKS_Ciphertext_Rotation_Three_P_Primes)
+{
+    check_rotations(3);
 }
 
 // Two P primes only: with one, the Galois keys of N = 65536 take several GB.

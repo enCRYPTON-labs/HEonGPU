@@ -7,8 +7,8 @@
 #include <heongpu/heongpu.hpp>
 #include <gtest/gtest.h>
 
-// Rotations with one and with two P primes, which split Q into digits of one
-// and of two primes.
+// Rotations with one, two and three P primes, which split Q into digits of
+// one, two and three primes.
 static void check_rotations(int p_count)
 {
     {
@@ -445,6 +445,11 @@ TEST(HEonGPU, BFV_Ciphertext_Rotation_One_P_Prime)
 TEST(HEonGPU, BFV_Ciphertext_Rotation_Two_P_Primes)
 {
     check_rotations(2);
+}
+
+TEST(HEonGPU, BFV_Ciphertext_Rotation_Three_P_Primes)
+{
+    check_rotations(3);
 }
 
 int main(int argc, char** argv)

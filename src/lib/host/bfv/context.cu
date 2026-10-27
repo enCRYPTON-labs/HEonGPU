@@ -66,7 +66,7 @@ namespace heongpu
                     "log_P_bases_bit_sizes cannot be empty!");
             }
 
-            // Digits of up to two primes; with one P prime they are single
+            // Digits of P_size primes; with one P prime they are single
             // primes, which earlier versions called KEYSWITCHING_METHOD_I.
             keyswitching_type_ = keyswitching_type::KEYSWITCHING_METHOD_II;
 
@@ -176,7 +176,7 @@ namespace heongpu
                     "log_P_bases_bit_sizes cannot be empty!");
             }
 
-            // Digits of up to two primes; with one P prime they are single
+            // Digits of P_size primes; with one P prime they are single
             // primes, which earlier versions called KEYSWITCHING_METHOD_I.
             keyswitching_type_ = keyswitching_type::KEYSWITCHING_METHOD_II;
 
@@ -280,7 +280,7 @@ namespace heongpu
                     "P_modulus_size cannot be lower than 1!");
             }
 
-            // Digits of up to two primes; with one P prime they are single
+            // Digits of P_size primes; with one P prime they are single
             // primes, which earlier versions called KEYSWITCHING_METHOD_I.
             keyswitching_type_ = keyswitching_type::KEYSWITCHING_METHOD_II;
 
