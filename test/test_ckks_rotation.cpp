@@ -34,7 +34,9 @@ bool fix_point_array_check(const std::vector<T>& array1,
     return true;
 }
 
-TEST(HEonGPU, CKKS_Ciphertext_Rotation_Keyswitching_Method_I_Part_I)
+// Rotations with one and with two P primes, which split Q into digits of one
+// and of two primes.
+static void check_rotations(int p_count)
 {
     {
         size_t poly_modulus_degree = 4096;
@@ -42,7 +44,8 @@ TEST(HEonGPU, CKKS_Ciphertext_Rotation_Keyswitching_Method_I_Part_I)
             heongpu::GenHEContext<heongpu::Scheme::CKKS>(
                 heongpu::sec_level_type::none);
         context->set_poly_modulus_degree(poly_modulus_degree);
-        context->set_coeff_modulus_bit_sizes({40, 30, 30}, {40});
+        context->set_coeff_modulus_bit_sizes({40, 30, 30},
+                                             std::vector<int>(p_count, 40));
         context->generate();
 
         heongpu::HEKeyGenerator<heongpu::Scheme::CKKS> keygen(context);
@@ -74,7 +77,7 @@ TEST(HEonGPU, CKKS_Ciphertext_Rotation_Keyswitching_Method_I_Part_I)
             std::vector<double> message1(row_size, 0);
             for (int i = 0; i < row_size; i++)
             {
-                message1[i] = i; // dis(gen);
+                message1[i] = dis(gen);
             }
 
             int shift_count = shift_key_index[j];
@@ -133,7 +136,8 @@ TEST(HEonGPU, CKKS_Ciphertext_Rotation_Keyswitching_Method_I_Part_I)
             heongpu::GenHEContext<heongpu::Scheme::CKKS>(
                 heongpu::sec_level_type::none);
         context->set_poly_modulus_degree(poly_modulus_degree);
-        context->set_coeff_modulus_bit_sizes({40, 30, 30, 30, 30}, {40});
+        context->set_coeff_modulus_bit_sizes({40, 30, 30, 30, 30},
+                                             std::vector<int>(p_count, 40));
         context->generate();
 
         heongpu::HEKeyGenerator<heongpu::Scheme::CKKS> keygen(context);
@@ -225,7 +229,8 @@ TEST(HEonGPU, CKKS_Ciphertext_Rotation_Keyswitching_Method_I_Part_I)
                 heongpu::sec_level_type::none);
         context->set_poly_modulus_degree(poly_modulus_degree);
         context->set_coeff_modulus_bit_sizes(
-            {45, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35}, {45});
+            {45, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35},
+            std::vector<int>(p_count, 45));
         context->generate();
 
         heongpu::HEKeyGenerator<heongpu::Scheme::CKKS> keygen(context);
@@ -270,7 +275,7 @@ TEST(HEonGPU, CKKS_Ciphertext_Rotation_Keyswitching_Method_I_Part_I)
                 message_rotation_result[i] = message1[index];
             }
 
-            double scale = pow(2.0, 35);
+            double scale = pow(2.0, 30);
             heongpu::Plaintext<heongpu::Scheme::CKKS> P1(context);
             encoder.encode(P1, message1, scale);
 
@@ -309,7 +314,21 @@ TEST(HEonGPU, CKKS_Ciphertext_Rotation_Keyswitching_Method_I_Part_I)
     }
 
     cudaDeviceSynchronize();
+}
 
+TEST(HEonGPU, CKKS_Ciphertext_Rotation_One_P_Prime)
+{
+    check_rotations(1);
+}
+
+TEST(HEonGPU, CKKS_Ciphertext_Rotation_Two_P_Primes)
+{
+    check_rotations(2);
+}
+
+// Two P primes only: with one, the Galois keys of N = 65536 take several GB.
+TEST(HEonGPU, CKKS_Ciphertext_Rotation_Large_Rings)
+{
     {
         size_t poly_modulus_degree = 32768;
         heongpu::HEContext<heongpu::Scheme::CKKS> context =
@@ -319,7 +338,7 @@ TEST(HEonGPU, CKKS_Ciphertext_Rotation_Keyswitching_Method_I_Part_I)
         context->set_coeff_modulus_bit_sizes({59, 40, 40, 40, 40, 40, 40, 40,
                                               40, 40, 40, 40, 40, 40, 40, 40,
                                               40, 40, 40},
-                                             {59});
+                                             {59, 59});
         context->generate();
 
         heongpu::HEKeyGenerator<heongpu::Scheme::CKKS> keygen(context);
@@ -364,7 +383,7 @@ TEST(HEonGPU, CKKS_Ciphertext_Rotation_Keyswitching_Method_I_Part_I)
                 message_rotation_result[i] = message1[index];
             }
 
-            double scale = pow(2.0, 40);
+            double scale = pow(2.0, 30);
             heongpu::Plaintext<heongpu::Scheme::CKKS> P1(context);
             encoder.encode(P1, message1, scale);
 
@@ -410,7 +429,7 @@ TEST(HEonGPU, CKKS_Ciphertext_Rotation_Keyswitching_Method_I_Part_I)
         // CPU RAM.
         // heongpu::HEContext<heongpu::Scheme::CKKS>
         // context(heongpu::scheme_type::ckks,
-        // heongpu::keyswitching_type::KEYSWITCHING_METHOD_I,
+        // heongpu::keyswitching_type::KEYSWITCHING_METHOD_II,
         // heongpu::sec_level_type::none);
         // context->set_poly_modulus_degree(poly_modulus_degree);
         // context->set_coeff_modulus_bit_sizes({59, 45, 45, 45, 45, 45, 45, 45,
@@ -425,7 +444,7 @@ TEST(HEonGPU, CKKS_Ciphertext_Rotation_Keyswitching_Method_I_Part_I)
         context->set_poly_modulus_degree(poly_modulus_degree);
         context->set_coeff_modulus_bit_sizes(
             {59, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40},
-            {59});
+            {59, 59});
         context->generate();
 
         heongpu::HEKeyGenerator<heongpu::Scheme::CKKS> keygen(context);
@@ -470,7 +489,7 @@ TEST(HEonGPU, CKKS_Ciphertext_Rotation_Keyswitching_Method_I_Part_I)
                 message_rotation_result[i] = message1[index];
             }
 
-            double scale = pow(2.0, 40);
+            double scale = pow(2.0, 30);
             heongpu::Plaintext<heongpu::Scheme::CKKS> P1(context);
             encoder.encode(P1, message1, scale);
 

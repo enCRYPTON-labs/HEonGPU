@@ -30,8 +30,7 @@ set(EXECUTABLES
     bfv_encryption_testcases test_bfv_encryption.cpp
     bfv_multiplication_testcases test_bfv_multiplication.cpp
     bfv_relinearization_testcases test_bfv_relinearization.cpp
-    bfv_rotation_method_1_testcases test_bfv_rotation_method_1.cpp
-    bfv_rotation_method_2_testcases test_bfv_rotation_method_2.cpp
+    bfv_rotation_testcases test_bfv_rotation.cpp
 
     ckks_addition_testcases test_ckks_addition.cpp
     ckks_encoding_testcases test_ckks_encoding.cpp
@@ -40,8 +39,7 @@ set(EXECUTABLES
     ckks_ciphertext_serialization_testcases test_ckks_ciphertext_serialization.cpp
     ckks_multiplication_testcases test_ckks_multiplication.cpp
     ckks_relinearization_testcases test_ckks_relinearization.cpp
-    ckks_rotation_method_1_testcases test_ckks_rotation_method_1.cpp
-    ckks_rotation_method_2_testcases test_ckks_rotation_method_2.cpp
+    ckks_rotation_testcases test_ckks_rotation.cpp
     ckks_galoiskey_testcases test_ckks_galoiskey.cpp
 
     secretkey_security_testcases test_secretkey_security.cpp

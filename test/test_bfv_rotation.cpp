@@ -7,7 +7,9 @@
 #include <heongpu/heongpu.hpp>
 #include <gtest/gtest.h>
 
-TEST(HEonGPU, BFV_Ciphertext_Rotation_Keyswitching_Method_I)
+// Rotations with one and with two P primes, which split Q into digits of one
+// and of two primes.
+static void check_rotations(int p_count)
 {
     {
         size_t poly_modulus_degree = 4096;
@@ -16,7 +18,8 @@ TEST(HEonGPU, BFV_Ciphertext_Rotation_Keyswitching_Method_I)
             heongpu::GenHEContext<heongpu::Scheme::BFV>(
                 heongpu::sec_level_type::none);
         context->set_poly_modulus_degree(poly_modulus_degree);
-        context->set_coeff_modulus_bit_sizes({40, 40}, {40});
+        context->set_coeff_modulus_bit_sizes({40, 40},
+                                             std::vector<int>(p_count, 40));
         context->set_plain_modulus(plain_modulus);
         context->generate();
 
@@ -97,7 +100,8 @@ TEST(HEonGPU, BFV_Ciphertext_Rotation_Keyswitching_Method_I)
             heongpu::GenHEContext<heongpu::Scheme::BFV>(
                 heongpu::sec_level_type::none);
         context->set_poly_modulus_degree(poly_modulus_degree);
-        context->set_coeff_modulus_bit_sizes({54, 54, 54}, {55});
+        context->set_coeff_modulus_bit_sizes({54, 54, 54},
+                                             std::vector<int>(p_count, 55));
         context->set_plain_modulus(plain_modulus);
         context->generate();
 
@@ -179,7 +183,7 @@ TEST(HEonGPU, BFV_Ciphertext_Rotation_Keyswitching_Method_I)
                 heongpu::sec_level_type::none);
         context->set_poly_modulus_degree(poly_modulus_degree);
         context->set_coeff_modulus_bit_sizes({54, 54, 54, 54, 55, 55, 55},
-                                             {55});
+                                             std::vector<int>(p_count, 55));
         context->set_plain_modulus(plain_modulus);
         context->generate();
 
@@ -261,7 +265,8 @@ TEST(HEonGPU, BFV_Ciphertext_Rotation_Keyswitching_Method_I)
                 heongpu::sec_level_type::none);
         context->set_poly_modulus_degree(poly_modulus_degree);
         context->set_coeff_modulus_bit_sizes(
-            {58, 58, 58, 58, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59}, {59});
+            {58, 58, 58, 58, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59},
+            std::vector<int>(p_count, 59));
         context->set_plain_modulus(plain_modulus);
         context->generate();
 
@@ -356,7 +361,8 @@ TEST(HEonGPU, BFV_Ciphertext_Rotation_Keyswitching_Method_I)
                 heongpu::sec_level_type::none);
         context->set_poly_modulus_degree(poly_modulus_degree);
         context->set_coeff_modulus_bit_sizes(
-            {58, 58, 58, 58, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59}, {59});
+            {58, 58, 58, 58, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59},
+            std::vector<int>(p_count, 59));
         context->set_plain_modulus(plain_modulus);
         context->generate();
 
@@ -429,6 +435,16 @@ TEST(HEonGPU, BFV_Ciphertext_Rotation_Keyswitching_Method_I)
     }
 
     cudaDeviceSynchronize();
+}
+
+TEST(HEonGPU, BFV_Ciphertext_Rotation_One_P_Prime)
+{
+    check_rotations(1);
+}
+
+TEST(HEonGPU, BFV_Ciphertext_Rotation_Two_P_Primes)
+{
+    check_rotations(2);
 }
 
 int main(int argc, char** argv)
