@@ -62,6 +62,22 @@ CKKS Automatic Rescaling (``16_ckks_automatic_rescale.cpp``)
 
     * **Key Concept**: **Scales of the levels**. Every level has one scale, and the operators keep the ciphertexts at the scales of their levels.
 
+CKKS Session (``17_ckks_session.cpp``)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   This example evaluates :math:`x^2 y + 0.5x - y` with ``HESession``.
+
+    * **Workflow**: It creates the session from ``HEParams``, encrypts two vectors, writes the computation with the operators ``+``, ``-`` and ``*``, and decrypts the result. It then rotates a ciphertext and multiplies it by a vector of weights.
+
+    * **Key Concept**: **One object for the whole computation**. The session generates the context and the keys, relinearizes the products, works in the automatic rescale mode and generates Galois keys when a rotation first needs them.
+
+BFV Session (``18_bfv_session.cpp``)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   This example evaluates :math:`x^2 y + 3x - y` modulo the plain modulus with ``HESession``.
+
+    * **Workflow**: It creates the session from ``HEParams``, prints the noise budget before and after the computation, checks the result, and rotates the rows of slots and swaps them.
+
+    * **Key Concept**: **Integer constants and signed slots**. Constants are added to every slot, and ``decrypt_signed`` returns the slots centered around 0.
+
 Advanced Features
 -----------------
 

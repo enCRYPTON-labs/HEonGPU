@@ -156,6 +156,31 @@ A context created by hand selects the mode after setting its moduli with ``conte
 
 Relinearization is not automatic: it needs the relinearization key. Two operands at the same level with different scales, for example a ciphertext encoded with another scale, raise ``ParameterError``. Bootstrapping, the CoeffToSlot and SlotToCoeff transforms and ``HELogicOperator`` need the manual mode and raise ``StateError`` in the automatic one. The mode is not part of the context identity and is not saved with the context, since keys and ciphertexts are the same in both modes; set it again after ``load``.
 
+Sessions (HESession)
+--------------------
+
+``HESession`` holds one party's whole computation: the context of the parameters, the secret, public and relinearization keys, the encoder, the encryptor, the decryptor and the operators. Its ciphertexts, ``SessionCiphertext``, have the operators ``+``, ``-`` and ``*``:
+
+.. code-block:: cpp
+
+    heongpu::HEParams<heongpu::Scheme::CKKS> params;
+    params.multiplicative_depth = 3;
+    heongpu::HESession<heongpu::Scheme::CKKS> session(params);
+
+    auto x = session.encrypt(xs);
+    auto y = session.encrypt(ys);
+    auto z = x * x * y + 0.5 * x - y;
+    std::vector<double> result = session.decrypt(z);
+
+* A product of two ciphertexts is relinearized with the key of the session.
+* For CKKS the session uses the automatic rescale mode, unless ``params.rescale_mode`` is set to ``rescale_mode::manual``; a session made from an ``HEParameterSet`` takes its mode. In the manual mode, products are not rescaled: rescale them with ``session.operators().rescale_inplace(z.ciphertext())``.
+* The other operand can be a constant or a vector of values, one per slot. CKKS takes ``double`` values and encodes them at the level of the ciphertext with the scale the operation needs. BFV takes ``int64_t`` constants and ``uint64_t`` or ``int64_t`` vectors, modulo the plain modulus.
+* ``x.rotate(k)`` rotates the slots (both rows for BFV), ``x.conjugate()`` conjugates them (CKKS) and ``x.rotate_columns()`` swaps the two rows (BFV). The Galois key of a step is generated the first time it is used; ``HESession(params, {1, 2, 4})`` generates the keys of the given steps up front, and ``session.add_rotations(steps)`` adds keys later.
+* CKKS: ``session.evaluate_polynomial`` and ``session.evaluate_chebyshev``, see above; ``session.decrypt_complex`` returns complex slots. BFV: ``session.decrypt_signed`` returns the slots from :math:`-(t-1)/2` to :math:`(t-1)/2`, and ``session.noise_budget(x)`` the bits of noise budget left.
+* ``session.context()``, ``session.secret_key()``, ``session.relin_key()``, ``session.galois_key()``, ``session.operators()`` and the others return the objects of the lower level API, and ``x.ciphertext()`` the ``Ciphertext``. ``session.wrap(ciphertext)`` turns a ``Ciphertext`` encrypted with the keys of the session into a ``SessionCiphertext``.
+
+Copies of a session share its state, and a ``SessionCiphertext`` keeps the state of its session, so it stays usable after the session object is destroyed. Operations on ciphertexts of two different sessions raise ``ContextMismatchError``. The session holds the secret key: it is for the party that encrypts and decrypts. A server that computes on ciphertexts it receives uses the lower level API with the public evaluation keys.
+
 Storage Management with `ExecutionOptions`
 ------------------------------------------
 

@@ -213,3 +213,40 @@ Data and Cryptographic Classes
             void rotate_rows_inplace(Ciphertext<scheme_type>& ctxt, int steps, const Galoiskey<scheme_type>& gk);
             void rescale_inplace(Ciphertext<Scheme::CKKS>& ctxt); // CKKS only
         };
+
+**HESession and SessionCiphertext**
+    One party's computation in one object, see Sessions in the User Guide. ``SessionCiphertext`` has the operators ``+``, ``-``, ``*``, their compound assignments and unary ``-``, with other ciphertexts of the session, constants and vectors.
+
+    .. code-block:: cpp
+       :linenos:
+
+        template <Scheme scheme_type>
+        class HESession {
+        public:
+            explicit HESession(const HEParams<scheme_type>& params, const std::vector<int>& rotations = {});
+            explicit HESession(const HEParameterSet<scheme_type>& parameters, const std::vector<int>& rotations = {});
+
+            SessionCiphertext<scheme_type> encrypt(const std::vector<double>& values) const;  // CKKS; BFV: uint64_t, int64_t
+            std::vector<double> decrypt(const SessionCiphertext<scheme_type>& ctxt) const;   // CKKS; BFV: uint64_t
+            SessionCiphertext<scheme_type> wrap(Ciphertext<scheme_type> ctxt) const;
+            void add_rotations(const std::vector<int>& steps) const;
+
+            // CKKS: decrypt_complex, evaluate_polynomial, evaluate_chebyshev, scale, get_rescale_mode
+            // BFV: decrypt_signed, noise_budget, plain_modulus
+
+            // The objects of the lower level API.
+            HEContext<scheme_type> context() const;
+            Relinkey<scheme_type>& relin_key() const;
+            Galoiskey<scheme_type>& galois_key() const;
+            HEArithmeticOperator<scheme_type>& operators() const;
+            // ... secret_key, public_key, encoder, encryptor, decryptor
+        };
+
+        template <Scheme scheme_type>
+        class SessionCiphertext {
+        public:
+            Ciphertext<scheme_type>& ciphertext();
+            SessionCiphertext rotate(int steps) const;
+            SessionCiphertext conjugate() const;       // CKKS
+            SessionCiphertext rotate_columns() const;  // BFV
+        };

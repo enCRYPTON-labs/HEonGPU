@@ -23,6 +23,8 @@ set(EXECUTABLES
     14_ckks_serialization 14_ckks_serialization.cpp
     15_basic_tfhe 15_basic_tfhe.cpp
     16_ckks_automatic_rescale 16_ckks_automatic_rescale.cpp
+    17_ckks_session 17_ckks_session.cpp
+    18_bfv_session 18_bfv_session.cpp
 )
 
 function(add_example exe source)

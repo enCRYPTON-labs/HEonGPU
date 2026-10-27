@@ -435,6 +435,25 @@ int main() {
 }
 ```
 
+The same computation with `HESession`, which holds the context, the keys and the operators:
+
+```c++
+#include <heongpu/heongpu.hpp>
+
+int main() {
+    heongpu::HEParams<heongpu::Scheme::BFV> params;
+    params.multiplicative_depth = 1;
+    heongpu::HESession<heongpu::Scheme::BFV> session(params);
+
+    std::vector<uint64_t> message(session.slot_count(), 8ULL);
+    auto C1 = session.encrypt(message);
+    auto C2 = C1 + C1;
+    std::vector<uint64_t> result = session.decrypt(C2);
+
+    return 0;
+}
+```
+
 ## Configuration Header ([define.h](src/include/heongpu/kernel/defines.h))
 
 The [define.h](src/include/heongpu/kernel/defines.h) file is an essential configuration file for HEonGPU, containing key settings that define the library's limits and capabilities, including polynomial degrees, modulus bit-lengths, and memory pool sizes. 
