@@ -184,6 +184,26 @@ TEST_F(CKKSErrors, LevelMismatchError_Reports_Both_Depths)
     EXPECT_THROW(operators.add(input1, input2, output), std::logic_error);
 }
 
+TEST(HEonGPU, ParameterError_Reports_The_Key_Switching_Digit)
+{
+    // P has 50 bits, the digits of one Q prime 40 bits: valid.
+    auto context = heongpu::GenHEContext<heongpu::Scheme::CKKS>(
+        heongpu::sec_level_type::none);
+    context->set_poly_modulus_degree(degree);
+    EXPECT_NO_THROW(context->set_coeff_modulus_bit_sizes({40, 40, 40}, {50}));
+
+    // Digits of two Q primes have 70 and 40 bits, P 60.
+    auto bfv = heongpu::GenHEContext<heongpu::Scheme::BFV>(
+        heongpu::sec_level_type::none);
+    bfv->set_poly_modulus_degree(degree);
+    std::string message = message_of<heongpu::ParameterError>(
+        [&] {
+            bfv->set_coeff_modulus_bit_sizes({35, 35, 40}, {30, 30});
+        });
+    EXPECT_TRUE(contains(message, "Q primes 0 to 1 has 70 bits")) << message;
+    EXPECT_TRUE(contains(message, "60 bits of P")) << message;
+}
+
 TEST(HEonGPU, KeyNotFoundError_Reports_The_Missing_Step)
 {
     constexpr auto bfv = heongpu::Scheme::BFV;

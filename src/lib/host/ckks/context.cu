@@ -71,11 +71,8 @@ namespace heongpu
             // primes, which earlier versions called KEYSWITCHING_METHOD_I.
             keyswitching_type_ = keyswitching_type::KEYSWITCHING_METHOD_II;
 
-            if (!coefficient_validator(log_Q_bases_bit_sizes,
-                                       log_P_bases_bit_sizes))
-            {
-                throw std::logic_error("P should be bigger than Q pairs!");
-            }
+            validate_key_switching_digits(log_Q_bases_bit_sizes,
+                                          log_P_bases_bit_sizes);
 
             // Q' = Q x P
             Qprime_mod_bit_sizes_ = log_Q_bases_bit_sizes;
@@ -181,12 +178,8 @@ namespace heongpu
             // primes, which earlier versions called KEYSWITCHING_METHOD_I.
             keyswitching_type_ = keyswitching_type::KEYSWITCHING_METHOD_II;
 
-            if (!coefficient_validator(log_Q_bases_bit_sizes,
-                                       log_P_bases_bit_sizes))
-            {
-                throw std::logic_error(
-                    "Invalid parameters, P should be bigger than Q pairs!");
-            }
+            validate_key_switching_digits(log_Q_bases_bit_sizes,
+                                          log_P_bases_bit_sizes);
 
             // Q' = Q x P
             Qprime_mod_bit_sizes_ = log_Q_bases_bit_sizes;

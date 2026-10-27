@@ -59,6 +59,13 @@ namespace heongpu
     bool coefficient_validator(const std::vector<int>& log_Q_bases_bit_sizes,
                                const std::vector<int>& log_P_bases_bit_sizes);
 
+    // Throws ParameterError unless P has at least as many bits as every key
+    // switching digit of Q: the Q primes in groups of as many primes as P
+    // has, the last group possibly smaller.
+    void validate_key_switching_digits(
+        const std::vector<int>& log_Q_bases_bit_sizes,
+        const std::vector<int>& log_P_bases_bit_sizes);
+
     /**
      * @brief Returns the largest total bit size of the Q and P primes that
      * level allows for the ring size poly_modulus_degree, the limit the

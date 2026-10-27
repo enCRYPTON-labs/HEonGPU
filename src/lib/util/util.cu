@@ -152,6 +152,40 @@ namespace heongpu
         return true;
     }
 
+    void
+    validate_key_switching_digits(const std::vector<int>& log_Q_bases_bit_sizes,
+                                  const std::vector<int>& log_P_bases_bit_sizes)
+    {
+        const int P_size = static_cast<int>(log_P_bases_bit_sizes.size());
+        int P_bits = 0;
+        for (int bits : log_P_bases_bit_sizes)
+        {
+            P_bits += bits;
+        }
+
+        const int Q_size = static_cast<int>(log_Q_bases_bit_sizes.size());
+        for (int first = 0; first < Q_size; first += P_size)
+        {
+            const int last = std::min(first + P_size, Q_size) - 1;
+            int digit_bits = 0;
+            for (int i = first; i <= last; i++)
+            {
+                digit_bits += log_Q_bases_bit_sizes[i];
+            }
+            if (digit_bits > P_bits)
+            {
+                throw ParameterError(error_message(
+                    "The key switching digit of the Q primes ", first, " to ",
+                    last, " has ", digit_bits, " bits, more than the ", P_bits,
+                    " bits of P! Key switching splits Q into digits of as "
+                    "many primes as P has (",
+                    P_size,
+                    "), and P needs at least as many bits as each "
+                    "digit."));
+            }
+        }
+    }
+
     Data64 extendedGCD(Data64 a, Data64 b, Data64& x, Data64& y)
     {
         if (a == 0)
