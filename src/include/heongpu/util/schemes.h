@@ -132,6 +132,18 @@ namespace heongpu
         GATE_BOOTSTRAPPING = 0x2, // https://eprint.iacr.org/2024/767.pdf
     };
 
+    // How CKKS ciphertexts are rescaled; see
+    // HEContextImpl<Scheme::CKKS>::set_rescale_mode.
+    enum class rescale_mode : std::uint8_t
+    {
+        // The application rescales and brings operands to the same level.
+        manual = 0x0,
+
+        // The operators rescale before the operations that need it and bring
+        // operands to the same level and scale.
+        automatic = 0x1
+    };
+
     enum class encoding : std::uint8_t
     {
         SLOT = 0x0,

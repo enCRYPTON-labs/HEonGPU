@@ -65,6 +65,18 @@ namespace heongpu
             }
             return "unknown";
         }
+
+        const char* name(rescale_mode mode)
+        {
+            switch (mode)
+            {
+                case rescale_mode::manual:
+                    return "manual";
+                case rescale_mode::automatic:
+                    return "automatic";
+            }
+            return "unknown";
+        }
     } // namespace detail
 
     std::uint64_t context_identity(int scheme, int ring_size,

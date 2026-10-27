@@ -191,6 +191,7 @@ namespace heongpu
         }
         context->set_poly_modulus_degree(poly_modulus_degree);
         context->set_coeff_modulus_values(coeff_modulus, special_modulus);
+        context->set_rescale_mode(rescale_mode, scale);
     }
 
     HEContext<Scheme::CKKS> HEParameterSet<Scheme::CKKS>::make_context() const
@@ -217,7 +218,12 @@ namespace heongpu
         stream << " bits, total=" << total_bit_count() << "/" << max_bit_count()
                << " bits, digits=" << digit_count() << ", scale=2^"
                << std::log2(scale)
-               << ", security=" << detail::name(security_level) << ")";
+               << ", security=" << detail::name(security_level);
+        if (rescale_mode != heongpu::rescale_mode::manual)
+        {
+            stream << ", rescale=" << detail::name(rescale_mode);
+        }
+        stream << ")";
         return stream.str();
     }
 
@@ -300,6 +306,7 @@ namespace heongpu
         parameters.security_level = security_level;
         parameters.poly_modulus_degree = degree;
         parameters.scale = scale();
+        parameters.rescale_mode = rescale_mode;
 
         parameters.coeff_modulus = q;
         parameters.special_modulus = generate_primes_below(

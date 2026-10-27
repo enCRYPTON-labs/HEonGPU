@@ -60,6 +60,38 @@ namespace heongpu
         void generate(const MemoryPoolConfig& pool_config);
 
         /**
+         * @brief Selects how ciphertexts are rescaled, after the moduli are
+         * set. rescale_mode::manual, the default, leaves rescaling and
+         * bringing operands to the same level to the application.
+         *
+         * With rescale_mode::automatic, every level l has one scale s_l:
+         * s_L = scale at the top level and s_{l-1} = s_l^2 / q_l, where q_l is
+         * the prime that rescaling drops at level l. Multiplying two
+         * ciphertexts of level l and rescaling gives exactly s_{l-1}, so
+         * ciphertexts encoded with the scales of their levels keep them. The
+         * operators then rescale before the operations that need it and bring
+         * operands at different levels to the same level and scale; see
+         * HEArithmeticOperator<Scheme::CKKS>. HEParams<Scheme::CKKS> chooses
+         * primes that keep every s_l next to scale.
+         *
+         * The mode is not part of the identity of the context and is not
+         * saved with it: keys and ciphertexts are the same in both modes. Set
+         * it again after load().
+         */
+        void set_rescale_mode(rescale_mode mode, double scale = 0.0);
+
+        inline rescale_mode get_rescale_mode() const noexcept
+        {
+            return rescale_mode_;
+        }
+
+        /**
+         * @brief Returns the scale of level in rescale_mode::automatic, see
+         * set_rescale_mode.
+         */
+        double get_level_scale(int level) const;
+
+        /**
          * @brief Writes the encryption parameters to os, std::cout by
          * default.
          */
@@ -117,6 +149,11 @@ namespace heongpu
         bool coeff_modulus_specified_ = false;
         bool context_generated_ = false;
         std::uint64_t context_id_ = 0;
+
+        rescale_mode rescale_mode_ = rescale_mode::manual;
+        // The scale of every level in rescale_mode::automatic, indexed by
+        // level.
+        std::vector<double> level_scales_;
 
         scheme_type scheme_;
         sec_level_type sec_level_;

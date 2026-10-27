@@ -30,6 +30,9 @@ namespace heongpu
         // P, used by key switching.
         std::vector<Data64> special_modulus;
         double scale = 0.0;
+        // Set on the context by apply(), with scale as the scale of the top
+        // level.
+        heongpu::rescale_mode rescale_mode = heongpu::rescale_mode::manual;
 
         // The number of rescalings Q allows.
         int multiplicative_depth() const;
@@ -48,9 +51,9 @@ namespace heongpu
         int digit_count() const;
 
         /**
-         * @brief Sets the ring size and the moduli of context, before its
-         * generate(). Throws ParameterError if the security level of context
-         * is not security_level.
+         * @brief Sets the ring size, the moduli and the rescale mode of
+         * context, before its generate(). Throws ParameterError if the
+         * security level of context is not security_level.
          */
         void apply(const HEContext<Scheme::CKKS>& context) const;
 
@@ -106,6 +109,9 @@ namespace heongpu
         std::size_t poly_modulus_degree = 0;
         // Number of 60 bit P primes; 0 to take as many as fit.
         int special_modulus_count = 0;
+        // The rescale mode of the context, see
+        // HEContextImpl<Scheme::CKKS>::set_rescale_mode.
+        heongpu::rescale_mode rescale_mode = heongpu::rescale_mode::manual;
 
         /**
          * @brief Returns the parameters. Throws ParameterError if no

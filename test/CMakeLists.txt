@@ -69,6 +69,7 @@ set(EXECUTABLES
     prime_generation_testcases test_prime_generation.cpp
     ckks_parameters_testcases test_ckks_parameters.cpp
     bfv_parameters_testcases test_bfv_parameters.cpp
+    rescale_mode_testcases test_rescale_mode.cpp
 )
 
 function(add_test exe source)

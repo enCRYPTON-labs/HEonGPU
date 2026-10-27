@@ -78,6 +78,7 @@ namespace heongpu
         const char* name(keyswitching_type type);
         const char* name(storage_type type);
         const char* name(encoding type);
+        const char* name(rescale_mode mode);
     } // namespace detail
 
     // Identity of an HEContext, computed from the parameters its objects

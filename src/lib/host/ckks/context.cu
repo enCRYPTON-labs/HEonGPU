@@ -6,6 +6,7 @@
 
 #include <heongpu/host/ckks/context.cuh>
 #include <heongpu/util/runtime.cuh>
+#include <cmath>
 
 namespace heongpu
 {
@@ -266,6 +267,64 @@ namespace heongpu
             throw std::logic_error("coeff_modulus cannot be changed after the "
                                    "context is generated!");
         }
+    }
+
+    void HEContextImpl<Scheme::CKKS>::set_rescale_mode(rescale_mode mode,
+                                                       double scale)
+    {
+        if (!coeff_modulus_specified_)
+        {
+            throw StateError("The rescale mode needs the moduli! Set them "
+                             "before set_rescale_mode.");
+        }
+        switch (mode)
+        {
+            case rescale_mode::manual:
+                level_scales_.clear();
+                break;
+            case rescale_mode::automatic:
+            {
+                if (!(scale > 0.0) || !std::isfinite(scale))
+                {
+                    throw ParameterError(error_message(
+                        "Invalid scale ", scale,
+                        " for the automatic rescale mode! Expected a "
+                        "positive scale, the scale of the top level."));
+                }
+                // The scale a multiplication of two ciphertexts of level l
+                // and a rescaling give, computed as the operators do.
+                level_scales_.assign(Q_size, 0.0);
+                level_scales_[Q_size - 1] = scale;
+                for (int level = Q_size - 1; level > 0; level--)
+                {
+                    double square = level_scales_[level] * level_scales_[level];
+                    level_scales_[level - 1] =
+                        square /
+                        static_cast<double>(prime_vector_[level].value);
+                }
+                break;
+            }
+            default:
+                throw ParameterError(error_message(
+                    "Invalid rescale mode ", static_cast<int>(mode), "!"));
+        }
+        rescale_mode_ = mode;
+    }
+
+    double HEContextImpl<Scheme::CKKS>::get_level_scale(int level) const
+    {
+        if (rescale_mode_ != rescale_mode::automatic)
+        {
+            throw StateError("Levels have scales only in the automatic "
+                             "rescale mode!");
+        }
+        if ((level < 0) || (level >= static_cast<int>(level_scales_.size())))
+        {
+            throw ParameterError(error_message("Invalid level ", level,
+                                               "! Expected 0 to ",
+                                               level_scales_.size() - 1, "."));
+        }
+        return level_scales_[level];
     }
 
     void HEContextImpl<Scheme::CKKS>::generate()
@@ -728,8 +787,12 @@ namespace heongpu
         stream << " bits, P=";
         bits(P_mod_bit_sizes_);
         stream << " bits, " << detail::name(keyswitching_type_)
-               << ", security=" << detail::name(sec_level_) << ", id=0x"
-               << std::hex << context_id_ << ")";
+               << ", security=" << detail::name(sec_level_);
+        if (rescale_mode_ != rescale_mode::manual)
+        {
+            stream << ", rescale=" << detail::name(rescale_mode_);
+        }
+        stream << ", id=0x" << std::hex << context_id_ << ")";
         return stream.str();
     }
 
