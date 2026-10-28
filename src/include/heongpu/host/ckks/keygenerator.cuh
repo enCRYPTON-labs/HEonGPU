@@ -125,25 +125,45 @@ namespace heongpu
          *
          * @return int Seed of the key generator.
          */
-        inline int get_seed() const noexcept { return seed_; }
+        [[deprecated("Has no effect: random numbers come from "
+                     "heongpu::RandomNumberGenerator.")]] inline int
+        get_seed() const noexcept
+        {
+            return seed_;
+        }
 
         /**
          * @brief Sets the legacy seed value retained for API compatibility.
          * This does not make secret key generation deterministic.
          */
-        inline void set_seed(int new_seed) { seed_ = new_seed; }
+        [[deprecated("Has no effect: random numbers come from "
+                     "heongpu::RandomNumberGenerator.")]] inline void
+        set_seed(int new_seed)
+        {
+            seed_ = new_seed;
+        }
 
         /**
-         * @brief Returns the offset of the key generator(curand).
+         * @brief Returns the offset of the key generator (no effect).
          *
          * @return int Offset of the key generator.
          */
-        inline int get_offset() const noexcept { return offset_; }
+        [[deprecated("Has no effect: random numbers come from "
+                     "heongpu::RandomNumberGenerator.")]] inline int
+        get_offset() const noexcept
+        {
+            return offset_;
+        }
 
         /**
-         * @brief Sets the offset of the key generator with new offset(curand).
+         * @brief Sets the offset of the key generator with new offset (no effect).
          */
-        inline void set_offset(int new_offset) { offset_ = new_offset; }
+        [[deprecated("Has no effect: random numbers come from "
+                     "heongpu::RandomNumberGenerator.")]] inline void
+        set_offset(int new_offset)
+        {
+            offset_ = new_offset;
+        }
 
         HEKeyGenerator() = delete;
         HEKeyGenerator(const HEKeyGenerator& copy) = delete;
@@ -261,7 +281,7 @@ namespace heongpu
       private:
         HEContext<Scheme::CKKS> context_;
         int seed_;
-        int offset_; // Absolute offset into sequence (curand)
+        int offset_; // Unused, see get_offset()
 
         RNGSeed new_seed_;
     };

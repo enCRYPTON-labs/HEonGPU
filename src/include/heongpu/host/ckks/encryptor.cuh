@@ -100,24 +100,44 @@ namespace heongpu
          *
          * @return int Seed of the encryptor.
          */
-        inline int get_seed() const noexcept { return seed_; }
+        [[deprecated("Has no effect: random numbers come from "
+                     "heongpu::RandomNumberGenerator.")]] inline int
+        get_seed() const noexcept
+        {
+            return seed_;
+        }
 
         /**
          * @brief Sets the seed of the encryptor with new seed.
          */
-        inline void set_seed(int new_seed) { seed_ = new_seed; }
+        [[deprecated("Has no effect: random numbers come from "
+                     "heongpu::RandomNumberGenerator.")]] inline void
+        set_seed(int new_seed)
+        {
+            seed_ = new_seed;
+        }
 
         /**
-         * @brief Returns the offset of the encryptor(curand).
+         * @brief Returns the offset of the encryptor (no effect).
          *
          * @return int Offset of the encryptor.
          */
-        inline int get_offset() const noexcept { return offset_; }
+        [[deprecated("Has no effect: random numbers come from "
+                     "heongpu::RandomNumberGenerator.")]] inline int
+        get_offset() const noexcept
+        {
+            return offset_;
+        }
 
         /**
-         * @brief Sets the offset of the encryptor with new offset(curand).
+         * @brief Sets the offset of the encryptor with new offset (no effect).
          */
-        inline void set_offset(int new_offset) { offset_ = new_offset; }
+        [[deprecated("Has no effect: random numbers come from "
+                     "heongpu::RandomNumberGenerator.")]] inline void
+        set_offset(int new_offset)
+        {
+            offset_ = new_offset;
+        }
 
         HEEncryptor() = default;
         HEEncryptor(const HEEncryptor& copy) = default;
@@ -149,7 +169,7 @@ namespace heongpu
       private:
         HEContext<Scheme::CKKS> context_;
         int seed_;
-        int offset_; // Absolute offset into sequence (curand)
+        int offset_; // Unused, see get_offset()
 
         DeviceVector<Data64> public_key_;
     };

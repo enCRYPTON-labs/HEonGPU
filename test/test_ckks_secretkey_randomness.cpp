@@ -79,12 +79,16 @@ TEST(HEonGPU, CKKS_SecretKeysDoNotRepeatWithLegacySeed)
         heongpu::Secretkey<scheme> first(context, weight);
         heongpu::Secretkey<scheme> second(context, weight);
         heongpu::Secretkey<scheme> third(context, weight);
+        // set_seed, deprecated, has no effect.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         keygen.set_seed(12345);
         keygen.generate_secret_key(first);
         keygen.set_seed(12345);
         keygen.generate_secret_key(second);
         other_keygen.set_seed(12345);
         other_keygen.generate_secret_key(third);
+#pragma GCC diagnostic pop
         auto first_data = read_key(first);
         EXPECT_NE(first_data, read_key(second));
         EXPECT_NE(first_data, read_key(third));
