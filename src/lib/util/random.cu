@@ -11,7 +11,7 @@ namespace heongpu
     std::shared_ptr<rngongpu::RNG<rngongpu::Mode::AES>>
         RandomNumberGenerator::generator_ = nullptr;
     bool RandomNumberGenerator::initialized_ = false;
-    std::mutex RandomNumberGenerator::mutex_;
+    std::recursive_mutex RandomNumberGenerator::mutex_;
 
     RandomNumberGenerator& RandomNumberGenerator::instance()
     {
@@ -26,7 +26,7 @@ namespace heongpu
         rngongpu::SecurityLevel security_level,
         bool prediction_resistance_enabled)
     {
-        std::lock_guard<std::mutex> guard(mutex_);
+        std::lock_guard<std::recursive_mutex> guard(mutex_);
         if (!initialized_)
         {
             generator_ = std::make_shared<rngongpu::RNG<rngongpu::Mode::AES>>(
@@ -43,14 +43,26 @@ namespace heongpu
         const std::vector<unsigned char>& personalization_string,
         cudaStream_t stream)
     {
-        generator_->set(entropy_input, nonce, personalization_string, stream);
+        std::lock_guard<std::recursive_mutex> guard(mutex_);
+        generator().set(entropy_input, nonce, personalization_string, stream);
     }
 
     void RandomNumberGenerator::release()
     {
-        std::lock_guard<std::mutex> guard(mutex_);
+        std::lock_guard<std::recursive_mutex> guard(mutex_);
         generator_.reset();
         initialized_ = false;
+    }
+
+    rngongpu::RNG<rngongpu::Mode::AES>& RandomNumberGenerator::generator()
+    {
+        if (!generator_)
+        {
+            throw StateError(
+                "The random number generator is not initialized! Generate a "
+                "context or call heongpu::initialize() first.");
+        }
+        return *generator_;
     }
 
     RandomNumberGenerator::RandomNumberGenerator() = default;
@@ -65,8 +77,9 @@ namespace heongpu
         Data64* pointer, Modulus64* modulus, Data64 log_size, int mod_count,
         int repeat_count, cudaStream_t stream)
     {
+        std::lock_guard<std::recursive_mutex> guard(mutex_);
         std::vector<unsigned char> additional_input = {};
-        generator_->modular_uniform_random_number(pointer, modulus, log_size,
+        generator().modular_uniform_random_number(pointer, modulus, log_size,
                                                   mod_count, repeat_count,
                                                   additional_input, stream);
     }
@@ -77,7 +90,8 @@ namespace heongpu
         int repeat_count, std::vector<unsigned char>& entropy_input,
         std::vector<unsigned char> additional_input, cudaStream_t stream)
     {
-        generator_->modular_uniform_random_number(
+        std::lock_guard<std::recursive_mutex> guard(mutex_);
+        generator().modular_uniform_random_number(
             pointer, modulus, log_size, mod_count, repeat_count, entropy_input,
             additional_input, stream);
     }
@@ -87,8 +101,9 @@ namespace heongpu
         Data64* pointer, Modulus64* modulus, Data64 log_size, int mod_count,
         int* mod_index, int repeat_count, cudaStream_t stream)
     {
+        std::lock_guard<std::recursive_mutex> guard(mutex_);
         std::vector<unsigned char> additional_input = {};
-        generator_->modular_uniform_random_number(
+        generator().modular_uniform_random_number(
             pointer, modulus, log_size, mod_count, mod_index, repeat_count,
             additional_input, stream);
     }
@@ -100,7 +115,8 @@ namespace heongpu
         std::vector<unsigned char>& entropy_input,
         std::vector<unsigned char> additional_input, cudaStream_t stream)
     {
-        generator_->modular_uniform_random_number(
+        std::lock_guard<std::recursive_mutex> guard(mutex_);
+        generator().modular_uniform_random_number(
             pointer, modulus, log_size, mod_count, mod_index, repeat_count,
             entropy_input, additional_input, stream);
     }
@@ -110,8 +126,9 @@ namespace heongpu
         Float64 std_dev, Data64* pointer, Modulus64* modulus, Data64 log_size,
         int mod_count, int repeat_count, cudaStream_t stream)
     {
+        std::lock_guard<std::recursive_mutex> guard(mutex_);
         std::vector<unsigned char> additional_input = {};
-        generator_->modular_normal_random_number(
+        generator().modular_normal_random_number(
             std_dev, pointer, modulus, log_size, mod_count, repeat_count,
             additional_input, stream);
     }
@@ -123,7 +140,8 @@ namespace heongpu
         std::vector<unsigned char>& entropy_input,
         std::vector<unsigned char> additional_input, cudaStream_t stream)
     {
-        generator_->modular_normal_random_number(
+        std::lock_guard<std::recursive_mutex> guard(mutex_);
+        generator().modular_normal_random_number(
             std_dev, pointer, modulus, log_size, mod_count, repeat_count,
             entropy_input, additional_input, stream);
     }
@@ -133,8 +151,9 @@ namespace heongpu
         Float64 std_dev, Data64* pointer, Modulus64* modulus, Data64 log_size,
         int mod_count, int* mod_index, int repeat_count, cudaStream_t stream)
     {
+        std::lock_guard<std::recursive_mutex> guard(mutex_);
         std::vector<unsigned char> additional_input = {};
-        generator_->modular_normal_random_number(
+        generator().modular_normal_random_number(
             std_dev, pointer, modulus, log_size, mod_count, mod_index,
             repeat_count, additional_input, stream);
     }
@@ -146,7 +165,8 @@ namespace heongpu
         std::vector<unsigned char>& entropy_input,
         std::vector<unsigned char> additional_input, cudaStream_t stream)
     {
-        generator_->modular_normal_random_number(
+        std::lock_guard<std::recursive_mutex> guard(mutex_);
+        generator().modular_normal_random_number(
             std_dev, pointer, modulus, log_size, mod_count, mod_index,
             repeat_count, entropy_input, additional_input, stream);
     }
@@ -156,8 +176,9 @@ namespace heongpu
         Data64* pointer, Modulus64* modulus, Data64 log_size, int mod_count,
         int repeat_count, cudaStream_t stream)
     {
+        std::lock_guard<std::recursive_mutex> guard(mutex_);
         std::vector<unsigned char> additional_input = {};
-        generator_->modular_ternary_random_number(pointer, modulus, log_size,
+        generator().modular_ternary_random_number(pointer, modulus, log_size,
                                                   mod_count, repeat_count,
                                                   additional_input, stream);
     }
@@ -168,7 +189,8 @@ namespace heongpu
         int repeat_count, std::vector<unsigned char>& entropy_input,
         std::vector<unsigned char> additional_input, cudaStream_t stream)
     {
-        generator_->modular_ternary_random_number(
+        std::lock_guard<std::recursive_mutex> guard(mutex_);
+        generator().modular_ternary_random_number(
             pointer, modulus, log_size, mod_count, repeat_count, entropy_input,
             additional_input, stream);
     }
@@ -178,8 +200,9 @@ namespace heongpu
         Data64* pointer, Modulus64* modulus, Data64 log_size, int mod_count,
         int* mod_index, int repeat_count, cudaStream_t stream)
     {
+        std::lock_guard<std::recursive_mutex> guard(mutex_);
         std::vector<unsigned char> additional_input = {};
-        generator_->modular_ternary_random_number(
+        generator().modular_ternary_random_number(
             pointer, modulus, log_size, mod_count, mod_index, repeat_count,
             additional_input, stream);
     }
@@ -191,7 +214,8 @@ namespace heongpu
         std::vector<unsigned char>& entropy_input,
         std::vector<unsigned char> additional_input, cudaStream_t stream)
     {
-        generator_->modular_ternary_random_number(
+        std::lock_guard<std::recursive_mutex> guard(mutex_);
+        generator().modular_ternary_random_number(
             pointer, modulus, log_size, mod_count, mod_index, repeat_count,
             entropy_input, additional_input, stream);
     }

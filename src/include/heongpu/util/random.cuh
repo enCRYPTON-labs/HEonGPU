@@ -708,14 +708,53 @@ namespace heongpu
             std::vector<unsigned char> additional_input,
             cudaStream_t stream = cudaStreamDefault);
 
+        /**
+         * @brief Runs function with the generator seeded by seed, then seeds
+         * the generator with a new random seed, also if function throws.
+         * Other threads draw no numbers in between, so they never get numbers
+         * of seed, which other parties may know. function may call the
+         * generation functions of the generator.
+         */
+        template <typename F>
+        void with_seed(const RNGSeed& seed, cudaStream_t stream, F&& function)
+        {
+            std::lock_guard<std::recursive_mutex> guard(mutex_);
+            struct Reseed
+            {
+                RandomNumberGenerator& generator;
+                cudaStream_t stream;
+                ~Reseed()
+                {
+                    try
+                    {
+                        RNGSeed fresh;
+                        generator.set(fresh.key_, fresh.nonce_,
+                                      fresh.personalization_string_, stream);
+                    }
+                    catch (...)
+                    {
+                    }
+                }
+            };
+            set(seed.key_, seed.nonce_, seed.personalization_string_, stream);
+            Reseed reseed{*this, stream};
+            function();
+        }
+
       private:
         RandomNumberGenerator();
         RandomNumberGenerator(const RandomNumberGenerator&) = delete;
         RandomNumberGenerator& operator=(const RandomNumberGenerator&) = delete;
 
+        // The generator; throws StateError if it is not initialized. Called
+        // with mutex_ held.
+        rngongpu::RNG<rngongpu::Mode::AES>& generator();
+
         static std::shared_ptr<rngongpu::RNG<rngongpu::Mode::AES>> generator_;
         static bool initialized_;
-        static std::mutex mutex_;
+        // Held by every function, so that a seeded sequence of with_seed and
+        // release() wait for calls of other threads.
+        static std::recursive_mutex mutex_;
     };
 
 } // namespace heongpu

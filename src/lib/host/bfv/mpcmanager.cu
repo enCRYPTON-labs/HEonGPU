@@ -36,18 +36,15 @@ namespace heongpu
         Data64* error_poly = errors_a.data();
         Data64* a_poly = error_poly + (context_->Q_prime_size * context_->n);
 
-        RandomNumberGenerator::instance().set(
-            common_seed.key_, common_seed.nonce_,
-            common_seed.personalization_string_, stream);
-        RandomNumberGenerator::instance()
-            .modular_ternary_random_number_generation(
-                a_poly, context_->modulus_->data(), context_->n_power,
-                context_->Q_prime_size, 1, stream);
-
-        RNGSeed gen_seed;
-        RandomNumberGenerator::instance().set(gen_seed.key_, gen_seed.nonce_,
-                                              gen_seed.personalization_string_,
-                                              stream);
+        RandomNumberGenerator::instance().with_seed(
+            common_seed, stream,
+            [&]
+            {
+                RandomNumberGenerator::instance()
+                    .modular_ternary_random_number_generation(
+                        a_poly, context_->modulus_->data(), context_->n_power,
+                        context_->Q_prime_size, 1, stream);
+            });
 
         RandomNumberGenerator::instance()
             .modular_gaussian_random_number_generation(
@@ -148,20 +145,17 @@ namespace heongpu
                         Data64* common_a =
                             u + (context_->Q_prime_size * context_->n);
 
-                        RandomNumberGenerator::instance().set(
-                            common_seed.key_, common_seed.nonce_,
-                            common_seed.personalization_string_,
-                            options.stream_);
-                        RandomNumberGenerator::instance()
-                            .modular_ternary_random_number_generation(
-                                common_a, context_->modulus_->data(),
-                                context_->n_power, context_->Q_prime_size,
-                                context_->d, options.stream_);
-
-                        RNGSeed gen_seed1;
-                        RandomNumberGenerator::instance().set(
-                            gen_seed1.key_, gen_seed1.nonce_,
-                            gen_seed1.personalization_string_, options.stream_);
+                        RandomNumberGenerator::instance().with_seed(
+                            common_seed, options.stream_,
+                            [&]
+                            {
+                                RandomNumberGenerator::instance()
+                                    .modular_ternary_random_number_generation(
+                                        common_a, context_->modulus_->data(),
+                                        context_->n_power,
+                                        context_->Q_prime_size, context_->d,
+                                        options.stream_);
+                            });
 
                         RandomNumberGenerator::instance()
                             .modular_gaussian_random_number_generation(
@@ -169,19 +163,17 @@ namespace heongpu
                                 context_->n_power, context_->Q_prime_size,
                                 2 * context_->d, options.stream_);
 
-                        RandomNumberGenerator::instance().set(
-                            new_seed_.key_, new_seed_.nonce_,
-                            new_seed_.personalization_string_, options.stream_);
-                        RandomNumberGenerator::instance()
-                            .modular_ternary_random_number_generation(
-                                u, context_->modulus_->data(),
-                                context_->n_power, context_->Q_prime_size, 1,
-                                options.stream_);
-
-                        RNGSeed gen_seed2;
-                        RandomNumberGenerator::instance().set(
-                            gen_seed2.key_, gen_seed2.nonce_,
-                            gen_seed2.personalization_string_, options.stream_);
+                        RandomNumberGenerator::instance().with_seed(
+                            new_seed_, options.stream_,
+                            [&]
+                            {
+                                RandomNumberGenerator::instance()
+                                    .modular_ternary_random_number_generation(
+                                        u, context_->modulus_->data(),
+                                        context_->n_power,
+                                        context_->Q_prime_size, 1,
+                                        options.stream_);
+                            });
 
                         gpuntt::ntt_rns_configuration<Data64> cfg_ntt = {
                             .n_power = context_->n_power,
@@ -277,22 +269,17 @@ namespace heongpu
                                         context_->Q_prime_size, 2,
                                         options.stream_);
 
-                                RandomNumberGenerator::instance().set(
-                                    new_seed_.key_, new_seed_.nonce_,
-                                    new_seed_.personalization_string_,
-                                    options.stream_);
-                                RandomNumberGenerator::instance()
-                                    .modular_ternary_random_number_generation(
-                                        u, context_->modulus_->data(),
-                                        context_->n_power,
-                                        context_->Q_prime_size, 1,
-                                        options.stream_);
-
-                                RNGSeed gen_seed;
-                                RandomNumberGenerator::instance().set(
-                                    gen_seed.key_, gen_seed.nonce_,
-                                    gen_seed.personalization_string_,
-                                    options.stream_);
+                                RandomNumberGenerator::instance().with_seed(
+                                    new_seed_, options.stream_,
+                                    [&]
+                                    {
+                                        RandomNumberGenerator::instance()
+                                            .modular_ternary_random_number_generation(
+                                                u, context_->modulus_->data(),
+                                                context_->n_power,
+                                                context_->Q_prime_size, 1,
+                                                options.stream_);
+                                    });
 
                                 gpuntt::ntt_rns_configuration<Data64> cfg_ntt =
                                     {.n_power = context_->n_power,
@@ -509,18 +496,15 @@ namespace heongpu
         Data64* a_poly =
             error_poly + (context_->Q_prime_size * context_->d * context_->n);
 
-        RandomNumberGenerator::instance().set(
-            common_seed.key_, common_seed.nonce_,
-            common_seed.personalization_string_, options.stream_);
-        RandomNumberGenerator::instance()
-            .modular_ternary_random_number_generation(
-                a_poly, context_->modulus_->data(), context_->n_power,
-                context_->Q_prime_size, context_->d, options.stream_);
-
-        RNGSeed gen_seed1;
-        RandomNumberGenerator::instance().set(gen_seed1.key_, gen_seed1.nonce_,
-                                              gen_seed1.personalization_string_,
-                                              options.stream_);
+        RandomNumberGenerator::instance().with_seed(
+            common_seed, options.stream_,
+            [&]
+            {
+                RandomNumberGenerator::instance()
+                    .modular_ternary_random_number_generation(
+                        a_poly, context_->modulus_->data(), context_->n_power,
+                        context_->Q_prime_size, context_->d, options.stream_);
+            });
 
         input_storage_manager(
             sk,
@@ -1060,19 +1044,15 @@ namespace heongpu
         Data64* a_poly = error_poly + (2 * context_->Q_size * context_->n);
         Data64* random_t_poly = a_poly + (context_->Q_size * context_->n);
 
-        RandomNumberGenerator::instance().set(
-            common_seed.key_, common_seed.nonce_,
-            common_seed.personalization_string_, stream);
-
-        RandomNumberGenerator::instance()
-            .modular_uniform_random_number_generation(
-                a_poly, context_->modulus_->data(), context_->n_power,
-                context_->Q_size, 1, stream);
-
-        RNGSeed gen_seed;
-        RandomNumberGenerator::instance().set(gen_seed.key_, gen_seed.nonce_,
-                                              gen_seed.personalization_string_,
-                                              stream);
+        RandomNumberGenerator::instance().with_seed(
+            common_seed, stream,
+            [&]
+            {
+                RandomNumberGenerator::instance()
+                    .modular_uniform_random_number_generation(
+                        a_poly, context_->modulus_->data(), context_->n_power,
+                        context_->Q_size, 1, stream);
+            });
 
         RandomNumberGenerator::instance()
             .modular_gaussian_random_number_generation(
@@ -1200,19 +1180,15 @@ namespace heongpu
         Data64* ct1 =
             output_memory.data() + (context_->Q_size << context_->n_power);
 
-        RandomNumberGenerator::instance().set(
-            common_seed.key_, common_seed.nonce_,
-            common_seed.personalization_string_, stream);
-
-        RandomNumberGenerator::instance()
-            .modular_uniform_random_number_generation(
-                ct1, context_->modulus_->data(), context_->n_power,
-                context_->Q_size, 1, stream);
-
-        RNGSeed gen_seed;
-        RandomNumberGenerator::instance().set(gen_seed.key_, gen_seed.nonce_,
-                                              gen_seed.personalization_string_,
-                                              stream);
+        RandomNumberGenerator::instance().with_seed(
+            common_seed, stream,
+            [&]
+            {
+                RandomNumberGenerator::instance()
+                    .modular_uniform_random_number_generation(
+                        ct1, context_->modulus_->data(), context_->n_power,
+                        context_->Q_size, 1, stream);
+            });
 
         gpuntt::ntt_rns_configuration<Data64> cfg_intt = {
             .n_power = context_->n_power,
