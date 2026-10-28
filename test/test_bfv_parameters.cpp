@@ -372,3 +372,80 @@ INSTANTIATE_TEST_SUITE_P(
                       std::make_pair(2, 17), std::make_pair(4, 20),
                       std::make_pair(6, 25), std::make_pair(10, 20),
                       std::make_pair(8, 30), std::make_pair(20, 20)));
+
+// Key switching with the P primes generate() takes: one digit with three P
+// primes, and two digits with three, five and ten.
+class BFVParametersKeys : public ::testing::TestWithParam<int>
+{
+};
+
+TEST_P(BFVParametersKeys, Switch_Keys)
+{
+    auto set = params(GetParam()).generate();
+    SCOPED_TRACE(set.to_string());
+    ASSERT_GT(set.special_modulus.size(), 1u);
+
+    auto context = set.make_context();
+    context->generate();
+    heongpu::HEKeyGenerator<S> generator(context);
+    heongpu::Secretkey<S> secret_key(context);
+    generator.generate_secret_key(secret_key);
+    heongpu::Publickey<S> public_key(context);
+    generator.generate_public_key(public_key, secret_key);
+    heongpu::Relinkey<S> relin_key(context);
+    generator.generate_relin_key(relin_key, secret_key);
+    std::vector<int> shifts = {3, -1};
+    heongpu::Galoiskey<S> galois_key(context, shifts);
+    generator.generate_galois_key(galois_key, secret_key);
+    heongpu::HEEncoder<S> encoder(context);
+    heongpu::HEEncryptor<S> encryptor(context, public_key);
+    heongpu::HEDecryptor<S> decryptor(context, secret_key);
+    heongpu::HEArithmeticOperator<S> operators(context, encoder);
+
+    std::size_t n = set.poly_modulus_degree;
+    std::size_t row_size = n / 2;
+    Data64 t = set.plain_modulus;
+    std::mt19937_64 random(11);
+    std::vector<uint64_t> message(n);
+    for (auto& value : message)
+    {
+        value = random() % t;
+    }
+
+    heongpu::Plaintext<S> plaintext(context);
+    encoder.encode(plaintext, message);
+    heongpu::Ciphertext<S> ciphertext(context);
+    encryptor.encrypt(ciphertext, plaintext);
+    operators.multiply_inplace(ciphertext, ciphertext);
+    operators.relinearize_inplace(ciphertext, relin_key);
+    std::vector<uint64_t> expected(n);
+    for (std::size_t i = 0; i < n; i++)
+    {
+        expected[i] = static_cast<uint64_t>(
+            (static_cast<unsigned __int128>(message[i]) * message[i]) % t);
+    }
+
+    for (int shift : shifts)
+    {
+        operators.rotate_rows_inplace(ciphertext, galois_key, shift);
+        std::vector<uint64_t> rotated(n);
+        for (std::size_t i = 0; i < row_size; i++)
+        {
+            std::size_t from = (i + row_size + shift) % row_size;
+            rotated[i] = expected[from];
+            rotated[i + row_size] = expected[from + row_size];
+        }
+        expected = rotated;
+    }
+    operators.rotate_columns(ciphertext, ciphertext, galois_key);
+    std::rotate(expected.begin(), expected.begin() + row_size, expected.end());
+
+    heongpu::Plaintext<S> result(context);
+    decryptor.decrypt(result, ciphertext);
+    std::vector<uint64_t> values;
+    encoder.decode(values, result);
+    EXPECT_EQ(values, expected);
+}
+
+INSTANTIATE_TEST_SUITE_P(Depths, BFVParametersKeys,
+                         ::testing::Values(4, 6, 15, 30));
