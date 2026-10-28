@@ -74,8 +74,11 @@ namespace heongpu
      * of Q, and each multiplication with relinearization about
      * log2(t) + log2(N) more. generate() takes the smallest ring size N whose
      * security limit fits Q, in as few primes of up to 60 bits as possible,
-     * and one P prime with a bit more than them: key switching uses digits
-     * of one Q prime.
+     * and one P prime with a bit more than them. Then it takes as many of
+     * these P primes as fit the limit, at most one per Q prime, and of those
+     * the fewest that split Q into the same number of key switching digits:
+     * a digit has as many Q primes as P has, and fewer digits make the keys
+     * smaller and key switching faster.
      *
      * @code
      * heongpu::HEParams<heongpu::Scheme::BFV> params;

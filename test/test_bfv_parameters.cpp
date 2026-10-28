@@ -6,6 +6,7 @@
 
 #include <heongpu/heongpu.hpp>
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <random>
 #include <string>
 #include <vector>
@@ -34,6 +35,11 @@ namespace
         }
         ADD_FAILURE() << "no ParameterError";
         return "";
+    }
+
+    int bit_length(Data64 value)
+    {
+        return 64 - __builtin_clzll(value);
     }
 
     Params params(int depth, int plain_bits = 20, Level level = Level::sec128)
@@ -73,8 +79,36 @@ TEST(BFVParameters, Never_Exceed_The_Security_Limit)
                 SCOPED_TRACE(set.to_string());
                 std::size_t n = set.poly_modulus_degree;
                 EXPECT_LE(set.total_bit_count(), set.max_bit_count());
-                EXPECT_EQ(set.special_modulus.size(), 1u);
-                EXPECT_EQ(set.digit_count(), int(set.coeff_modulus.size()));
+
+                // P primes with a bit more than the largest Q prime, at most
+                // 60, distinct from the Q primes and t.
+                int q_count = int(set.coeff_modulus.size());
+                int p_count = int(set.special_modulus.size());
+                int p_bits = std::min(bit_length(set.coeff_modulus[0]) + 1, 60);
+                for (Data64 prime : set.special_modulus)
+                {
+                    EXPECT_EQ(bit_length(prime), p_bits);
+                    EXPECT_EQ(prime % (2 * n), 1u);
+                    EXPECT_NE(prime, set.plain_modulus);
+                    for (Data64 q : set.coeff_modulus)
+                    {
+                        EXPECT_NE(prime, q);
+                    }
+                }
+
+                // As many P primes as fit, at most one per Q prime, and the
+                // fewest that give the same number of digits.
+                int digits = set.digit_count();
+                EXPECT_GE(p_count, 1);
+                EXPECT_LE(p_count, q_count);
+                EXPECT_EQ(p_count, (q_count + digits - 1) / digits);
+                if (digits > 1)
+                {
+                    int fewer = (q_count + digits - 2) / (digits - 1);
+                    EXPECT_GT(set.total_bit_count() +
+                                  (fewer - p_count) * p_bits,
+                              set.max_bit_count());
+                }
 
                 // A batching plaintext modulus of the requested size.
                 EXPECT_TRUE(heongpu::is_prime(set.plain_modulus));
@@ -104,23 +138,28 @@ TEST(BFVParameters, Choices)
         std::size_t n;
         std::size_t q_count;
         Data64 t;
+        std::size_t special_count;
+        int digits;
     };
-    for (const auto& e : std::vector<Expected>{{0, 20, 4096, 1, 1032193},
-                                               {2, 20, 8192, 2, 1032193},
-                                               {4, 20, 16384, 3, 786433},
-                                               {10, 20, 16384, 7, 786433},
-                                               {20, 20, 32768, 13, 786433},
-                                               {30, 20, 65536, 19, 786433},
-                                               {4, 17, 8192, 3, 114689},
-                                               {5, 17, 16384, 4, 65537},
-                                               {1, 30, 8192, 2, 1073692673},
-                                               {8, 30, 32768, 7, 1073479681}})
+    for (const auto& e :
+         std::vector<Expected>{{0, 20, 4096, 1, 1032193, 1, 1},
+                               {2, 20, 8192, 2, 1032193, 2, 1},
+                               {4, 20, 16384, 3, 786433, 3, 1},
+                               {10, 20, 16384, 7, 786433, 1, 7},
+                               {20, 20, 32768, 13, 786433, 2, 7},
+                               {30, 20, 65536, 19, 786433, 10, 2},
+                               {4, 17, 8192, 3, 114689, 1, 3},
+                               {5, 17, 16384, 4, 65537, 4, 1},
+                               {1, 30, 8192, 2, 1073692673, 2, 1},
+                               {8, 30, 32768, 7, 1073479681, 7, 1}})
     {
         auto set = params(e.depth, e.plain_bits).generate();
         SCOPED_TRACE(set.to_string());
         EXPECT_EQ(set.poly_modulus_degree, e.n);
         EXPECT_EQ(set.coeff_modulus.size(), e.q_count);
         EXPECT_EQ(set.plain_modulus, e.t);
+        EXPECT_EQ(set.special_modulus.size(), e.special_count);
+        EXPECT_EQ(set.digit_count(), e.digits);
     }
 
     // Q primes whose bit sizes differ by at most one, and a P prime with one
@@ -128,6 +167,10 @@ TEST(BFVParameters, Choices)
     EXPECT_EQ(params(1).generate().to_string(),
               "HEParameterSet<BFV>(N=4096, Q=36+35 bits, P=37 bits, "
               "total=108/109 bits, digits=2, t=1032193, security=sec128)");
+    // As many P primes as fit, one digit.
+    EXPECT_EQ(params(4).generate().to_string(),
+              "HEParameterSet<BFV>(N=16384, Q=59+58+58 bits, P=60+60+60 bits, "
+              "total=355/438 bits, digits=1, t=786433, security=sec128)");
 }
 
 TEST(BFVParameters, Given_Plaintext_Modulus_And_Ring_Size)

@@ -64,11 +64,28 @@ namespace heongpu
             return sizes;
         }
 
-        // Key switching uses digits of one Q prime, so one P prime with a bit
-        // more than the largest of them suffices.
+        // Key switching splits Q into digits of as many primes as P has, so
+        // P primes with a bit more than the largest Q prime suffice.
         int special_bit_size(const std::vector<int>& q_sizes)
         {
             return std::min(q_sizes[0] + 1, MAX_USER_DEFINED_MOD_BIT_COUNT);
+        }
+
+        // As many P primes as fit limit next to Q, at most one per Q prime,
+        // then the fewest that split Q into the same number of digits: more
+        // would make the keys larger without making key switching faster.
+        int fitting_special_count(const std::vector<int>& q_sizes, int limit)
+        {
+            int q_count = static_cast<int>(q_sizes.size());
+            int q_bits = 0;
+            for (int size : q_sizes)
+            {
+                q_bits += size;
+            }
+            int count =
+                std::min((limit - q_bits) / special_bit_size(q_sizes), q_count);
+            int digits = (q_count + count - 1) / count;
+            return (q_count + digits - 1) / digits;
         }
 
         // Bit count of Q and the P prime.
@@ -304,8 +321,9 @@ namespace heongpu
             excluded.insert(excluded.end(), primes.begin(), primes.end());
             i = end;
         }
-        parameters.special_modulus =
-            generate_primes_below(degree, special_bit_size(sizes), 1, excluded);
+        parameters.special_modulus = generate_primes_below(
+            degree, special_bit_size(sizes),
+            fitting_special_count(sizes, limit), excluded);
 
         return parameters;
     }
