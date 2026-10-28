@@ -493,9 +493,18 @@ namespace heongpu
                 generate_coeff_div_plain_modulus(prime_vector_, plain_mod,
                                                  Q_size);
 
-            bsk_modulus = prime_vector_.size();
-            if (calculate_bit_count(plain_mod.value) + total_coeff_bit_count +
-                    32 >=
+            // The base Bsk of the multiplication holds the tensor product of
+            // two ciphertexts, which depends on Q and t, not on P. The bound
+            // counts P as one prime of MAX_MOD_BIT_COUNT bits, so that no Q
+            // gets fewer Bsk primes than with one P prime before.
+            int Q_bit_count = 0;
+            for (int i = 0; i < Q_size; i++)
+            {
+                Q_bit_count += calculate_bit_count(prime_vector_[i].value);
+            }
+            bsk_modulus = Q_size + 1;
+            if (calculate_bit_count(plain_mod.value) + Q_bit_count +
+                    MAX_MOD_BIT_COUNT + 32 >=
                 MAX_MOD_BIT_COUNT * Q_size + MAX_MOD_BIT_COUNT)
             {
                 bsk_modulus++;
