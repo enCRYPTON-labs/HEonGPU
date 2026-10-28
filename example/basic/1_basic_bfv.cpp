@@ -35,7 +35,9 @@ int main(int argc, char* argv[])
 
     // HEParams takes the smallest polynomial modulus degree N whose security
     // limit fits the coefficient modulus Q the noise needs, here 8192. Larger
-    // values allow more operations but increase the computational cost.
+    // values allow more operations but increase the computational cost. Then
+    // it takes as many P primes as fit next to Q, here two: key switching
+    // splits Q into digits of as many primes as P has, so Q is one digit.
     heongpu::HEParameterSet<Scheme> parameters = params.generate();
     std::cout << parameters << std::endl;
 
@@ -43,7 +45,7 @@ int main(int argc, char* argv[])
     // heongpu::HEContext<Scheme> context = heongpu::GenHEContext<Scheme>(
     //     heongpu::sec_level_type::sec128);
     // context->set_poly_modulus_degree(8192);
-    // context->set_coeff_modulus_bit_sizes({54, 54}, {55});
+    // context->set_coeff_modulus_bit_sizes({53, 53}, {54, 54});
     // context->set_plain_modulus(1032193);
     heongpu::HEContext<Scheme> context = parameters.make_context();
     const size_t poly_modulus_degree = parameters.poly_modulus_degree;

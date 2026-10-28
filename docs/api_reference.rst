@@ -99,6 +99,7 @@ Context and Parameter Classes
             int plain_modulus_bit_size = 20;
             sec_level_type security_level = sec_level_type::sec128;
             std::size_t poly_modulus_degree = 0;  // 0: the smallest that fits
+            int special_modulus_count = 0;        // 0: as many as fit
 
             HEParameterSet<Scheme::BFV> generate() const;
             HEContext<Scheme::BFV> make_context() const;

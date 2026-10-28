@@ -40,7 +40,7 @@ Key-switching is a fundamental primitive used in operations like relinearization
 * **Method I (Fan-Vercauteren)**: The classical approach: every prime of the ciphertext modulus is one digit of the decomposition.
 * **Method II (Hybrid Key Switching)**: Groups the primes into digits of several primes, which reduces the number of NTTs and Hadamard products compared to Method I, at the cost of extra base conversion operations. This method is generally faster on GPUs where the NTT acceleration is significant.
 
-Method I is Method II with digits of one prime, so HEonGPU implements one hybrid key switching. The digits have as many primes as the P modulus (at most two for BFV); with one P prime this is Method I, with the kernels specialized for it.
+Method I is Method II with digits of one prime, so HEonGPU implements one hybrid key switching. The digits have as many primes as the P modulus; with one P prime this is Method I, with the kernels specialized for it.
 
 Memory Management with RAPIDS Memory Manager (RMM)
 ----------------------------------------------------
