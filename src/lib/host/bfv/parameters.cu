@@ -102,6 +102,21 @@ namespace heongpu
             return count + special_count * special_bit_size(sizes);
         }
 
+        // The largest total bit count level allows for degree; no limit for
+        // sec_level_type::none.
+        int bit_limit(sec_level_type level, std::size_t degree)
+        {
+            return (level == sec_level_type::none)
+                       ? INT_MAX
+                       : max_coeff_bit_count(level, degree);
+        }
+
+        bool supported_degree(std::size_t degree)
+        {
+            return (degree >= MIN_POLY_DEGREE) && (degree <= MAX_POLY_DEGREE) &&
+                   ((degree & (degree - 1)) == 0);
+        }
+
         // The largest prime 1 (mod 2N) of bit_size bits, or 0 if there is
         // none.
         Data64 batching_plain_modulus(std::size_t degree, int bit_size)
@@ -142,16 +157,16 @@ namespace heongpu
                                   min_plain_bit_size, " to ",
                                   max_plain_modulus_bit_size, "."));
             }
-            if (params.security_level == sec_level_type::none)
+            if ((params.security_level == sec_level_type::none) &&
+                (params.poly_modulus_degree == 0))
             {
                 throw ParameterError(
-                    "HEParams needs a security level! Set the ring size and "
-                    "the moduli of the context directly for "
-                    "sec_level_type::none.");
+                    "HEParams with sec_level_type::none needs a "
+                    "poly_modulus_degree! Without a security limit there is "
+                    "no smallest ring size to take.");
             }
             if ((params.poly_modulus_degree != 0) &&
-                (max_coeff_bit_count(params.security_level,
-                                     params.poly_modulus_degree) == 0))
+                !supported_degree(params.poly_modulus_degree))
             {
                 throw ParameterError(error_message(
                     "Invalid poly modulus degree ", params.poly_modulus_degree,
@@ -225,8 +240,12 @@ namespace heongpu
         bits(coeff_modulus);
         stream << " bits, P=";
         bits(special_modulus);
-        stream << " bits, total=" << total_bit_count() << "/" << max_bit_count()
-               << " bits, digits=" << digit_count() << ", t=" << plain_modulus
+        stream << " bits, total=" << total_bit_count();
+        if (security_level != sec_level_type::none)
+        {
+            stream << "/" << max_bit_count();
+        }
+        stream << " bits, digits=" << digit_count() << ", t=" << plain_modulus
                << ", security=" << detail::name(security_level) << ")";
         return stream.str();
     }
@@ -274,7 +293,7 @@ namespace heongpu
                     " needs a plaintext modulus of at least ",
                     calculate_bit_size(degree) + 1, " bits."));
             }
-            limit = max_coeff_bit_count(security_level, degree);
+            limit = bit_limit(security_level, degree);
             if ((total_bit_count_for(degree, t, depth, min_special_count) <=
                  limit) ||
                 (degree >= max_degree))
@@ -315,9 +334,10 @@ namespace heongpu
         std::vector<int> sizes = q_bit_sizes(noise_bit_count(degree, t, depth));
 
         // More P primes than Q primes make the keys larger without making
-        // key switching faster.
+        // key switching faster; sec_level_type::none allows them anyway.
         int q_count = static_cast<int>(sizes.size());
-        if (special_modulus_count > q_count)
+        if ((special_modulus_count > q_count) &&
+            (security_level != sec_level_type::none))
         {
             throw ParameterError(
                 error_message("Invalid special modulus count ",

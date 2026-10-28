@@ -246,8 +246,6 @@ TEST(BFVParameters, Invalid_Requests)
     EXPECT_THROW(params(-1).generate(), heongpu::ParameterError);
     EXPECT_THROW(params(3, 13).generate(), heongpu::ParameterError);
     EXPECT_THROW(params(3, 31).generate(), heongpu::ParameterError);
-    EXPECT_THROW(params(3, 20, Level::none).generate(),
-                 heongpu::ParameterError);
 
     Params p = params(3);
     p.plain_modulus = 1;
@@ -261,6 +259,38 @@ TEST(BFVParameters, Invalid_Requests)
     q.poly_modulus_degree = 0;
     q.special_modulus_count = -1;
     EXPECT_THROW(q.generate(), heongpu::ParameterError);
+}
+
+TEST(BFVParameters, No_Security_Limit)
+{
+    // Without a security limit the ring size is given, and P gets one prime
+    // per Q prime.
+    Params p = params(10, 20, Level::none);
+    EXPECT_EQ(message_of([&] { p.generate(); }),
+              "HEParams with sec_level_type::none needs a poly_modulus_degree! "
+              "Without a security limit there is no smallest ring size to "
+              "take.");
+
+    p.poly_modulus_degree = 4096;
+    auto set = p.generate();
+    SCOPED_TRACE(set.to_string());
+    EXPECT_EQ(set.poly_modulus_degree, 4096u);
+    EXPECT_EQ(set.special_modulus.size(), set.coeff_modulus.size());
+    EXPECT_EQ(set.digit_count(), 1);
+    EXPECT_EQ(set.max_bit_count(), 0);
+    EXPECT_GT(set.total_bit_count(),
+              heongpu::max_coeff_bit_count(Level::sec128, 4096));
+    EXPECT_NE(set.to_string().find(
+                  "total=" + std::to_string(set.total_bit_count()) + " bits"),
+              std::string::npos);
+
+    // Any number of P primes.
+    p.special_modulus_count = int(set.coeff_modulus.size()) + 2;
+    auto more = p.generate();
+    EXPECT_EQ(int(more.special_modulus.size()), p.special_modulus_count);
+
+    auto context = set.make_context();
+    EXPECT_NO_THROW(context->generate());
 }
 
 TEST(BFVParameters, Apply_Checks_The_Security_Level)

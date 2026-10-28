@@ -6,6 +6,7 @@
 
 #include <heongpu/host/ckks/parameters.cuh>
 #include <algorithm>
+#include <climits>
 #include <cmath>
 #include <sstream>
 
@@ -28,6 +29,21 @@ namespace heongpu
                 count += bit_length(prime);
             }
             return count;
+        }
+
+        // The largest total bit count level allows for degree; no limit for
+        // sec_level_type::none.
+        int bit_limit(sec_level_type level, std::size_t degree)
+        {
+            return (level == sec_level_type::none)
+                       ? INT_MAX
+                       : max_coeff_bit_count(level, degree);
+        }
+
+        bool supported_degree(std::size_t degree)
+        {
+            return (degree >= MIN_POLY_DEGREE) && (degree <= MAX_POLY_DEGREE) &&
+                   ((degree & (degree - 1)) == 0);
         }
 
         // Q for the ring size degree: the first prime, then one scaling
@@ -127,16 +143,16 @@ namespace heongpu
                                   params.scale_bit_size, " to ",
                                   MAX_USER_DEFINED_MOD_BIT_COUNT, "."));
             }
-            if (params.security_level == sec_level_type::none)
+            if ((params.security_level == sec_level_type::none) &&
+                (params.poly_modulus_degree == 0))
             {
                 throw ParameterError(
-                    "HEParams needs a security level! Set the ring size and "
-                    "the moduli of the context directly for "
-                    "sec_level_type::none.");
+                    "HEParams with sec_level_type::none needs a "
+                    "poly_modulus_degree! Without a security limit there is "
+                    "no smallest ring size to take.");
             }
             if ((params.poly_modulus_degree != 0) &&
-                (max_coeff_bit_count(params.security_level,
-                                     params.poly_modulus_degree) == 0))
+                !supported_degree(params.poly_modulus_degree))
             {
                 throw ParameterError(error_message(
                     "Invalid poly modulus degree ", params.poly_modulus_degree,
@@ -215,8 +231,12 @@ namespace heongpu
         bits(coeff_modulus);
         stream << " bits, P=";
         bits(special_modulus);
-        stream << " bits, total=" << total_bit_count() << "/" << max_bit_count()
-               << " bits, digits=" << digit_count() << ", scale=2^"
+        stream << " bits, total=" << total_bit_count();
+        if (security_level != sec_level_type::none)
+        {
+            stream << "/" << max_bit_count();
+        }
+        stream << " bits, digits=" << digit_count() << ", scale=2^"
                << std::log2(scale)
                << ", security=" << detail::name(security_level);
         if (rescale_mode != heongpu::rescale_mode::manual)
@@ -251,7 +271,7 @@ namespace heongpu
         int min_bits = first_modulus_bit_size + depth * scale_bit_size +
                        min_special_count * special_bit_size;
         while ((degree < max_degree) &&
-               (min_bits > max_coeff_bit_count(security_level, degree)))
+               (min_bits > bit_limit(security_level, degree)))
         {
             degree *= 2;
         }
@@ -260,7 +280,7 @@ namespace heongpu
         while (true)
         {
             q = q_primes(*this, degree, depth);
-            limit = max_coeff_bit_count(security_level, degree);
+            limit = bit_limit(security_level, degree);
             if ((bit_count(q) + min_special_count * special_bit_size <=
                  limit) ||
                 (degree >= max_degree))

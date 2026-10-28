@@ -239,8 +239,6 @@ TEST(CKKSParameters, Invalid_Requests)
     EXPECT_THROW(params(-1).generate(), heongpu::ParameterError);
     EXPECT_THROW(params(3, 29).generate(), heongpu::ParameterError);
     EXPECT_THROW(params(3, 60).generate(), heongpu::ParameterError);
-    EXPECT_THROW(params(3, 40, Level::none).generate(),
-                 heongpu::ParameterError);
 
     Params p = params(3, 50);
     p.first_modulus_bit_size = 49;
@@ -256,6 +254,36 @@ TEST(CKKSParameters, Invalid_Requests)
     q.poly_modulus_degree = 0;
     q.special_modulus_count = -1;
     EXPECT_THROW(q.generate(), heongpu::ParameterError);
+}
+
+TEST(CKKSParameters, No_Security_Limit)
+{
+    // Without a security limit the ring size is given, and P gets one prime
+    // per Q prime.
+    Params p = params(10, 40, Level::none);
+    EXPECT_EQ(message_of([&] { p.generate(); }),
+              "HEParams with sec_level_type::none needs a poly_modulus_degree! "
+              "Without a security limit there is no smallest ring size to "
+              "take.");
+
+    p.poly_modulus_degree = 8192;
+    auto set = p.generate();
+    SCOPED_TRACE(set.to_string());
+    EXPECT_EQ(set.poly_modulus_degree, 8192u);
+    EXPECT_EQ(set.special_modulus.size(), 11u);
+    EXPECT_EQ(set.digit_count(), 1);
+    EXPECT_EQ(set.max_bit_count(), 0);
+    EXPECT_GT(set.total_bit_count(),
+              heongpu::max_coeff_bit_count(Level::sec128, 8192));
+    EXPECT_NE(set.to_string().find(
+                  "total=" + std::to_string(set.total_bit_count()) + " bits"),
+              std::string::npos);
+
+    p.special_modulus_count = 2;
+    EXPECT_EQ(p.generate().special_modulus.size(), 2u);
+
+    auto context = set.make_context();
+    EXPECT_NO_THROW(context->generate());
 }
 
 TEST(CKKSParameters, Apply_Checks_The_Security_Level)

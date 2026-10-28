@@ -43,7 +43,8 @@ namespace heongpu
         int total_bit_count() const;
 
         // The largest total bit count security_level allows for
-        // poly_modulus_degree.
+        // poly_modulus_degree; 0 for sec_level_type::none, which has no
+        // limit.
         int max_bit_count() const;
 
         // The number of digits key switching splits Q into: Q has
@@ -105,7 +106,9 @@ namespace heongpu
         // Bit size of the first Q prime, which bounds the result at level 0;
         // from scale_bit_size to 60.
         int first_modulus_bit_size = 60;
-        // sec128, sec192 or sec256.
+        // sec128, sec192 or sec256; none for no security limit, which needs
+        // poly_modulus_degree and takes one P prime per Q prime unless
+        // special_modulus_count is given.
         sec_level_type security_level = sec_level_type::sec128;
         // 0 to take the smallest ring size the security level allows.
         std::size_t poly_modulus_degree = 0;
