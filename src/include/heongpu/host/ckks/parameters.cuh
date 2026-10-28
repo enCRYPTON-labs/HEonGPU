@@ -85,7 +85,8 @@ namespace heongpu
      * around 2^scale_bit_size at every level.
      * P then gets as many 60 bit primes as the limit leaves room for, up to
      * the number of Q primes: a larger P splits Q into fewer key switching
-     * digits, which makes key switching faster and the keys smaller.
+     * digits, which makes key switching faster and the keys smaller. Of
+     * these it takes the fewest that give the same number of digits.
      *
      * @code
      * heongpu::HEParams<heongpu::Scheme::CKKS> params;

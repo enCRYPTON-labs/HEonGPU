@@ -298,8 +298,14 @@ namespace heongpu
         int special_count = special_modulus_count;
         if (special_count == 0)
         {
-            special_count =
-                std::min((limit - q_bits) / special_bit_size, depth + 1);
+            // As many P primes as fit, at most one per Q prime, then the
+            // fewest that split Q into the same number of digits: more would
+            // make the keys larger without making key switching faster.
+            int q_count = depth + 1;
+            int fitting =
+                std::min((limit - q_bits) / special_bit_size, q_count);
+            int digits = (q_count + fitting - 1) / fitting;
+            special_count = (q_count + digits - 1) / digits;
         }
 
         HEParameterSet<Scheme::CKKS> parameters;

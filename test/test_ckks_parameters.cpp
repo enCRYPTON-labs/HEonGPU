@@ -95,18 +95,27 @@ TEST(CKKSParameters, Never_Exceed_The_Security_Limit)
                     EXPECT_EQ(bit_length(prime), 60);
                 }
 
-                // The smallest ring size, and as many P primes as fit.
+                // The smallest ring size.
                 if (n > 4096)
                 {
                     Params smaller = p;
                     smaller.poly_modulus_degree = n / 2;
                     EXPECT_THROW(smaller.generate(), heongpu::ParameterError);
                 }
-                EXPECT_GE(set.special_modulus.size(), 1u);
-                EXPECT_LE(set.special_modulus.size(), size_t(depth + 1));
-                if (set.special_modulus.size() < size_t(depth + 1))
+
+                // As many P primes as fit, at most one per Q prime, and the
+                // fewest that give the same number of digits.
+                int q_count = depth + 1;
+                int p_count = int(set.special_modulus.size());
+                int digits = set.digit_count();
+                EXPECT_GE(p_count, 1);
+                EXPECT_LE(p_count, q_count);
+                EXPECT_EQ(p_count, (q_count + digits - 1) / digits);
+                if (digits > 1)
                 {
-                    EXPECT_GT(set.total_bit_count() + 60, set.max_bit_count());
+                    int fewer = (q_count + digits - 2) / (digits - 1);
+                    EXPECT_GT(set.total_bit_count() + (fewer - p_count) * 60,
+                              set.max_bit_count());
                 }
 
                 // Every prime is distinct and 1 mod 2N.
@@ -143,9 +152,9 @@ TEST(CKKSParameters, Choices)
                                                {2, 40, 8192, 1, 3},
                                                {5, 40, 16384, 2, 3},
                                                {10, 40, 32768, 6, 2},
-                                               {10, 50, 32768, 5, 3},
+                                               {10, 50, 32768, 4, 3},
                                                {15, 40, 32768, 3, 6},
-                                               {20, 40, 65536, 14, 2},
+                                               {20, 40, 65536, 11, 2},
                                                {30, 40, 65536, 8, 4}})
     {
         auto set = params(e.depth, e.scale_bits).generate();
