@@ -193,6 +193,39 @@ TEST(BFVParameters, Given_Plaintext_Modulus_And_Ring_Size)
               "needs a plaintext modulus of at least 18 bits.");
 }
 
+TEST(BFVParameters, Given_Special_Count)
+{
+    Params p = params(4);
+    EXPECT_EQ(p.generate().special_modulus.size(), 3u);
+    p.special_modulus_count = 2;
+    auto set = p.generate();
+    EXPECT_EQ(set.poly_modulus_degree, 16384u);
+    EXPECT_EQ(set.special_modulus.size(), 2u);
+    EXPECT_EQ(set.digit_count(), 2);
+
+    // Two P primes need a larger ring than one.
+    Params q = params(1);
+    EXPECT_EQ(q.generate().poly_modulus_degree, 4096u);
+    q.special_modulus_count = 2;
+    set = q.generate();
+    EXPECT_EQ(set.poly_modulus_degree, 8192u);
+    EXPECT_EQ(set.special_modulus.size(), 2u);
+
+    // At most one P prime per Q prime.
+    q.special_modulus_count = 3;
+    EXPECT_EQ(message_of([&] { q.generate(); }),
+              "Invalid special modulus count 3! Expected 0 to 2, the number of "
+              "Q primes of depth 1 with N = 8192.");
+
+    Params small = params(5);
+    small.poly_modulus_degree = 8192;
+    small.special_modulus_count = 2;
+    EXPECT_EQ(message_of([&] { small.generate(); }),
+              "Depth 5 with the plaintext modulus 1032193 does not fit sec128 "
+              "with N = 8192: Q and 2 P primes need 313 bits, the limit is "
+              "218. At most depth 2 fits.");
+}
+
 TEST(BFVParameters, Too_Deep)
 {
     EXPECT_EQ(message_of([] { params(60).generate(); }),
@@ -224,6 +257,9 @@ TEST(BFVParameters, Invalid_Requests)
 
     Params q = params(3);
     q.poly_modulus_degree = 10000;
+    EXPECT_THROW(q.generate(), heongpu::ParameterError);
+    q.poly_modulus_degree = 0;
+    q.special_modulus_count = -1;
     EXPECT_THROW(q.generate(), heongpu::ParameterError);
 }
 

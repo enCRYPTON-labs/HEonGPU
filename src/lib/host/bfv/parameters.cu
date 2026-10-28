@@ -88,9 +88,9 @@ namespace heongpu
             return (q_count + digits - 1) / digits;
         }
 
-        // Bit count of Q and the P prime.
+        // Bit count of Q and special_count P primes.
         int total_bit_count_for(std::size_t degree, Data64 plain_modulus,
-                                int depth)
+                                int depth, int special_count)
         {
             std::vector<int> sizes =
                 q_bit_sizes(noise_bit_count(degree, plain_modulus, depth));
@@ -99,7 +99,7 @@ namespace heongpu
             {
                 count += size;
             }
-            return count + special_bit_size(sizes);
+            return count + special_count * special_bit_size(sizes);
         }
 
         // The largest prime 1 (mod 2N) of bit_size bits, or 0 if there is
@@ -157,6 +157,12 @@ namespace heongpu
                     "Invalid poly modulus degree ", params.poly_modulus_degree,
                     "! Expected 0 or a power of two from ", MIN_POLY_DEGREE,
                     " to ", MAX_POLY_DEGREE, "."));
+            }
+            if (params.special_modulus_count < 0)
+            {
+                throw ParameterError(error_message(
+                    "Invalid special modulus count ",
+                    params.special_modulus_count, "! Expected 0 or more."));
             }
         }
     } // namespace
@@ -236,8 +242,9 @@ namespace heongpu
         check(*this);
 
         int depth = multiplicative_depth;
+        int min_special_count = std::max(special_modulus_count, 1);
 
-        // The smallest ring size that fits Q and the P prime, or the given
+        // The smallest ring size that fits Q and the P primes, or the given
         // one. A plaintext modulus for batching depends on the ring size.
         std::size_t degree =
             (poly_modulus_degree != 0) ? poly_modulus_degree : MIN_POLY_DEGREE;
@@ -268,7 +275,8 @@ namespace heongpu
                     calculate_bit_size(degree) + 1, " bits."));
             }
             limit = max_coeff_bit_count(security_level, degree);
-            if ((total_bit_count_for(degree, t, depth) <= limit) ||
+            if ((total_bit_count_for(degree, t, depth, min_special_count) <=
+                 limit) ||
                 (degree >= max_degree))
             {
                 break;
@@ -276,14 +284,19 @@ namespace heongpu
             degree *= 2;
         }
 
-        int needed = total_bit_count_for(degree, t, depth);
+        int needed = total_bit_count_for(degree, t, depth, min_special_count);
         if (needed > limit)
         {
             int fitting_depth = -1;
-            while (total_bit_count_for(degree, t, fitting_depth + 1) <= limit)
+            while (total_bit_count_for(degree, t, fitting_depth + 1,
+                                       min_special_count) <= limit)
             {
                 fitting_depth++;
             }
+            std::string special =
+                (special_modulus_count == 0)
+                    ? std::string("one P prime")
+                    : error_message(special_modulus_count, " P primes");
             std::string ring =
                 (poly_modulus_degree != 0)
                     ? error_message("N = ", degree)
@@ -295,11 +308,26 @@ namespace heongpu
             throw ParameterError(error_message(
                 "Depth ", depth, " with the plaintext modulus ", t,
                 " does not fit ", detail::name(security_level), " with ", ring,
-                ": Q and one P prime need ", needed, " bits, the limit is ",
+                ": Q and ", special, " need ", needed, " bits, the limit is ",
                 limit, ". ", fitting));
         }
 
         std::vector<int> sizes = q_bit_sizes(noise_bit_count(degree, t, depth));
+
+        // More P primes than Q primes make the keys larger without making
+        // key switching faster.
+        int q_count = static_cast<int>(sizes.size());
+        if (special_modulus_count > q_count)
+        {
+            throw ParameterError(
+                error_message("Invalid special modulus count ",
+                              special_modulus_count, "! Expected 0 to ",
+                              q_count, ", the number of Q primes of depth ",
+                              depth, " with N = ", degree, "."));
+        }
+        int special_count = (special_modulus_count != 0)
+                                ? special_modulus_count
+                                : fitting_special_count(sizes, limit);
 
         HEParameterSet<Scheme::BFV> parameters;
         parameters.security_level = security_level;
@@ -322,8 +350,7 @@ namespace heongpu
             i = end;
         }
         parameters.special_modulus = generate_primes_below(
-            degree, special_bit_size(sizes),
-            fitting_special_count(sizes, limit), excluded);
+            degree, special_bit_size(sizes), special_count, excluded);
 
         return parameters;
     }

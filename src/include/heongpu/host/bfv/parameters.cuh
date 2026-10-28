@@ -106,11 +106,15 @@ namespace heongpu
         sec_level_type security_level = sec_level_type::sec128;
         // 0 to take the smallest ring size the security level allows.
         std::size_t poly_modulus_degree = 0;
+        // Number of P primes, at most the number of Q primes; 0 to take as
+        // many as fit, see above.
+        int special_modulus_count = 0;
 
         /**
          * @brief Returns the parameters. Throws ParameterError if no
-         * supported ring size fits them, or the given poly_modulus_degree
-         * does not; the message gives the largest depth that fits.
+         * supported ring size fits them, or the given poly_modulus_degree or
+         * special_modulus_count does not; the message gives the largest depth
+         * that fits.
          */
         HEParameterSet<Scheme::BFV> generate() const;
 
