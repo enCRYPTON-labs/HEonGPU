@@ -71,6 +71,7 @@ set(EXECUTABLES
     ckks_session_testcases test_ckks_session.cpp
     bfv_session_testcases test_bfv_session.cpp
     deprecated_testcases test_deprecated.cpp
+    random_testcases test_random.cpp
 )
 
 function(add_test exe source)
