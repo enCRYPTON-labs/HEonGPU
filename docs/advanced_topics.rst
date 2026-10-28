@@ -76,7 +76,7 @@ Supported toolchain: CUDA 12.8 or newer, a C++20 compiler (tested with GCC 11.4)
 * Keys and operators can be shared by threads that run operations on their own ciphertexts and plaintexts and their own CUDA streams, as the multi-stream examples do.
 * An object that an operation writes, or moves between host and device memory, must not be used by another thread at the same time.
 * The memory pool is thread-safe. Call ``heongpu::initialize()`` and ``heongpu::shutdown()`` while no other thread uses HEonGPU.
-* Key generation and encryption draw from one process-wide random number generator that is not synchronized: run them from one thread at a time.
+* Key generation, encryption and multiparty computation can run from several threads. They draw from one process-wide random number generator, which serves one request at a time on any kind of CUDA stream; the numbers of a seed, as the common polynomials of multiparty computation, are drawn without other threads drawing in between.
 
 Multiparty Computation (MPC)
 ----------------------------
