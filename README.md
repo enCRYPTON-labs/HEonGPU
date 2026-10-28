@@ -298,7 +298,7 @@ On Ubuntu: `sudo apt install libgmp-dev libntl-dev libssl-dev zlib1g-dev`.
 - [GoogleTest](https://github.com/google/googletest)
 
 HEonGPU builds GPU-NTT, GPU-FFT and RNGonGPU from its git submodules. It downloads RMM unless `HEonGPU_USE_SYSTEM_RMM` is set, and GoogleTest unless an installed one is found.
-Default CUDA architectures: `80;86;89;90`. Override with `-D CMAKE_CUDA_ARCHITECTURES=<...>` if needed.
+Without `CMAKE_CUDA_ARCHITECTURES` (or the `CUDAARCHS` environment variable), HEonGPU builds for the architecture of the first GPU of the machine. Set `-D CMAKE_CUDA_ARCHITECTURES=<...>` to build for other or several GPUs.
 
 ### Build & Install
 

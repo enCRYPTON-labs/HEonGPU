@@ -38,7 +38,7 @@ The library uses a standard CMake build process. The most critical configuration
     GPU-NTT, GPU-FFT and RNGonGPU are git submodules. If the repository was cloned without ``--recursive``, fetch them with ``git submodule update --init --recursive``.
 
 **Step 2: Configure with CMake**
-    Run CMake from the root of the repository to generate the build files. You **must** set the ``CMAKE_CUDA_ARCHITECTURES`` variable to match your GPU's architecture. This flag instructs the CUDA compiler (``nvcc``) to generate code specifically optimized for your hardware.
+    Run CMake from the root of the repository to generate the build files. Without ``CMAKE_CUDA_ARCHITECTURES`` (or the ``CUDAARCHS`` environment variable), HEonGPU builds for the architecture of the first GPU of the machine. To build for another GPU or several, for example on a machine without one, set ``CMAKE_CUDA_ARCHITECTURES``; this instructs the CUDA compiler (``nvcc``) to generate code for that hardware.
 
     .. code-block:: bash
 
