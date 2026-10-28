@@ -14,7 +14,7 @@
 
 // The random number generator gives the same numbers for a seed on every
 // kind of stream, which seeded generation, as of the common polynomials of
-// multiparty computation, needs.
+// multiparty computation, needs, and can be used from several threads.
 
 namespace
 {
@@ -149,6 +149,8 @@ TEST(HEonGPU, With_Seed_Is_Not_Interrupted_By_Other_Threads)
                         generator.modular_uniform_random_number_generation(
                             values.data(), modulus.data(), log_size, mod_count,
                             1, stream);
+                        std::this_thread::sleep_for(
+                            std::chrono::microseconds(100));
                     }
                     HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
                 }
@@ -168,4 +170,86 @@ TEST(HEonGPU, With_Seed_Is_Not_Interrupted_By_Other_Threads)
         thread.join();
     }
     HEONGPU_CUDA_CHECK(cudaStreamDestroy(stream));
+}
+
+// Threads generate keys and encrypt with one context at the same time, each
+// on its own stream: every ciphertext decrypts, and the ciphertexts of one
+// message differ.
+TEST(HEonGPU, Threads_Generate_Keys_And_Encrypt)
+{
+    constexpr auto S = heongpu::Scheme::BFV;
+    heongpu::HEParams<S> params;
+    params.multiplicative_depth = 1;
+    auto context = params.make_context();
+    context->generate();
+    std::size_t n = context->get_poly_modulus_degree();
+    std::vector<uint64_t> message(n);
+    for (std::size_t i = 0; i < n; i++)
+    {
+        message[i] = i % 1000;
+    }
+
+    constexpr int thread_count = 4;
+    constexpr int rounds = 5;
+    std::vector<std::vector<std::vector<Data64>>> ciphertexts(thread_count);
+    std::vector<int> failures(thread_count, 0);
+    std::vector<std::thread> threads;
+    for (int t = 0; t < thread_count; t++)
+    {
+        threads.emplace_back(
+            [&, t]
+            {
+                cudaStream_t stream;
+                HEONGPU_CUDA_CHECK(
+                    cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+                auto options = heongpu::ExecutionOptions().set_stream(stream);
+                {
+                    heongpu::HEKeyGenerator<S> generator(context);
+                    heongpu::Secretkey<S> secret_key(context);
+                    generator.generate_secret_key(secret_key, options);
+                    heongpu::Publickey<S> public_key(context);
+                    generator.generate_public_key(public_key, secret_key,
+                                                  options);
+                    heongpu::HEEncoder<S> encoder(context);
+                    heongpu::HEEncryptor<S> encryptor(context, public_key);
+                    heongpu::HEDecryptor<S> decryptor(context, secret_key);
+                    for (int r = 0; r < rounds; r++)
+                    {
+                        heongpu::Plaintext<S> plaintext(context, options);
+                        encoder.encode(plaintext, message, options);
+                        heongpu::Ciphertext<S> ciphertext(context, options);
+                        encryptor.encrypt(ciphertext, plaintext, options);
+                        heongpu::Plaintext<S> result(context, options);
+                        decryptor.decrypt(result, ciphertext, options);
+                        std::vector<uint64_t> values;
+                        encoder.decode(values, result, options);
+                        HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
+                        failures[t] += (values != message);
+                        std::vector<Data64> data;
+                        ciphertext.get_data(data, stream);
+                        ciphertexts[t].push_back(data);
+                    }
+                    HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
+                }
+                HEONGPU_CUDA_CHECK(cudaStreamDestroy(stream));
+            });
+    }
+    for (auto& thread : threads)
+    {
+        thread.join();
+    }
+
+    std::vector<std::vector<Data64>> all;
+    for (int t = 0; t < thread_count; t++)
+    {
+        EXPECT_EQ(failures[t], 0) << "thread " << t;
+        all.insert(all.end(), ciphertexts[t].begin(), ciphertexts[t].end());
+    }
+    for (std::size_t i = 0; i < all.size(); i++)
+    {
+        for (std::size_t j = 0; j < i; j++)
+        {
+            EXPECT_NE(all[i], all[j]);
+        }
+    }
 }
