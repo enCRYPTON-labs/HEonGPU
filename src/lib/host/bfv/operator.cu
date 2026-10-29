@@ -1303,11 +1303,11 @@ namespace heongpu
         const ExecutionOptions& options)
     {
         // TODO: make it efficient
-        negate_inplace(input1, options);
+        negate(input1, output, options);
 
         addition_plain_bfv_poly<<<dim3((context_->n >> 8), context_->Q_size, 2),
                                   256, 0, options.stream_>>>(
-            input1.data(), encoded_constant_one_.data(), output.data(),
+            output.data(), encoded_constant_one_.data(), output.data(),
             context_->modulus_->data(), context_->plain_modulus_,
             context_->Q_mod_t_, context_->upper_threshold_,
             context_->coeeff_div_plainmod_->data(), context_->n_power);

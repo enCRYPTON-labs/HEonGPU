@@ -5611,14 +5611,14 @@ namespace heongpu
         const ExecutionOptions& options)
     {
         // TODO: make it efficient
-        negate_inplace(input1, options);
+        negate(input1, output, options);
 
         int current_decomp_count = context_->Q_size - input1.depth_;
 
         addition_plain_ckks_poly<<<dim3((context_->n >> 8),
                                         current_decomp_count, 2),
                                    256, 0, options.stream_>>>(
-            input1.data(), encoded_constant_one_.data(), output.data(),
+            output.data(), encoded_constant_one_.data(), output.data(),
             context_->modulus_->data(), context_->n_power);
         HEONGPU_CUDA_CHECK(cudaGetLastError());
     }
