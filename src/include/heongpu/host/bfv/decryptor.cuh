@@ -78,6 +78,7 @@ namespace heongpu
                             plaintext.scheme_ = context_->scheme_;
                             plaintext.context_id_ = context_->context_id_;
                             plaintext.in_ntt_domain_ = false;
+                            plaintext.plaintext_generated_ = true;
                         },
                         options);
                 },

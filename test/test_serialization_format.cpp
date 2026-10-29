@@ -303,6 +303,21 @@ TYPED_TEST(SerializationFormat, Corrupted_Context_Is_Rejected)
     EXPECT_THROW(load(*context, binary), heongpu::SerializationError);
 }
 
+// A decrypted plaintext can be saved and loaded like an encoded one.
+TYPED_TEST(SerializationFormat, Decrypted_Plaintext_Can_Be_Saved)
+{
+    constexpr auto S = TestFixture::S;
+    auto& a = this->a;
+    auto ciphertext = a.encrypt();
+    heongpu::HEDecryptor<S> decryptor(a.context, a.secret_key);
+    heongpu::Plaintext<S> decrypted(a.context);
+    decryptor.decrypt(decrypted, ciphertext);
+    const std::string binary = save(decrypted);
+    heongpu::Plaintext<S> loaded;
+    load(loaded, binary);
+    EXPECT_EQ(save(loaded), binary);
+}
+
 TYPED_TEST(SerializationFormat, Unknown_Format_Is_Rejected)
 {
     std::stringstream stream;
