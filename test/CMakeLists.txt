@@ -70,7 +70,6 @@ set(EXECUTABLES
     rescale_mode_testcases test_rescale_mode.cpp
     ckks_session_testcases test_ckks_session.cpp
     bfv_session_testcases test_bfv_session.cpp
-    deprecated_testcases test_deprecated.cpp
     random_testcases test_random.cpp
     inputs_testcases test_inputs.cpp
     storage_testcases test_storage.cpp

@@ -25,10 +25,7 @@ namespace heongpu
     enum class storage_type : std::uint8_t
     {
         host = 0x1, // Host memory storage
-        device = 0x2, // Device memory storage
-
-        HOST [[deprecated("Use storage_type::host.")]] = host,
-        DEVICE [[deprecated("Use storage_type::device.")]] = device
+        device = 0x2 // Device memory storage
     };
 
     /**
