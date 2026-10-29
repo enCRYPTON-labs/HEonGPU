@@ -214,6 +214,18 @@ namespace heongpu
         }
     }
 
+    const Data64* Secretkey<Scheme::BFV>::data() const
+    {
+        if (storage_type_ == storage_type::device)
+        {
+            return device_locations_.data();
+        }
+        else
+        {
+            return host_locations_.data();
+        }
+    }
+
     void Secretkey<Scheme::BFV>::store_in_device(cudaStream_t stream)
     {
         if (storage_type_ == storage_type::device)
@@ -425,7 +437,7 @@ namespace heongpu
     }
 
     void Secretkey<Scheme::BFV>::validate_context(
-        const HEContext<Scheme::BFV>& context)
+        const HEContext<Scheme::BFV>& context) const
     {
         if (!context || !context->context_generated_)
             throw StateError("HEContext is not generated! Create the context "
@@ -461,11 +473,11 @@ namespace heongpu
                         actual[i].value, " in the key's context and ",
                         expected[i].value, " in this context."));
         }
-        else
+        else if (secret_key_generated_)
         {
-            if (secret_key_generated_)
-                validate_key_data(context);
-            context_ = context;
+            // A key without a context, as a loaded one, is checked against
+            // the context each time.
+            validate_key_data(context);
         }
         if (secret_key_generated_ &&
             (!in_ntt_domain_ ||

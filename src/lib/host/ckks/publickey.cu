@@ -39,6 +39,18 @@ namespace heongpu
         }
     }
 
+    const Data64* Publickey<Scheme::CKKS>::data() const
+    {
+        if (storage_type_ == storage_type::device)
+        {
+            return device_locations_.data();
+        }
+        else
+        {
+            return host_locations_.data();
+        }
+    }
+
     void Publickey<Scheme::CKKS>::store_in_device(cudaStream_t stream)
     {
         if (storage_type_ == storage_type::device)

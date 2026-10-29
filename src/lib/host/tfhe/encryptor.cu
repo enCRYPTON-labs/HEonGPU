@@ -9,9 +9,9 @@
 
 namespace heongpu
 {
-    __host__
-    HEEncryptor<Scheme::TFHE>::HEEncryptor(HEContext<Scheme::TFHE> context,
-                                           Secretkey<Scheme::TFHE>& secret_key)
+    __host__ HEEncryptor<Scheme::TFHE>::HEEncryptor(
+        HEContext<Scheme::TFHE> context,
+        const Secretkey<Scheme::TFHE>& secret_key)
     {
         if (!context)
         {

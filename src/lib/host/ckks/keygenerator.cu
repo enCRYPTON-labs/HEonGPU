@@ -98,7 +98,7 @@ namespace heongpu
     }
 
     __host__ void HEKeyGenerator<Scheme::CKKS>::generate_public_key(
-        Publickey<Scheme::CKKS>& pk, Secretkey<Scheme::CKKS>& sk,
+        Publickey<Scheme::CKKS>& pk, const Secretkey<Scheme::CKKS>& sk,
         const ExecutionOptions& options)
     {
         sk.validate_context(context_);
@@ -179,7 +179,7 @@ namespace heongpu
     }
 
     __host__ void HEKeyGenerator<Scheme::CKKS>::generate_ckks_relin_key(
-        Relinkey<Scheme::CKKS>& rk, Secretkey<Scheme::CKKS>& sk,
+        Relinkey<Scheme::CKKS>& rk, const Secretkey<Scheme::CKKS>& sk,
         const ExecutionOptions& options)
     {
         sk.validate_context(context_);
@@ -252,8 +252,8 @@ namespace heongpu
                         relinkey_gen_II_kernel<<<
                             dim3((context_->n >> 8), context_->Q_prime_size, 1),
                             256, 0, options.stream_>>>(
-                            output_memory.data(), sk.data(), error_poly, a_poly,
-                            context_->modulus_->data(),
+                            output_memory.data(), sk_.data(), error_poly,
+                            a_poly, context_->modulus_->data(),
                             context_->factor_->data(),
                             context_->Sk_pair_leveled->operator[](0).data(),
                             context_->n_power, context_->Q_prime_size,
@@ -271,7 +271,7 @@ namespace heongpu
     }
 
     __host__ void HEKeyGenerator<Scheme::CKKS>::generate_ckks_galois_key(
-        Galoiskey<Scheme::CKKS>& gk, Secretkey<Scheme::CKKS>& sk,
+        Galoiskey<Scheme::CKKS>& gk, const Secretkey<Scheme::CKKS>& sk,
         const ExecutionOptions& options)
     {
         sk.validate_context(context_);
@@ -347,8 +347,8 @@ namespace heongpu
                         galoiskey_gen_II_kernel<<<
                             dim3((context_->n >> 8), context_->Q_prime_size, 1),
                             256, 0, options.stream_>>>(
-                            output_memory.data(), sk.data(), error_poly, a_poly,
-                            context_->modulus_->data(),
+                            output_memory.data(), sk_.data(), error_poly,
+                            a_poly, context_->modulus_->data(),
                             context_->factor_->data(), inv_galois,
                             context_->Sk_pair_leveled->operator[](0).data(),
                             context_->n_power, context_->Q_prime_size,
@@ -411,7 +411,7 @@ namespace heongpu
                     galoiskey_gen_II_kernel<<<dim3((context_->n >> 8),
                                                    context_->Q_prime_size, 1),
                                               256, 0, options.stream_>>>(
-                        output_memory.data(), sk.data(), error_poly, a_poly,
+                        output_memory.data(), sk_.data(), error_poly, a_poly,
                         context_->modulus_->data(), context_->factor_->data(),
                         gk.galois_elt_zero,
                         context_->Sk_pair_leveled->operator[](0).data(),
@@ -478,8 +478,8 @@ namespace heongpu
                         galoiskey_gen_II_kernel<<<
                             dim3((context_->n >> 8), context_->Q_prime_size, 1),
                             256, 0, options.stream_>>>(
-                            output_memory.data(), sk.data(), error_poly, a_poly,
-                            context_->modulus_->data(),
+                            output_memory.data(), sk_.data(), error_poly,
+                            a_poly, context_->modulus_->data(),
                             context_->factor_->data(), inv_galois,
                             context_->Sk_pair_leveled->operator[](0).data(),
                             context_->n_power, context_->Q_prime_size,
@@ -542,7 +542,7 @@ namespace heongpu
                     galoiskey_gen_II_kernel<<<dim3((context_->n >> 8),
                                                    context_->Q_prime_size, 1),
                                               256, 0, options.stream_>>>(
-                        output_memory.data(), sk.data(), error_poly, a_poly,
+                        output_memory.data(), sk_.data(), error_poly, a_poly,
                         context_->modulus_->data(), context_->factor_->data(),
                         gk.galois_elt_zero,
                         context_->Sk_pair_leveled->operator[](0).data(),
@@ -573,8 +573,8 @@ namespace heongpu
     }
 
     __host__ void HEKeyGenerator<Scheme::CKKS>::generate_ckks_switch_key(
-        Switchkey<Scheme::CKKS>& swk, Secretkey<Scheme::CKKS>& new_sk,
-        Secretkey<Scheme::CKKS>& old_sk, const ExecutionOptions& options)
+        Switchkey<Scheme::CKKS>& swk, const Secretkey<Scheme::CKKS>& new_sk,
+        const Secretkey<Scheme::CKKS>& old_sk, const ExecutionOptions& options)
     {
         old_sk.validate_context(context_);
         if (!old_sk.secret_key_generated_)
@@ -660,8 +660,8 @@ namespace heongpu
                                     dim3((context_->n >> 8),
                                          context_->Q_prime_size, 1),
                                     256, 0, options.stream_>>>(
-                                    output_memory.data(), new_sk.data(),
-                                    old_sk.data(), error_poly, a_poly,
+                                    output_memory.data(), new_sk_.data(),
+                                    old_sk_.data(), error_poly, a_poly,
                                     context_->modulus_->data(),
                                     context_->factor_->data(),
                                     context_->Sk_pair_leveled->operator[](0)
@@ -671,9 +671,9 @@ namespace heongpu
                                     context_->Q_size, context_->P_size);
                                 HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                                swk.memory_set(std::move(output_memory));
+                                swk_.memory_set(std::move(output_memory));
 
-                                swk.switch_key_generated_ = true;
+                                swk_.switch_key_generated_ = true;
                             },
                             options);
                     },

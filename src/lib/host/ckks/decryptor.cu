@@ -9,9 +9,9 @@
 namespace heongpu
 {
 
-    __host__
-    HEDecryptor<Scheme::CKKS>::HEDecryptor(HEContext<Scheme::CKKS> context,
-                                           Secretkey<Scheme::CKKS>& secret_key)
+    __host__ HEDecryptor<Scheme::CKKS>::HEDecryptor(
+        HEContext<Scheme::CKKS> context,
+        const Secretkey<Scheme::CKKS>& secret_key)
     {
         if (!context || !context->context_generated_)
         {
@@ -34,8 +34,8 @@ namespace heongpu
         }
         else
         {
-            secret_key.store_in_device();
-            secret_key_ = secret_key.device_locations_;
+            // The key itself stays in host memory.
+            secret_key_ = DeviceVector<Data64>(secret_key.host_locations_);
             HEONGPU_CUDA_CHECK(cudaStreamSynchronize(secret_key_.stream()));
         }
     }

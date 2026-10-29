@@ -101,7 +101,7 @@ namespace heongpu
     }
 
     __host__ void HEKeyGenerator<Scheme::BFV>::generate_public_key(
-        Publickey<Scheme::BFV>& pk, Secretkey<Scheme::BFV>& sk,
+        Publickey<Scheme::BFV>& pk, const Secretkey<Scheme::BFV>& sk,
         const ExecutionOptions& options)
     {
         const auto* ctx = context_.get();
@@ -181,7 +181,7 @@ namespace heongpu
     }
 
     __host__ void HEKeyGenerator<Scheme::BFV>::generate_bfv_relin_key(
-        Relinkey<Scheme::BFV>& rk, Secretkey<Scheme::BFV>& sk,
+        Relinkey<Scheme::BFV>& rk, const Secretkey<Scheme::BFV>& sk,
         const ExecutionOptions& options)
     {
         const auto* ctx = context_.get();
@@ -246,8 +246,8 @@ namespace heongpu
                         relinkey_gen_II_kernel<<<dim3((ctx->n >> 8),
                                                       ctx->Q_prime_size, 1),
                                                  256, 0, options.stream_>>>(
-                            output_memory.data(), sk.data(), error_poly, a_poly,
-                            ctx->modulus_->data(), ctx->factor_->data(),
+                            output_memory.data(), sk_.data(), error_poly,
+                            a_poly, ctx->modulus_->data(), ctx->factor_->data(),
                             ctx->Sk_pair_->data(), ctx->n_power,
                             ctx->Q_prime_size, ctx->d, ctx->Q_size,
                             ctx->P_size);
@@ -263,7 +263,7 @@ namespace heongpu
     }
 
     __host__ void HEKeyGenerator<Scheme::BFV>::generate_bfv_galois_key(
-        Galoiskey<Scheme::BFV>& gk, Secretkey<Scheme::BFV>& sk,
+        Galoiskey<Scheme::BFV>& gk, const Secretkey<Scheme::BFV>& sk,
         const ExecutionOptions& options)
     {
         const auto* ctx = context_.get();
@@ -330,8 +330,8 @@ namespace heongpu
                         galoiskey_gen_II_kernel<<<dim3((ctx->n >> 8),
                                                        ctx->Q_prime_size, 1),
                                                   256, 0, options.stream_>>>(
-                            output_memory.data(), sk.data(), error_poly, a_poly,
-                            ctx->modulus_->data(), ctx->factor_->data(),
+                            output_memory.data(), sk_.data(), error_poly,
+                            a_poly, ctx->modulus_->data(), ctx->factor_->data(),
                             inv_galois, ctx->Sk_pair_->data(), ctx->n_power,
                             ctx->Q_prime_size, ctx->d, ctx->Q_size,
                             ctx->P_size);
@@ -386,7 +386,7 @@ namespace heongpu
                     galoiskey_gen_II_kernel<<<dim3((ctx->n >> 8),
                                                    ctx->Q_prime_size, 1),
                                               256, 0, options.stream_>>>(
-                        output_memory.data(), sk.data(), error_poly, a_poly,
+                        output_memory.data(), sk_.data(), error_poly, a_poly,
                         ctx->modulus_->data(), ctx->factor_->data(),
                         gk.galois_elt_zero, ctx->Sk_pair_->data(), ctx->n_power,
                         ctx->Q_prime_size, ctx->d, ctx->Q_size, ctx->P_size);
@@ -444,8 +444,8 @@ namespace heongpu
                         galoiskey_gen_II_kernel<<<dim3((ctx->n >> 8),
                                                        ctx->Q_prime_size, 1),
                                                   256, 0, options.stream_>>>(
-                            output_memory.data(), sk.data(), error_poly, a_poly,
-                            ctx->modulus_->data(), ctx->factor_->data(),
+                            output_memory.data(), sk_.data(), error_poly,
+                            a_poly, ctx->modulus_->data(), ctx->factor_->data(),
                             inv_galois, ctx->Sk_pair_->data(), ctx->n_power,
                             ctx->Q_prime_size, ctx->d, ctx->Q_size,
                             ctx->P_size);
@@ -500,7 +500,7 @@ namespace heongpu
                     galoiskey_gen_II_kernel<<<dim3((ctx->n >> 8),
                                                    ctx->Q_prime_size, 1),
                                               256, 0, options.stream_>>>(
-                        output_memory.data(), sk.data(), error_poly, a_poly,
+                        output_memory.data(), sk_.data(), error_poly, a_poly,
                         ctx->modulus_->data(), ctx->factor_->data(),
                         gk.galois_elt_zero, ctx->Sk_pair_->data(), ctx->n_power,
                         ctx->Q_prime_size, ctx->d, ctx->Q_size, ctx->P_size);
@@ -528,8 +528,8 @@ namespace heongpu
     }
 
     __host__ void HEKeyGenerator<Scheme::BFV>::generate_bfv_switch_key(
-        Switchkey<Scheme::BFV>& swk, Secretkey<Scheme::BFV>& new_sk,
-        Secretkey<Scheme::BFV>& old_sk, const ExecutionOptions& options)
+        Switchkey<Scheme::BFV>& swk, const Secretkey<Scheme::BFV>& new_sk,
+        const Secretkey<Scheme::BFV>& old_sk, const ExecutionOptions& options)
     {
         const auto* ctx = context_.get();
 
@@ -607,17 +607,17 @@ namespace heongpu
                                 switchkey_gen_II_kernel<<<
                                     dim3((ctx->n >> 8), ctx->Q_prime_size, 1),
                                     256, 0, options.stream_>>>(
-                                    output_memory.data(), new_sk.data(),
-                                    old_sk.data(), error_poly, a_poly,
+                                    output_memory.data(), new_sk_.data(),
+                                    old_sk_.data(), error_poly, a_poly,
                                     ctx->modulus_->data(), ctx->factor_->data(),
                                     ctx->Sk_pair_->data(), ctx->n_power,
                                     ctx->Q_prime_size, ctx->d, ctx->Q_size,
                                     ctx->P_size);
                                 HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                                swk.memory_set(std::move(output_memory));
+                                swk_.memory_set(std::move(output_memory));
 
-                                swk.switch_key_generated_ = true;
+                                swk_.switch_key_generated_ = true;
                             },
                             options);
                     },

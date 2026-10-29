@@ -7,9 +7,9 @@
 
 namespace heongpu
 {
-    __host__
-    HEEncryptor<Scheme::BFV>::HEEncryptor(HEContext<Scheme::BFV> context,
-                                          Publickey<Scheme::BFV>& public_key)
+    __host__ HEEncryptor<Scheme::BFV>::HEEncryptor(
+        HEContext<Scheme::BFV> context,
+        const Publickey<Scheme::BFV>& public_key)
     {
         if (!context || !context->context_generated_)
         {
@@ -28,8 +28,9 @@ namespace heongpu
         }
         else
         {
-            public_key.store_in_device();
-            public_key_ = public_key.device_locations_;
+            // The key itself stays in host memory.
+            public_key_ = DeviceVector<Data64>(public_key.host_locations_);
+            HEONGPU_CUDA_CHECK(cudaStreamSynchronize(public_key_.stream()));
         }
 
         // context_ holds all parameters

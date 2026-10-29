@@ -69,6 +69,8 @@ namespace
         if (where != placement::device)
         {
             copy.store_in_host();
+            // The copy to host memory is asynchronous.
+            EXPECT_EQ(cudaDeviceSynchronize(), cudaSuccess);
         }
         return copy;
     }
@@ -533,5 +535,99 @@ TEST(Inputs, TFHE_Gates_Leave_Their_Inputs)
         EXPECT_EQ(bits(x_copy), a);
         EXPECT_EQ(bits(y_copy), b);
         EXPECT_EQ(bits(z_copy), c);
+    }
+}
+
+// Encoding, encryption, decryption and key generation leave their inputs,
+// also keys in host memory given to an encryptor or decryptor.
+template <typename T> class InputsOfSchemes : public ::testing::Test
+{
+};
+using SchemeTypes = ::testing::Types<
+    std::integral_constant<heongpu::Scheme, heongpu::Scheme::BFV>,
+    std::integral_constant<heongpu::Scheme, heongpu::Scheme::CKKS>>;
+TYPED_TEST_SUITE(InputsOfSchemes, SchemeTypes);
+
+TYPED_TEST(InputsOfSchemes, Encryption_Decryption_And_Keys_Leave_Their_Inputs)
+{
+    constexpr auto S = TypeParam::value;
+    heongpu::HEParams<S> params;
+    params.multiplicative_depth = 2;
+    if constexpr (S == heongpu::Scheme::BFV)
+    {
+        params.plain_modulus_bit_size = 20;
+    }
+    auto context = params.make_context();
+    context->generate();
+    heongpu::HEKeyGenerator<S> keygen(context);
+    auto secret_key0 = keygen.secret_key();
+    auto public_key0 = keygen.public_key(secret_key0);
+    heongpu::HEEncoder<S> encoder(context);
+    const std::size_t n = context->get_poly_modulus_degree();
+    auto plain0 = [&]
+    {
+        if constexpr (S == heongpu::Scheme::BFV)
+            return encoder.encode(std::vector<uint64_t>(n, 3));
+        else
+            return encoder.encode(std::vector<double>(n / 2, 0.5),
+                                  params.scale());
+    }();
+
+    for (placement where : placements)
+    {
+        SCOPED_TRACE(static_cast<int>(where));
+        const auto options = options_for(where);
+        const auto secret_key = placed(secret_key0, where);
+        const auto public_key = placed(public_key0, where);
+        const auto plain = placed(plain0, where);
+
+        expect_unchanged(
+            "keys",
+            [&]
+            {
+                heongpu::Publickey<S> pk(context);
+                keygen.generate_public_key(pk, secret_key, options);
+                heongpu::Relinkey<S> rk(context);
+                keygen.generate_relin_key(rk, secret_key, options);
+            },
+            secret_key);
+        heongpu::Ciphertext<S> ciphertext0(context);
+        expect_unchanged(
+            "encryption",
+            [&]
+            {
+                heongpu::HEEncryptor<S> encryptor(context, public_key);
+                encryptor.encrypt(ciphertext0, plain, options);
+            },
+            public_key, plain);
+        const auto ciphertext = placed(ciphertext0, where);
+        heongpu::Plaintext<S> decrypted(context);
+        expect_unchanged(
+            "decryption",
+            [&]
+            {
+                heongpu::HEDecryptor<S> decryptor(context, secret_key);
+                decryptor.decrypt(decrypted, ciphertext, options);
+            },
+            secret_key, ciphertext);
+        const auto decrypted_placed = placed(decrypted, where);
+        expect_unchanged(
+            "decoding",
+            [&]
+            {
+                if constexpr (S == heongpu::Scheme::BFV)
+                {
+                    std::vector<uint64_t> values;
+                    encoder.decode(values, decrypted_placed, options);
+                    EXPECT_EQ(values[0], 3u);
+                }
+                else
+                {
+                    std::vector<double> values;
+                    encoder.decode(values, decrypted_placed, options);
+                    EXPECT_NEAR(values[0], 0.5, 1e-3);
+                }
+            },
+            decrypted_placed);
     }
 }

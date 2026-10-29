@@ -66,11 +66,11 @@ namespace heongpu
                 {
                     encode_bfv(plain_, message, options.stream_);
 
-                    plain.plain_size_ = context_->n;
-                    plain.scheme_ = context_->scheme_;
-                    plain.context_id_ = context_->context_id_;
-                    plain.in_ntt_domain_ = false;
-                    plain.plaintext_generated_ = true;
+                    plain_.plain_size_ = context_->n;
+                    plain_.scheme_ = context_->scheme_;
+                    plain_.context_id_ = context_->context_id_;
+                    plain_.in_ntt_domain_ = false;
+                    plain_.plaintext_generated_ = true;
                 },
                 options);
         }
@@ -100,11 +100,11 @@ namespace heongpu
                 {
                     encode_bfv(plain_, message, options.stream_);
 
-                    plain.plain_size_ = context_->n;
-                    plain.scheme_ = context_->scheme_;
-                    plain.context_id_ = context_->context_id_;
-                    plain.in_ntt_domain_ = false;
-                    plain.plaintext_generated_ = true;
+                    plain_.plain_size_ = context_->n;
+                    plain_.scheme_ = context_->scheme_;
+                    plain_.context_id_ = context_->context_id_;
+                    plain_.in_ntt_domain_ = false;
+                    plain_.plaintext_generated_ = true;
                 },
                 options);
         }
@@ -134,11 +134,11 @@ namespace heongpu
                 {
                     encode_bfv(plain_, message, options.stream_);
 
-                    plain.plain_size_ = context_->n;
-                    plain.scheme_ = context_->scheme_;
-                    plain.context_id_ = context_->context_id_;
-                    plain.in_ntt_domain_ = false;
-                    plain.plaintext_generated_ = true;
+                    plain_.plain_size_ = context_->n;
+                    plain_.scheme_ = context_->scheme_;
+                    plain_.context_id_ = context_->context_id_;
+                    plain_.in_ntt_domain_ = false;
+                    plain_.plaintext_generated_ = true;
                 },
                 options);
         }
@@ -168,11 +168,11 @@ namespace heongpu
                 {
                     encode_bfv(plain_, message, options.stream_);
 
-                    plain.plain_size_ = context_->n;
-                    plain.scheme_ = context_->scheme_;
-                    plain.context_id_ = context_->context_id_;
-                    plain.in_ntt_domain_ = false;
-                    plain.plaintext_generated_ = true;
+                    plain_.plain_size_ = context_->n;
+                    plain_.scheme_ = context_->scheme_;
+                    plain_.context_id_ = context_->context_id_;
+                    plain_.in_ntt_domain_ = false;
+                    plain_.plaintext_generated_ = true;
                 },
                 options);
         }
@@ -184,7 +184,8 @@ namespace heongpu
          * @param plain Plaintext object to be decoded.
          */
         __host__ void
-        decode(std::vector<uint64_t>& message, Plaintext<Scheme::BFV>& plain,
+        decode(std::vector<uint64_t>& message,
+               const Plaintext<Scheme::BFV>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
             plain.validate_context(context_);
@@ -203,7 +204,8 @@ namespace heongpu
          * @param plain Plaintext object to be decoded.
          */
         __host__ void
-        decode(std::vector<int64_t>& message, Plaintext<Scheme::BFV>& plain,
+        decode(std::vector<int64_t>& message,
+               const Plaintext<Scheme::BFV>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
             plain.validate_context(context_);
@@ -225,7 +227,8 @@ namespace heongpu
          * @param plain Plaintext object to be decoded.
          */
         __host__ void
-        decode(HostVector<uint64_t>& message, Plaintext<Scheme::BFV>& plain,
+        decode(HostVector<uint64_t>& message,
+               const Plaintext<Scheme::BFV>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
             plain.validate_context(context_);
@@ -245,7 +248,8 @@ namespace heongpu
          * @param plain Plaintext object to be decoded.
          */
         __host__ void
-        decode(HostVector<int64_t>& message, Plaintext<Scheme::BFV>& plain,
+        decode(HostVector<int64_t>& message,
+               const Plaintext<Scheme::BFV>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
             plain.validate_context(context_);
@@ -307,7 +311,7 @@ namespace heongpu
          * plain).
          */
         __host__ std::vector<uint64_t>
-        decode(Plaintext<Scheme::BFV>& plain,
+        decode(const Plaintext<Scheme::BFV>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
             std::vector<uint64_t> message;

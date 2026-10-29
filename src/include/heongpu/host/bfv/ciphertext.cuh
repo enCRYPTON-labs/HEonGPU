@@ -77,6 +77,7 @@ namespace heongpu
          * @return Data64* Pointer to the data.
          */
         Data64* data();
+        const Data64* data() const;
 
         /**
          * @brief Copies the data from the device to the host.

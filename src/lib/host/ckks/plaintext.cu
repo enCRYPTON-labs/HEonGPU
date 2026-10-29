@@ -95,6 +95,18 @@ namespace heongpu
         }
     }
 
+    const Data64* Plaintext<Scheme::CKKS>::data() const
+    {
+        if (storage_type_ == storage_type::device)
+        {
+            return device_locations_.data();
+        }
+        else
+        {
+            return host_locations_.data();
+        }
+    }
+
     void Plaintext<Scheme::CKKS>::save(std::ostream& os,
                                        serialization_format format) const
     {

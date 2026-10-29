@@ -87,6 +87,7 @@ namespace heongpu
          * @return Data64* Pointer to the secret key data.
          */
         Data64* data();
+        const Data64* data() const;
 
         /**
          * @brief Switches the secretkey CUDA stream.
@@ -321,7 +322,7 @@ namespace heongpu
         DeviceVector<Data64> device_locations_; // coefficients are RNS domain
         HostVector<Data64> host_locations_; // coefficients are RNS domain
 
-        void validate_context(const HEContext<Scheme::BFV>& context);
+        void validate_context(const HEContext<Scheme::BFV>& context) const;
         void validate_key_data(const HEContext<Scheme::BFV>& context) const;
         int memory_size() const;
         void memory_clear(cudaStream_t stream);

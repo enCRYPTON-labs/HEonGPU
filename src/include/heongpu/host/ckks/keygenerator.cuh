@@ -68,7 +68,7 @@ namespace heongpu
          * public key.
          */
         __host__ void generate_public_key(
-            Publickey<Scheme::CKKS>& pk, Secretkey<Scheme::CKKS>& sk,
+            Publickey<Scheme::CKKS>& pk, const Secretkey<Scheme::CKKS>& sk,
             const ExecutionOptions& options = ExecutionOptions());
 
         /**
@@ -81,7 +81,7 @@ namespace heongpu
          */
         __host__ void
         generate_relin_key(Relinkey<Scheme::CKKS>& rk,
-                           Secretkey<Scheme::CKKS>& sk,
+                           const Secretkey<Scheme::CKKS>& sk,
                            const ExecutionOptions& options = ExecutionOptions())
         {
             generate_ckks_relin_key(rk, sk, options);
@@ -96,7 +96,7 @@ namespace heongpu
          * Galois key.
          */
         __host__ void generate_galois_key(
-            Galoiskey<Scheme::CKKS>& gk, Secretkey<Scheme::CKKS>& sk,
+            Galoiskey<Scheme::CKKS>& gk, const Secretkey<Scheme::CKKS>& sk,
             const ExecutionOptions& options = ExecutionOptions())
         {
             generate_ckks_galois_key(gk, sk, options);
@@ -112,8 +112,8 @@ namespace heongpu
          * @param old_sk Reference to the old Secretkey object to switch from.
          */
         __host__ void generate_switch_key(
-            Switchkey<Scheme::CKKS>& swk, Secretkey<Scheme::CKKS>& new_sk,
-            Secretkey<Scheme::CKKS>& old_sk,
+            Switchkey<Scheme::CKKS>& swk, const Secretkey<Scheme::CKKS>& new_sk,
+            const Secretkey<Scheme::CKKS>& old_sk,
             const ExecutionOptions& options = ExecutionOptions())
         {
             generate_ckks_switch_key(swk, new_sk, old_sk, options);
@@ -143,7 +143,7 @@ namespace heongpu
          * @brief Returns a new Publickey of sk; see generate_public_key.
          */
         __host__ Publickey<Scheme::CKKS>
-        public_key(Secretkey<Scheme::CKKS>& sk,
+        public_key(const Secretkey<Scheme::CKKS>& sk,
                    const ExecutionOptions& options = ExecutionOptions())
         {
             Publickey<Scheme::CKKS> output(context_);
@@ -155,7 +155,7 @@ namespace heongpu
          * @brief Returns a new Relinkey of sk; see generate_relin_key.
          */
         __host__ Relinkey<Scheme::CKKS>
-        relin_key(Secretkey<Scheme::CKKS>& sk,
+        relin_key(const Secretkey<Scheme::CKKS>& sk,
                   const ExecutionOptions& options = ExecutionOptions())
         {
             Relinkey<Scheme::CKKS> output(context_);
@@ -167,7 +167,7 @@ namespace heongpu
          * @brief Returns a new Galoiskey of sk; see generate_galois_key.
          */
         __host__ Galoiskey<Scheme::CKKS>
-        galois_key(Secretkey<Scheme::CKKS>& sk,
+        galois_key(const Secretkey<Scheme::CKKS>& sk,
                    const ExecutionOptions& options = ExecutionOptions())
         {
             Galoiskey<Scheme::CKKS> output(context_);
@@ -180,7 +180,7 @@ namespace heongpu
          * generate_galois_key.
          */
         __host__ Galoiskey<Scheme::CKKS>
-        galois_key(Secretkey<Scheme::CKKS>& sk, std::vector<int>& shifts,
+        galois_key(const Secretkey<Scheme::CKKS>& sk, std::vector<int>& shifts,
                    const ExecutionOptions& options = ExecutionOptions())
         {
             Galoiskey<Scheme::CKKS> output(context_, shifts);
@@ -196,7 +196,7 @@ namespace heongpu
          * Hamming weight.
          */
         __host__ CKKSBootstrappingKeys bootstrapping_keys(
-            Secretkey<Scheme::CKKS>& sk, std::vector<int> galois_shifts,
+            const Secretkey<Scheme::CKKS>& sk, std::vector<int> galois_shifts,
             int sparse_secret_key_hamming_weight = 0,
             const ExecutionOptions& options = ExecutionOptions())
         {
@@ -220,17 +220,19 @@ namespace heongpu
 
       private:
         __host__ void generate_ckks_relin_key(Relinkey<Scheme::CKKS>& rk,
-                                              Secretkey<Scheme::CKKS>& sk,
+                                              const Secretkey<Scheme::CKKS>& sk,
                                               const ExecutionOptions& options);
 
-        __host__ void generate_ckks_galois_key(Galoiskey<Scheme::CKKS>& gk,
-                                               Secretkey<Scheme::CKKS>& sk,
-                                               const ExecutionOptions& options);
+        __host__ void
+        generate_ckks_galois_key(Galoiskey<Scheme::CKKS>& gk,
+                                 const Secretkey<Scheme::CKKS>& sk,
+                                 const ExecutionOptions& options);
 
-        __host__ void generate_ckks_switch_key(Switchkey<Scheme::CKKS>& swk,
-                                               Secretkey<Scheme::CKKS>& new_sk,
-                                               Secretkey<Scheme::CKKS>& old_sk,
-                                               const ExecutionOptions& options);
+        __host__ void
+        generate_ckks_switch_key(Switchkey<Scheme::CKKS>& swk,
+                                 const Secretkey<Scheme::CKKS>& new_sk,
+                                 const Secretkey<Scheme::CKKS>& old_sk,
+                                 const ExecutionOptions& options);
 
       private:
         HEContext<Scheme::CKKS> context_;

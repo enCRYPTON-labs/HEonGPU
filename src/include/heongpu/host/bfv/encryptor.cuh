@@ -38,7 +38,7 @@ namespace heongpu
          * encryption.
          */
         __host__ HEEncryptor(HEContext<Scheme::BFV> context,
-                             Publickey<Scheme::BFV>& public_key);
+                             const Publickey<Scheme::BFV>& public_key);
 
         /**
          * @brief Encrypts a plaintext into a ciphertext, automatically
@@ -50,7 +50,7 @@ namespace heongpu
          */
         __host__ void
         encrypt(Ciphertext<Scheme::BFV>& ciphertext,
-                Plaintext<Scheme::BFV>& plaintext,
+                const Plaintext<Scheme::BFV>& plaintext,
                 const ExecutionOptions& options = ExecutionOptions())
         {
             plaintext.validate_context(context_);
@@ -71,14 +71,14 @@ namespace heongpu
                             encrypt_bfv(ciphertext_, plaintext_,
                                         options.stream_);
 
-                            ciphertext.scheme_ = context_->scheme_;
-                            ciphertext.context_id_ = context_->context_id_;
-                            ciphertext.ring_size_ = context_->n;
-                            ciphertext.coeff_modulus_count_ = context_->Q_size;
-                            ciphertext.cipher_size_ = 2;
-                            ciphertext.in_ntt_domain_ = false;
-                            ciphertext.relinearization_required_ = false;
-                            ciphertext.ciphertext_generated_ = true;
+                            ciphertext_.scheme_ = context_->scheme_;
+                            ciphertext_.context_id_ = context_->context_id_;
+                            ciphertext_.ring_size_ = context_->n;
+                            ciphertext_.coeff_modulus_count_ = context_->Q_size;
+                            ciphertext_.cipher_size_ = 2;
+                            ciphertext_.in_ntt_domain_ = false;
+                            ciphertext_.relinearization_required_ = false;
+                            ciphertext_.ciphertext_generated_ = true;
                         },
                         options);
                 },
@@ -99,7 +99,7 @@ namespace heongpu
          * encrypt(ciphertext, plaintext).
          */
         __host__ Ciphertext<Scheme::BFV>
-        encrypt(Plaintext<Scheme::BFV>& plaintext,
+        encrypt(const Plaintext<Scheme::BFV>& plaintext,
                 const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::BFV> output(context_, options);

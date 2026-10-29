@@ -52,6 +52,7 @@ namespace heongpu
          * @return Data64* Pointer to the public key data.
          */
         Data64* data();
+        const Data64* data() const;
 
         /**
          * @brief Switches the publickey CUDA stream.

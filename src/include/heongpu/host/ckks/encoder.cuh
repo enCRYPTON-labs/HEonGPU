@@ -98,14 +98,14 @@ namespace heongpu
                                           options.stream_);
                     }
 
-                    plain.plain_size_ = context_->n * context_->Q_size;
-                    plain.scheme_ = context_->scheme_;
-                    plain.context_id_ = context_->context_id_;
-                    plain.depth_ = 0;
-                    plain.scale_ = scale;
-                    plain.in_ntt_domain_ = true;
-                    plain.encoding_ = type;
-                    plain.plaintext_generated_ = true;
+                    plain_.plain_size_ = context_->n * context_->Q_size;
+                    plain_.scheme_ = context_->scheme_;
+                    plain_.context_id_ = context_->context_id_;
+                    plain_.depth_ = 0;
+                    plain_.scale_ = scale;
+                    plain_.in_ntt_domain_ = true;
+                    plain_.encoding_ = type;
+                    plain_.plaintext_generated_ = true;
                 },
                 options);
         }
@@ -168,14 +168,14 @@ namespace heongpu
                                           options.stream_);
                     }
 
-                    plain.plain_size_ = context_->n * context_->Q_size;
-                    plain.scheme_ = context_->scheme_;
-                    plain.context_id_ = context_->context_id_;
-                    plain.depth_ = 0;
-                    plain.scale_ = scale;
-                    plain.in_ntt_domain_ = true;
-                    plain.encoding_ = type;
-                    plain.plaintext_generated_ = true;
+                    plain_.plain_size_ = context_->n * context_->Q_size;
+                    plain_.scheme_ = context_->scheme_;
+                    plain_.context_id_ = context_->context_id_;
+                    plain_.depth_ = 0;
+                    plain_.scale_ = scale;
+                    plain_.in_ntt_domain_ = true;
+                    plain_.encoding_ = type;
+                    plain_.plaintext_generated_ = true;
                 },
                 options);
         }
@@ -223,14 +223,14 @@ namespace heongpu
                 {
                     encode_ckks(plain_, message, scale, options.stream_);
 
-                    plain.plain_size_ = context_->n * context_->Q_size;
-                    plain.scheme_ = context_->scheme_;
-                    plain.context_id_ = context_->context_id_;
-                    plain.depth_ = 0;
-                    plain.scale_ = scale;
-                    plain.in_ntt_domain_ = true;
-                    plain.encoding_ = type;
-                    plain.plaintext_generated_ = true;
+                    plain_.plain_size_ = context_->n * context_->Q_size;
+                    plain_.scheme_ = context_->scheme_;
+                    plain_.context_id_ = context_->context_id_;
+                    plain_.depth_ = 0;
+                    plain_.scale_ = scale;
+                    plain_.in_ntt_domain_ = true;
+                    plain_.encoding_ = type;
+                    plain_.plaintext_generated_ = true;
                 },
                 options);
         }
@@ -278,14 +278,14 @@ namespace heongpu
                 {
                     encode_ckks(plain_, message, scale, options.stream_);
 
-                    plain.plain_size_ = context_->n * context_->Q_size;
-                    plain.scheme_ = context_->scheme_;
-                    plain.context_id_ = context_->context_id_;
-                    plain.depth_ = 0;
-                    plain.scale_ = scale;
-                    plain.in_ntt_domain_ = true;
-                    plain.encoding_ = type;
-                    plain.plaintext_generated_ = true;
+                    plain_.plain_size_ = context_->n * context_->Q_size;
+                    plain_.scheme_ = context_->scheme_;
+                    plain_.context_id_ = context_->context_id_;
+                    plain_.depth_ = 0;
+                    plain_.scale_ = scale;
+                    plain_.in_ntt_domain_ = true;
+                    plain_.encoding_ = type;
+                    plain_.plaintext_generated_ = true;
                 },
                 options);
         }
@@ -398,14 +398,14 @@ namespace heongpu
                 {
                     encode_ckks(plain_, message, scale, options.stream_);
 
-                    plain.plain_size_ = context_->n * context_->Q_size;
-                    plain.scheme_ = context_->scheme_;
-                    plain.context_id_ = context_->context_id_;
-                    plain.depth_ = 0;
-                    plain.scale_ = scale;
-                    plain.in_ntt_domain_ = true;
-                    plain.encoding_ = type;
-                    plain.plaintext_generated_ = true;
+                    plain_.plain_size_ = context_->n * context_->Q_size;
+                    plain_.scheme_ = context_->scheme_;
+                    plain_.context_id_ = context_->context_id_;
+                    plain_.depth_ = 0;
+                    plain_.scale_ = scale;
+                    plain_.in_ntt_domain_ = true;
+                    plain_.encoding_ = type;
+                    plain_.plaintext_generated_ = true;
                 },
                 options);
         }
@@ -447,14 +447,14 @@ namespace heongpu
                 {
                     encode_ckks(plain_, message, scale, options.stream_);
 
-                    plain.plain_size_ = context_->n * context_->Q_size;
-                    plain.scheme_ = context_->scheme_;
-                    plain.context_id_ = context_->context_id_;
-                    plain.depth_ = 0;
-                    plain.scale_ = scale;
-                    plain.in_ntt_domain_ = true;
-                    plain.encoding_ = type;
-                    plain.plaintext_generated_ = true;
+                    plain_.plain_size_ = context_->n * context_->Q_size;
+                    plain_.scheme_ = context_->scheme_;
+                    plain_.context_id_ = context_->context_id_;
+                    plain_.depth_ = 0;
+                    plain_.scale_ = scale;
+                    plain_.in_ntt_domain_ = true;
+                    plain_.encoding_ = type;
+                    plain_.plaintext_generated_ = true;
                 },
                 options);
         }
@@ -466,7 +466,8 @@ namespace heongpu
          * @param plain Plaintext object to be decoded.
          */
         __host__ void
-        decode(std::vector<double>& message, Plaintext<Scheme::CKKS>& plain,
+        decode(std::vector<double>& message,
+               const Plaintext<Scheme::CKKS>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
             plain.validate_context(context_);
@@ -496,7 +497,8 @@ namespace heongpu
          * @param plain Plaintext object to be decoded.
          */
         __host__ void
-        decode(HostVector<double>& message, Plaintext<Scheme::CKKS>& plain,
+        decode(HostVector<double>& message,
+               const Plaintext<Scheme::CKKS>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
             plain.validate_context(context_);
@@ -524,7 +526,8 @@ namespace heongpu
          * @param plain Plaintext object to be decoded.
          */
         __host__ void
-        decode(std::vector<Complex64>& message, Plaintext<Scheme::CKKS>& plain,
+        decode(std::vector<Complex64>& message,
+               const Plaintext<Scheme::CKKS>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
             plain.validate_context(context_);
@@ -553,7 +556,8 @@ namespace heongpu
          * @param plain Plaintext object to be decoded.
          */
         __host__ void
-        decode(HostVector<Complex64>& message, Plaintext<Scheme::CKKS>& plain,
+        decode(HostVector<Complex64>& message,
+               const Plaintext<Scheme::CKKS>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
             plain.validate_context(context_);
@@ -826,7 +830,7 @@ namespace heongpu
          * plain).
          */
         __host__ std::vector<double>
-        decode(Plaintext<Scheme::CKKS>& plain,
+        decode(const Plaintext<Scheme::CKKS>& plain,
                const ExecutionOptions& options = ExecutionOptions())
         {
             std::vector<double> message;

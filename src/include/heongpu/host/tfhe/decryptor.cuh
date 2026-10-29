@@ -32,7 +32,7 @@ namespace heongpu
          *                   the TFHE encryption scheme.
          */
         __host__ HEDecryptor(HEContext<Scheme::TFHE> context,
-                             Secretkey<Scheme::TFHE>& secret_key);
+                             const Secretkey<Scheme::TFHE>& secret_key);
 
         /**
          * @brief Decrypts a TFHE ciphertext into a vector of boolean messages.
@@ -50,14 +50,14 @@ namespace heongpu
          * to use. Defaults to `ExecutionOptions()`.
          */
         __host__ void
-        decrypt(Ciphertext<Scheme::TFHE>& ciphertext,
+        decrypt(const Ciphertext<Scheme::TFHE>& ciphertext,
                 std::vector<bool>& messages,
                 const ExecutionOptions& options = ExecutionOptions())
         {
             input_storage_manager(
                 ciphertext,
                 [&](Ciphertext<Scheme::TFHE>& ciphertext_)
-                { decrypt_lwe(messages, ciphertext, options.stream_); },
+                { decrypt_lwe(messages, ciphertext_, options.stream_); },
                 options, false);
         }
 

@@ -46,7 +46,7 @@ namespace heongpu
          * decryption.
          */
         __host__ HEDecryptor(HEContext<Scheme::CKKS> context,
-                             Secretkey<Scheme::CKKS>& secret_key);
+                             const Secretkey<Scheme::CKKS>& secret_key);
 
         /**
          * @brief Decrypts a ciphertext into a plaintext, automatically
@@ -58,7 +58,7 @@ namespace heongpu
          */
         __host__ void
         decrypt(Plaintext<Scheme::CKKS>& plaintext,
-                Ciphertext<Scheme::CKKS>& ciphertext,
+                const Ciphertext<Scheme::CKKS>& ciphertext,
                 const ExecutionOptions& options = ExecutionOptions())
         {
             ciphertext.validate_context(context_);
@@ -75,19 +75,19 @@ namespace heongpu
                         plaintext,
                         [&](Plaintext<Scheme::CKKS>& plaintext_)
                         {
-                            decrypt_ckks(plaintext_, ciphertext,
+                            decrypt_ckks(plaintext_, ciphertext_,
                                          options.stream_);
 
-                            plaintext.plain_size_ =
+                            plaintext_.plain_size_ =
                                 context_->n *
-                                (context_->Q_size - ciphertext.depth_);
-                            plaintext.scheme_ = context_->scheme_;
-                            plaintext.context_id_ = context_->context_id_;
-                            plaintext.depth_ = ciphertext.depth_;
-                            plaintext.scale_ = ciphertext.scale_;
-                            plaintext.in_ntt_domain_ = true;
-                            plaintext.encoding_ = ciphertext.encoding_;
-                            plaintext.plaintext_generated_ = true;
+                                (context_->Q_size - ciphertext_.depth_);
+                            plaintext_.scheme_ = context_->scheme_;
+                            plaintext_.context_id_ = context_->context_id_;
+                            plaintext_.depth_ = ciphertext_.depth_;
+                            plaintext_.scale_ = ciphertext_.scale_;
+                            plaintext_.in_ntt_domain_ = true;
+                            plaintext_.encoding_ = ciphertext_.encoding_;
+                            plaintext_.plaintext_generated_ = true;
                         },
                         options);
                 },
@@ -108,7 +108,7 @@ namespace heongpu
          * decrypt(plaintext, ciphertext).
          */
         __host__ Plaintext<Scheme::CKKS>
-        decrypt(Ciphertext<Scheme::CKKS>& ciphertext,
+        decrypt(const Ciphertext<Scheme::CKKS>& ciphertext,
                 const ExecutionOptions& options = ExecutionOptions())
         {
             Plaintext<Scheme::CKKS> output(context_, options);

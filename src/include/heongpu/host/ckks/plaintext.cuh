@@ -87,6 +87,7 @@ namespace heongpu
          * @return Data64* Pointer to the plaintext data.
          */
         Data64* data();
+        const Data64* data() const;
 
         /**
          * @brief Returns the size of the plaintext.

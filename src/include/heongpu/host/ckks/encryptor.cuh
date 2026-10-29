@@ -38,7 +38,7 @@ namespace heongpu
          * encryption.
          */
         __host__ HEEncryptor(HEContext<Scheme::CKKS> context,
-                             Publickey<Scheme::CKKS>& public_key);
+                             const Publickey<Scheme::CKKS>& public_key);
 
         /**
          * @brief Encrypts a plaintext into a ciphertext, automatically
@@ -50,7 +50,7 @@ namespace heongpu
          */
         __host__ void
         encrypt(Ciphertext<Scheme::CKKS>& ciphertext,
-                Plaintext<Scheme::CKKS>& plaintext,
+                const Plaintext<Scheme::CKKS>& plaintext,
                 const ExecutionOptions& options = ExecutionOptions())
         {
             plaintext.validate_context(context_);
@@ -74,21 +74,21 @@ namespace heongpu
                         ciphertext,
                         [&](Ciphertext<Scheme::CKKS>& ciphertext_)
                         {
-                            encrypt_ckks(ciphertext_, plaintext,
+                            encrypt_ckks(ciphertext_, plaintext_,
                                          options.stream_);
 
-                            ciphertext.scheme_ = context_->scheme_;
-                            ciphertext.context_id_ = context_->context_id_;
-                            ciphertext.ring_size_ = context_->n;
-                            ciphertext.coeff_modulus_count_ = context_->Q_size;
-                            ciphertext.cipher_size_ = 2;
-                            ciphertext.depth_ = 0;
-                            ciphertext.in_ntt_domain_ = true;
-                            ciphertext.encoding_ = plaintext.encoding_;
-                            ciphertext.scale_ = plaintext.scale_;
-                            ciphertext.rescale_required_ = false;
-                            ciphertext.relinearization_required_ = false;
-                            ciphertext.ciphertext_generated_ = true;
+                            ciphertext_.scheme_ = context_->scheme_;
+                            ciphertext_.context_id_ = context_->context_id_;
+                            ciphertext_.ring_size_ = context_->n;
+                            ciphertext_.coeff_modulus_count_ = context_->Q_size;
+                            ciphertext_.cipher_size_ = 2;
+                            ciphertext_.depth_ = 0;
+                            ciphertext_.in_ntt_domain_ = true;
+                            ciphertext_.encoding_ = plaintext_.encoding_;
+                            ciphertext_.scale_ = plaintext_.scale_;
+                            ciphertext_.rescale_required_ = false;
+                            ciphertext_.relinearization_required_ = false;
+                            ciphertext_.ciphertext_generated_ = true;
                         },
                         options);
                 },
@@ -109,7 +109,7 @@ namespace heongpu
          * encrypt(ciphertext, plaintext).
          */
         __host__ Ciphertext<Scheme::CKKS>
-        encrypt(Plaintext<Scheme::CKKS>& plaintext,
+        encrypt(const Plaintext<Scheme::CKKS>& plaintext,
                 const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::CKKS> output(context_, options);

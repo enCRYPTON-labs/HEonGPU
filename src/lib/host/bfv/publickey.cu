@@ -39,6 +39,18 @@ namespace heongpu
         }
     }
 
+    const Data64* Publickey<Scheme::BFV>::data() const
+    {
+        if (storage_type_ == storage_type::device)
+        {
+            return device_locations_.data();
+        }
+        else
+        {
+            return host_locations_.data();
+        }
+    }
+
     void Publickey<Scheme::BFV>::store_in_device(cudaStream_t stream)
     {
         if (storage_type_ == storage_type::device)

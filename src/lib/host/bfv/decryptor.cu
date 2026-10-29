@@ -9,9 +9,9 @@
 
 namespace heongpu
 {
-    __host__
-    HEDecryptor<Scheme::BFV>::HEDecryptor(HEContext<Scheme::BFV> context,
-                                          Secretkey<Scheme::BFV>& secret_key)
+    __host__ HEDecryptor<Scheme::BFV>::HEDecryptor(
+        HEContext<Scheme::BFV> context,
+        const Secretkey<Scheme::BFV>& secret_key)
     {
         if (!context || !context->context_generated_)
         {
@@ -34,8 +34,8 @@ namespace heongpu
         }
         else
         {
-            secret_key.store_in_device();
-            secret_key_ = secret_key.device_locations_;
+            // The key itself stays in host memory.
+            secret_key_ = DeviceVector<Data64>(secret_key.host_locations_);
             HEONGPU_CUDA_CHECK(cudaStreamSynchronize(secret_key_.stream()));
         }
     }
@@ -174,7 +174,8 @@ namespace heongpu
     }
 
     __host__ int HEDecryptor<Scheme::BFV>::noise_budget_calculation(
-        Ciphertext<Scheme::BFV>& ciphertext, const ExecutionOptions& options)
+        const Ciphertext<Scheme::BFV>& ciphertext,
+        const ExecutionOptions& options)
     {
         const auto* ctx = context_.get();
         const int n = ctx->n;
@@ -187,8 +188,8 @@ namespace heongpu
             ciphertext,
             [&](Ciphertext<Scheme::BFV>& ciphertext_)
             {
-                Data64* ct0 = ciphertext.data();
-                Data64* ct1 = ciphertext.data() + (Q_size << n_power);
+                Data64* ct0 = ciphertext_.data();
+                Data64* ct1 = ciphertext_.data() + (Q_size << n_power);
 
                 gpuntt::ntt_rns_configuration<Data64> cfg_ntt = {
                     .n_power = n_power,

@@ -35,7 +35,7 @@ namespace heongpu
          * encryption.
          */
         __host__ HEEncryptor(HEContext<Scheme::TFHE> context,
-                             Secretkey<Scheme::TFHE>& secret_key);
+                             const Secretkey<Scheme::TFHE>& secret_key);
 
         /**
          * @brief Encrypts a vector of boolean messages into a TFHE ciphertext.

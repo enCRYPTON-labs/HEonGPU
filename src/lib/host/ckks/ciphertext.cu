@@ -127,6 +127,18 @@ namespace heongpu
         }
     }
 
+    const Data64* Ciphertext<Scheme::CKKS>::data() const
+    {
+        if (storage_type_ == storage_type::device)
+        {
+            return device_locations_.data();
+        }
+        else
+        {
+            return host_locations_.data();
+        }
+    }
+
     void Ciphertext<Scheme::CKKS>::get_data(std::vector<Data64>& cipher,
                                             cudaStream_t stream)
     {

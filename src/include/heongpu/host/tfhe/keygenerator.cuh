@@ -53,7 +53,8 @@ namespace heongpu
          * @param options Optional CUDA execution settings.
          */
         __host__ void generate_bootstrapping_key(
-            Bootstrappingkey<Scheme::TFHE>& bk, Secretkey<Scheme::TFHE>& sk,
+            Bootstrappingkey<Scheme::TFHE>& bk,
+            const Secretkey<Scheme::TFHE>& sk,
             const ExecutionOptions& options = ExecutionOptions());
 
       private:

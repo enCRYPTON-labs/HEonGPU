@@ -46,7 +46,7 @@ namespace heongpu
          * decryption.
          */
         __host__ HEDecryptor(HEContext<Scheme::BFV> context,
-                             Secretkey<Scheme::BFV>& secret_key);
+                             const Secretkey<Scheme::BFV>& secret_key);
 
         /**
          * @brief Decrypts a ciphertext into a plaintext, automatically
@@ -58,7 +58,7 @@ namespace heongpu
          */
         __host__ void
         decrypt(Plaintext<Scheme::BFV>& plaintext,
-                Ciphertext<Scheme::BFV>& ciphertext,
+                const Ciphertext<Scheme::BFV>& ciphertext,
                 const ExecutionOptions& options = ExecutionOptions())
         {
             ciphertext.validate_context(context_);
@@ -74,11 +74,11 @@ namespace heongpu
                             decrypt_bfv(plaintext_, ciphertext_,
                                         options.stream_);
 
-                            plaintext.plain_size_ = context_->n;
-                            plaintext.scheme_ = context_->scheme_;
-                            plaintext.context_id_ = context_->context_id_;
-                            plaintext.in_ntt_domain_ = false;
-                            plaintext.plaintext_generated_ = true;
+                            plaintext_.plain_size_ = context_->n;
+                            plaintext_.scheme_ = context_->scheme_;
+                            plaintext_.context_id_ = context_->context_id_;
+                            plaintext_.in_ntt_domain_ = false;
+                            plaintext_.plaintext_generated_ = true;
                         },
                         options);
                 },
@@ -93,7 +93,7 @@ namespace heongpu
          * @return int The remainder of the noise budget in the ciphertext.
          */
         __host__ int remainder_noise_budget(
-            Ciphertext<Scheme::BFV>& ciphertext,
+            const Ciphertext<Scheme::BFV>& ciphertext,
             const ExecutionOptions& options = ExecutionOptions())
         {
             return noise_budget_calculation(ciphertext, options);
@@ -113,7 +113,7 @@ namespace heongpu
          * decrypt(plaintext, ciphertext).
          */
         __host__ Plaintext<Scheme::BFV>
-        decrypt(Ciphertext<Scheme::BFV>& ciphertext,
+        decrypt(const Ciphertext<Scheme::BFV>& ciphertext,
                 const ExecutionOptions& options = ExecutionOptions())
         {
             Plaintext<Scheme::BFV> output(context_, options);
@@ -131,7 +131,7 @@ namespace heongpu
                                     const cudaStream_t stream);
 
         __host__ int noise_budget_calculation(
-            Ciphertext<Scheme::BFV>& ciphertext,
+            const Ciphertext<Scheme::BFV>& ciphertext,
             const ExecutionOptions& options = ExecutionOptions());
 
         __host__ void
