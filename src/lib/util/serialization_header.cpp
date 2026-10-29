@@ -66,20 +66,11 @@ namespace heongpu
                                         scheme_type scheme,
                                         std::uint64_t context_id)
         {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            // Deprecated, written until 2.0.
-            if (format == serialization_format::v1)
-            {
-                return;
-            }
-#pragma GCC diagnostic pop
             if (format != serialization_format::v2)
             {
                 throw ParameterError(error_message(
                     "Invalid serialization format ", static_cast<int>(format),
-                    "! Expected serialization_format::v1 or "
-                    "serialization_format::v2."));
+                    "! Expected serialization_format::v2."));
             }
             std::array<unsigned char, field_bytes> fields;
             fields[0] = format_version & 0xFF;

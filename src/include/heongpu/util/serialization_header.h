@@ -31,8 +31,7 @@ namespace heongpu
 
         // Writes the serialization_format::v2 header: the magic number
         // "HEGP", the format version, the object type, the scheme and the
-        // context identity, in little-endian order. Writes nothing for
-        // serialization_format::v1.
+        // context identity, in little-endian order.
         void write_serialization_header(std::ostream& os,
                                         serialization_format format,
                                         serialized_object object,
@@ -41,8 +40,8 @@ namespace heongpu
 
         // Reads and checks the serialization_format::v2 header when the
         // stream starts with one, and returns the context identity stored in
-        // it. Returns 0 without reading anything for serialization_format::v1
-        // data, which starts with the scheme.
+        // it. Returns 0 without reading anything for data of the format v1
+        // (HEonGPU 1.2 and earlier), which starts with the scheme.
         std::uint64_t read_serialization_header(std::istream& is,
                                                 serialized_object object,
                                                 scheme_type scheme);

@@ -11,11 +11,9 @@
 #include <string>
 #include <type_traits>
 
-// The format v1, deprecated; its writing is tested until 2.0 removes it.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-static constexpr auto format_v1 = heongpu::serialization_format::v1;
-#pragma GCC diagnostic pop
+// Data of the format v1 (HEonGPU 1.2 and earlier), which HEonGPU still reads,
+// is the data of serialization_format::v2 without its 16-byte header.
+static constexpr std::size_t v2_header_size = 16;
 
 namespace
 {
@@ -222,8 +220,8 @@ TEST(HEonGPU, ContextMismatchError_For_A_Key_Of_Other_Digits)
     // The format v1 has the fields only; the digit count follows the scheme,
     // the key switching type and three ints.
     std::stringstream stream;
-    relin_key.save(stream, format_v1);
-    std::string binary = stream.str();
+    relin_key.save(stream);
+    std::string binary = stream.str().substr(v2_header_size);
     int digits;
     std::memcpy(&digits, binary.data() + 14, sizeof(int));
     EXPECT_EQ(digits, 2);
@@ -290,8 +288,8 @@ TEST_F(CKKSErrors, SerializationError_Reports_The_Scheme)
     heongpu::Plaintext<scheme> plaintext(context);
     encoder.encode(plaintext, std::vector<double>(degree / 2, 0.5), scale);
     std::stringstream stream;
-    plaintext.save(stream, format_v1);
-    std::string binary = stream.str();
+    plaintext.save(stream);
+    std::string binary = stream.str().substr(v2_header_size);
     binary[0] = static_cast<char>(heongpu::scheme_type::bfv);
 
     std::stringstream corrupted(binary);

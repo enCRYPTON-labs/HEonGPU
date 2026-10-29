@@ -11,12 +11,6 @@
 #include <string>
 #include <vector>
 
-// The format v1, deprecated; its writing is tested until 2.0 removes it.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-static constexpr auto format_v1 = heongpu::serialization_format::v1;
-#pragma GCC diagnostic pop
-
 // The rotation is rotate for CKKS and rotate_rows for BFV.
 template <heongpu::Scheme S>
 static void rotate(heongpu::HEArithmeticOperator<S>& operators,
@@ -185,14 +179,12 @@ namespace
                                        : heongpu::scheme_type::bfv;
         Party<S> a{make_context<S>(0)};
 
-        // Checks the v2 header and that the v1 data is the v2 data without
-        // its header.
+        // Checks the v2 header.
         template <typename O>
         void expect_formats(const O& object, uint8_t object_type,
                             uint64_t context_id)
         {
             const std::string v2 = save(object);
-            const std::string v1 = save(object, format_v1);
             ASSERT_GT(v2.size(), header_size);
             EXPECT_EQ(v2.substr(0, 4), "HEGP");
             EXPECT_EQ(static_cast<unsigned char>(v2[4]), 2);
@@ -201,7 +193,6 @@ namespace
             EXPECT_EQ(static_cast<unsigned char>(v2[7]),
                       static_cast<unsigned char>(scheme_id));
             EXPECT_EQ(read_id(v2), context_id);
-            EXPECT_EQ(v2.substr(header_size), v1);
         }
     };
 
@@ -232,18 +223,19 @@ TYPED_TEST(SerializationFormat, V1_And_V2_Data_Load)
     constexpr auto S = TestFixture::S;
     auto& a = this->a;
     auto ciphertext = a.encrypt();
-    for (auto format : {format_v1, heongpu::serialization_format::v2})
+    // The format v1 is the v2 data without its header.
+    for (std::size_t header : {header_size, std::size_t(0)})
     {
         heongpu::Ciphertext<S> loaded;
-        load(loaded, save(ciphertext, format));
+        load(loaded, save(ciphertext).substr(header));
         EXPECT_TRUE(a.decrypts_correctly(loaded));
 
         heongpu::Ciphertext<S> bound(a.context);
-        load(bound, save(ciphertext, format));
+        load(bound, save(ciphertext).substr(header));
         EXPECT_TRUE(a.decrypts_correctly(bound));
 
         auto context = heongpu::GenHEContext<S>();
-        load(*context, save(*a.context, format));
+        load(*context, save(*a.context).substr(header));
         EXPECT_EQ(context->context_id(), a.context->context_id());
     }
 }
@@ -318,12 +310,18 @@ TYPED_TEST(SerializationFormat, Decrypted_Plaintext_Can_Be_Saved)
     EXPECT_EQ(save(loaded), binary);
 }
 
+// 1 is the format v1, which HEonGPU 2.0 no longer writes.
 TYPED_TEST(SerializationFormat, Unknown_Format_Is_Rejected)
 {
-    std::stringstream stream;
-    EXPECT_THROW(this->a.encrypt().save(
-                     stream, static_cast<heongpu::serialization_format>(3)),
-                 heongpu::ParameterError);
+    for (int format : {1, 3})
+    {
+        std::stringstream stream;
+        EXPECT_THROW(
+            this->a.encrypt().save(
+                stream, static_cast<heongpu::serialization_format>(format)),
+            heongpu::ParameterError);
+        EXPECT_TRUE(stream.str().empty());
+    }
 }
 
 TYPED_TEST(SerializationFormat, Loaded_Keys_Give_The_Same_Results)

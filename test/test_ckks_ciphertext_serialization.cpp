@@ -13,11 +13,9 @@
 #include <sstream>
 #include <thread>
 
-// The format v1, deprecated; its writing is tested until 2.0 removes it.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-static constexpr auto format_v1 = heongpu::serialization_format::v1;
-#pragma GCC diagnostic pop
+// Data of the format v1 (HEonGPU 1.2 and earlier), which HEonGPU still reads,
+// is the data of serialization_format::v2 without its 16-byte header.
+static constexpr std::size_t v2_header_size = 16;
 
 namespace
 {
@@ -106,8 +104,8 @@ namespace
     {
         std::stringstream stream;
         // BinaryCiphertext parses the field layout of the format v1.
-        ciphertext.save(stream, format_v1);
-        return stream.str();
+        ciphertext.save(stream);
+        return stream.str().substr(v2_header_size);
     }
 
     std::vector<Data64> data(heongpu::Ciphertext<scheme>& ciphertext)

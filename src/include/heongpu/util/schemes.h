@@ -157,10 +157,8 @@ namespace heongpu
 
     enum class serialization_format : std::uint8_t
     {
-        // The fields only, as written by HEonGPU 1.2 and earlier. Readable by
-        // every HEonGPU version. Writing it ends with 2.0; reading it stays.
-        v1 [[deprecated("Use serialization_format::v2; HEonGPU 2.0 no "
-                        "longer writes v1.")]] = 0x1,
+        // 0x1 was the format v1 of HEonGPU 1.2 and earlier, the fields
+        // only, which HEonGPU 2.0 no longer writes but still reads.
 
         // A header with a magic number, the format version, the object type,
         // the scheme and the context identity before the fields. Readable by
