@@ -911,7 +911,7 @@ namespace heongpu
 
         bool galois_key_generated_ = false;
 
-        // for rotate_rows
+        // for rotate
         std::unordered_map<int, int> galois_elt;
         std::unordered_map<int, DeviceVector<Data64>> device_location_;
         std::unordered_map<int, HostVector<Data64>> host_location_;

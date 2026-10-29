@@ -1358,25 +1358,6 @@ namespace heongpu
             rotate(input1, input1, galois_key, shift, options);
         }
 
-        // The slots of CKKS are not split into rows; see rotate.
-        [[deprecated("Use rotate() instead.")]] __host__ void
-        rotate_rows(Ciphertext<Scheme::CKKS>& input1,
-                    Ciphertext<Scheme::CKKS>& output,
-                    Galoiskey<Scheme::CKKS>& galois_key, int shift,
-                    const ExecutionOptions& options = ExecutionOptions())
-        {
-            rotate(input1, output, galois_key, shift, options);
-        }
-
-        [[deprecated("Use rotate_inplace() instead.")]] __host__ void
-        rotate_rows_inplace(
-            Ciphertext<Scheme::CKKS>& input1,
-            Galoiskey<Scheme::CKKS>& galois_key, int shift,
-            const ExecutionOptions& options = ExecutionOptions())
-        {
-            rotate_inplace(input1, galois_key, shift, options);
-        }
-
         /**
          * @brief Applies a Galois automorphism to the ciphertext and stores the
          * result in the output.
@@ -1950,17 +1931,6 @@ namespace heongpu
                        const std::vector<int>& shifts,
                        const ExecutionOptions& options = ExecutionOptions());
 
-        [[deprecated("Use rotate_hoisted() instead.")]] __host__
-            std::vector<Ciphertext<Scheme::CKKS>>
-            rotate_rows_hoisted(
-                Ciphertext<Scheme::CKKS>& input1,
-                Galoiskey<Scheme::CKKS>& galois_key,
-                const std::vector<int>& shifts,
-                const ExecutionOptions& options = ExecutionOptions())
-        {
-            return rotate_hoisted(input1, galois_key, shifts, options);
-        }
-
         /**
          * @brief Returns the polynomial
          * coefficients[0] + coefficients[1] * x + ... + coefficients[d] * x^d
@@ -2120,15 +2090,6 @@ namespace heongpu
             Ciphertext<Scheme::CKKS> output(context_, options);
             rotate(input1, output, galois_key, shift, options);
             return output;
-        }
-
-        [[deprecated("Use rotate() instead.")]] __host__
-            Ciphertext<Scheme::CKKS>
-            rotate_rows(Ciphertext<Scheme::CKKS>& input1,
-                        Galoiskey<Scheme::CKKS>& galois_key, int shift,
-                        const ExecutionOptions& options = ExecutionOptions())
-        {
-            return rotate(input1, galois_key, shift, options);
         }
 
         /**
@@ -4428,8 +4389,6 @@ namespace heongpu
         using HEOperator<Scheme::CKKS>::mod_drop_inplace;
         using HEOperator<Scheme::CKKS>::rotate;
         using HEOperator<Scheme::CKKS>::rotate_inplace;
-        using HEOperator<Scheme::CKKS>::rotate_rows;
-        using HEOperator<Scheme::CKKS>::rotate_rows_inplace;
 
       private:
         enum class logic_gate
