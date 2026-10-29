@@ -721,111 +721,138 @@ namespace heongpu
             }
 
             input_storage_manager(
-                input1,
-                [&](Ciphertext<Scheme::TFHE>& input1_)
+                control_input,
+                [&](Ciphertext<Scheme::TFHE>& control_input_)
                 {
                     input_storage_manager(
-                        input2,
-                        [&](Ciphertext<Scheme::TFHE>& input2_)
+                        input1,
+                        [&](Ciphertext<Scheme::TFHE>& input1_)
                         {
                             input_storage_manager(
-                                boot_key,
-                                [&](Bootstrappingkey<Scheme::TFHE>& boot_key_)
+                                input2,
+                                [&](Ciphertext<Scheme::TFHE>& input2_)
                                 {
-                                    output_storage_manager(
-                                        output,
-                                        [&](Ciphertext<Scheme::TFHE>& output_)
+                                    input_storage_manager(
+                                        boot_key,
+                                        [&](Bootstrappingkey<Scheme::TFHE>&
+                                                boot_key_)
                                         {
-                                            Ciphertext<Scheme::TFHE>
-                                                temp_cipher1 =
-                                                    generate_empty_ciphertext(
-                                                        context_->n_,
-                                                        input1.shape_,
+                                            output_storage_manager(
+                                                output,
+                                                [&](Ciphertext<Scheme::TFHE>&
+                                                        output_)
+                                                {
+                                                    Ciphertext<Scheme::TFHE>
+                                                        temp_cipher1 =
+                                                            generate_empty_ciphertext(
+                                                                context_->n_,
+                                                                input1.shape_,
+                                                                options
+                                                                    .stream_);
+
+                                                    AND_pre_computation(
+                                                        control_input_, input1,
+                                                        temp_cipher1,
                                                         options.stream_);
 
-                                            AND_pre_computation(
-                                                control_input, input1,
-                                                temp_cipher1, options.stream_);
+                                                    Ciphertext<Scheme::TFHE>
+                                                        temp_cipher2 =
+                                                            generate_empty_ciphertext(
+                                                                (context_->k_ *
+                                                                 context_->N_),
+                                                                input1.shape_,
+                                                                options
+                                                                    .stream_);
 
-                                            Ciphertext<Scheme::TFHE>
-                                                temp_cipher2 =
-                                                    generate_empty_ciphertext(
-                                                        (context_->k_ *
-                                                         context_->N_),
-                                                        input1.shape_,
+                                                    bootstrapping(
+                                                        temp_cipher1,
+                                                        temp_cipher2, boot_key,
                                                         options.stream_);
 
-                                            bootstrapping(
-                                                temp_cipher1, temp_cipher2,
-                                                boot_key, options.stream_);
+                                                    //
 
-                                            //
+                                                    Ciphertext<Scheme::TFHE>
+                                                        temp_cipher3 =
+                                                            generate_empty_ciphertext(
+                                                                context_->n_,
+                                                                input1.shape_,
+                                                                options
+                                                                    .stream_);
 
-                                            Ciphertext<Scheme::TFHE>
-                                                temp_cipher3 =
-                                                    generate_empty_ciphertext(
-                                                        context_->n_,
-                                                        input1.shape_,
+                                                    AND_N_pre_computation(
+                                                        control_input_, input2,
+                                                        temp_cipher3,
                                                         options.stream_);
 
-                                            AND_N_pre_computation(
-                                                control_input, input2,
-                                                temp_cipher3, options.stream_);
+                                                    Ciphertext<Scheme::TFHE>
+                                                        temp_cipher4 =
+                                                            generate_empty_ciphertext(
+                                                                (context_->k_ *
+                                                                 context_->N_),
+                                                                input1.shape_,
+                                                                options
+                                                                    .stream_);
 
-                                            Ciphertext<Scheme::TFHE>
-                                                temp_cipher4 =
-                                                    generate_empty_ciphertext(
-                                                        (context_->k_ *
-                                                         context_->N_),
-                                                        input1.shape_,
+                                                    bootstrapping(
+                                                        temp_cipher3,
+                                                        temp_cipher4, boot_key,
                                                         options.stream_);
 
-                                            bootstrapping(
-                                                temp_cipher3, temp_cipher4,
-                                                boot_key, options.stream_);
+                                                    //
 
-                                            //
+                                                    Ciphertext<Scheme::TFHE>
+                                                        temp_cipher5 =
+                                                            generate_empty_ciphertext(
+                                                                (context_->k_ *
+                                                                 context_->N_),
+                                                                input1.shape_,
+                                                                options
+                                                                    .stream_);
 
-                                            Ciphertext<Scheme::TFHE>
-                                                temp_cipher5 =
-                                                    generate_empty_ciphertext(
-                                                        (context_->k_ *
-                                                         context_->N_),
-                                                        input1.shape_,
+                                                    OR_pre_computation(
+                                                        temp_cipher2,
+                                                        temp_cipher4,
+                                                        temp_cipher5,
                                                         options.stream_);
 
-                                            OR_pre_computation(
-                                                temp_cipher2, temp_cipher4,
-                                                temp_cipher5, options.stream_);
+                                                    output.a_device_location_
+                                                        .resize(
+                                                            input1.shape_ *
+                                                                context_->n_,
+                                                            options.stream_);
+                                                    output.b_device_location_
+                                                        .resize(
+                                                            input1.shape_,
+                                                            options.stream_);
+                                                    output.n_ = input1.n_;
+                                                    output.shape_ =
+                                                        input1.shape_;
+                                                    output.variances_ =
+                                                        input1.variances_;
+                                                    output.alpha_min_ =
+                                                        input1.alpha_min_;
+                                                    output.alpha_max_ =
+                                                        input1.alpha_max_;
+                                                    output
+                                                        .ciphertext_generated_ =
+                                                        true;
+                                                    output.storage_type_ =
+                                                        storage_type::device;
 
-                                            output.a_device_location_.resize(
-                                                input1.shape_ * context_->n_,
-                                                options.stream_);
-                                            output.b_device_location_.resize(
-                                                input1.shape_, options.stream_);
-                                            output.n_ = input1.n_;
-                                            output.shape_ = input1.shape_;
-                                            output.variances_ =
-                                                input1.variances_;
-                                            output.alpha_min_ =
-                                                input1.alpha_min_;
-                                            output.alpha_max_ =
-                                                input1.alpha_max_;
-                                            output.ciphertext_generated_ = true;
-                                            output.storage_type_ =
-                                                storage_type::device;
-
-                                            key_switching(temp_cipher5, output,
-                                                          boot_key,
-                                                          options.stream_);
+                                                    key_switching(
+                                                        temp_cipher5, output,
+                                                        boot_key,
+                                                        options.stream_);
+                                                },
+                                                options);
                                         },
-                                        options);
+                                        options, false);
                                 },
-                                options, false);
+                                options, (&input2 == &output));
                         },
-                        options, (&input2 == &output));
+                        options, (&input1 == &output));
                 },
-                options, (&input1 == &output));
+                options, (&control_input == &output));
         }
 
       private:

@@ -100,3 +100,40 @@ TEST(Inputs, CKKS_NOT_Leaves_Its_Input)
         ASSERT_NEAR(result[i], 1 - message[i], 1e-3) << i;
     }
 }
+
+// TFHE MUX takes its control input from host memory too.
+TEST(Inputs, TFHE_MUX_With_A_Control_Input_In_Host_Memory)
+{
+    constexpr auto S = heongpu::Scheme::TFHE;
+    auto context = heongpu::GenHEContext<S>();
+    heongpu::HEKeyGenerator<S> keygen(context);
+    heongpu::Secretkey<S> secret_key(context);
+    keygen.generate_secret_key(secret_key);
+    heongpu::Bootstrappingkey<S> boot_key(context);
+    keygen.generate_bootstrapping_key(boot_key, secret_key);
+    heongpu::HEEncryptor<S> encryptor(context, secret_key);
+    heongpu::HEDecryptor<S> decryptor(context, secret_key);
+    heongpu::HELogicOperator<S> logic(context);
+
+    constexpr int size = 32;
+    std::vector<bool> a(size), b(size), c(size), expected(size);
+    for (int i = 0; i < size; i++)
+    {
+        a[i] = i % 2;
+        b[i] = (i / 2) % 2;
+        c[i] = (i / 4) % 2;
+        expected[i] = c[i] ? a[i] : b[i];
+    }
+    heongpu::Ciphertext<S> x(context), y(context), control(context);
+    encryptor.encrypt(x, a);
+    encryptor.encrypt(y, b);
+    encryptor.encrypt(control, c);
+    control.store_in_host();
+    ASSERT_EQ(cudaDeviceSynchronize(), cudaSuccess);
+
+    heongpu::Ciphertext<S> output(context);
+    logic.MUX(x, y, control, output, boot_key);
+    std::vector<bool> result;
+    decryptor.decrypt(output, result);
+    EXPECT_EQ(result, expected);
+}
