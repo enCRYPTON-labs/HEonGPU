@@ -23,19 +23,9 @@ Core Enumerations
 
 **Key-Switching Method**
     Key-switching operations like relinearization and rotation use hybrid
-    key switching (`KEYSWITCHING_METHOD_II`). The P modulus base count sets
-    the number of primes per digit; with `P_size == 1` every digit is one
-    prime, which is the classical method (`KEYSWITCHING_METHOD_I` of earlier
-    versions, whose data still loads). `P_size == 0` is invalid.
-
-    .. code-block:: cpp
-
-        namespace heongpu {
-            enum class keyswitching_type {
-                KEYSWITCHING_METHOD_I,  // Earlier versions, for one P prime; deprecated
-                KEYSWITCHING_METHOD_II, // Hybrid method, used by every context
-            };
-        }
+    key switching. The P modulus base count sets the number of primes per
+    digit; with `P_size == 1` every digit is one prime, which is the
+    classical method. `P_size == 0` is invalid.
 
 Context and Parameter Classes
 -----------------------------

@@ -209,3 +209,29 @@ TEST(HEonGPU, BFV_Value_Returning_Versions)
     same(operators.rotate_columns(x, galois_key),
          [&](Ciphertext& r) { operators.rotate_columns(x, r, galois_key); });
 }
+
+// The inputs are taken by const reference, so calls can be chained.
+TEST(HEonGPU, CKKS_Calls_Can_Be_Chained)
+{
+    constexpr auto S = heongpu::Scheme::CKKS;
+    auto context = heongpu::GenHEContext<S>(heongpu::sec_level_type::none);
+    context->set_poly_modulus_degree(degree);
+    context->set_coeff_modulus_bit_sizes({40, 30, 30}, {40});
+    context->generate();
+    heongpu::HEKeyGenerator<S> generator(context);
+    auto secret_key = generator.secret_key();
+    heongpu::HEEncoder<S> encoder(context);
+    heongpu::HEEncryptor<S> encryptor(context,
+                                      generator.public_key(secret_key));
+    heongpu::HEDecryptor<S> decryptor(context, secret_key);
+    heongpu::HEArithmeticOperator<S> operators(context, encoder);
+    const double scale = pow(2.0, 30);
+    std::vector<double> message(degree / 2, 0.25);
+
+    auto x = encryptor.encrypt(encoder.encode(message, scale));
+    auto values = encoder.decode(decryptor.decrypt(operators.add(x, x)));
+    for (int i = 0; i < degree / 2; i++)
+    {
+        ASSERT_NEAR(values[i], 0.5, 1e-3) << i;
+    }
+}

@@ -19,7 +19,7 @@ The implementation is heavily optimized for GPU execution and is based on techni
 
 * **Efficient DFT**: Instead of naive or BSGS methods for the homomorphic DFT, HEonGPU employs a more optimized approach described in the paper "Faster Homomorphic Discrete Fourier Transforms and Improved FHE Bootstrapping" (`ePrint 2018/1073 <https://eprint.iacr.org/2018/1073.pdf>`_). While this method consumes more circuit depth, it significantly minimizes the number of multiplications and rotations, leading to a substantial performance improvement.
 * **Full Slot Utilization**: The library utilizes all available slots in the CKKS ciphertext, avoiding the sparse packing method described in some earlier works.
-* **Double Hoisting**: The `Coeff to Slot` and `Slot to Coeff` matrix multiplications use double hoisting and require ``KEYSWITCHING_METHOD_II`` (more than one P prime).
+* **Double Hoisting**: The `Coeff to Slot` and `Slot to Coeff` matrix multiplications use double hoisting and require more than one P prime.
 * **Configurable Precision**: The `Approximate Modular Reduction` stage evaluates a Chebyshev interpolation of the cosine followed by double-angle steps. The `EvalModConfig` class configures it (``K``, polynomial degree, number of double-angle steps, ``message_ratio``).
 * **Non-Sparse Keys**: Bootstrapping works with a dense secret key; an optional temporary sparse secret key is used only around `ModRaise` through dense-to-sparse and sparse-to-dense switch keys (`ePrint 2020/1203 <https://eprint.iacr.org/2020/1203.pdf>`_).
 * **Memory Management**: Bootstrapping is extremely memory-intensive, particularly due to the large size of the Galois keys required for rotations. Galois keys can also be stored on the CPU at the cost of performance.

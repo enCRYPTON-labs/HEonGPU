@@ -81,11 +81,13 @@ namespace heongpu
         }
 
         /**
-         * @brief Specifies whether to preserve the initial data location.
+         * @brief Specifies whether the object an *_inplace operation changes
+         * returns to its initial location after the operation.
          *
-         * Controls whether the initial data location (e.g., host or device) is
-         * preserved during execution. If set to `true`, the data will be
-         * returned to its initial location after the operation.
+         * The inputs of an operation never move: an input in host memory is
+         * read from a temporary copy on the device. Only the object changed
+         * in place is affected; if set to `true`, an object that was in host
+         * memory is brought back there unless the storage type is device.
          *
          * @param keep_initial_condition Boolean flag to determine whether to
          * keep the initial location.

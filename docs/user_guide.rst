@@ -29,7 +29,7 @@ Most functions write their result into an object passed by the caller, which can
     auto decrypted = decryptor.decrypt(sum);
     auto values = encoder.decode(decrypted);
 
-The inputs are taken by non-const reference, so they have to be named objects; the result of one call cannot be passed directly to the next.
+The inputs are taken by ``const`` reference, so the result of one call can be passed directly to the next, as in ``decryptor.decrypt(operators.add(x, x))``.
 
 For vectors packed into the slots, ``sum_slots(ciphertext, galois_key)`` puts the sum of all slots into every slot, and ``inner_product(x, y, relin_key, galois_key)`` the inner product of two ciphertexts (or of a ciphertext and a plaintext). They need the Galois keys for the steps 1, 2, 4, ... up to half the slot count, as ``Galoiskey(context, log2(slot count) - 1)`` has; for CKKS, the default ``Galoiskey`` also works, with more rotations.
 
@@ -191,50 +191,19 @@ Storage Management with `ExecutionOptions`
 
 The ``ExecutionOptions`` struct provides precise control over where data resides, which is critical for optimizing complex computational pipelines by minimizing host-device data transfers.
 
-* ``set_storage_type(storage_type)``: Defines the desired location (``device`` or ``host``) for the *output* data of an operation.
-* ``set_initial_location(bool)``: If ``true``, ensures that input data returns to its original location after the computation. If ``false``, input data that was moved to the device for computation will remain on the device.
+* ``set_storage_type(storage_type)``: Defines the desired location (``device`` or ``host``) for the *output* data of an operation, and for the object an ``*_inplace`` operation changes.
+* ``set_initial_location(bool)``: Only applies to the object an ``*_inplace`` operation changes.
+
+The inputs of an operation are taken by ``const`` reference and never change: an input in host memory is read from a temporary copy on the device and stays in host memory. To keep an input on the device for later operations, move it there once with ``store_in_device()``.
 
 .. code-block:: cpp
 
-    // Example: Inputs are on HOST, but we want the output on DEVICE
-    // and want inputs to remain on HOST after the operation.
+    // Inputs in host memory, the output on the device.
     ExecutionOptions options;
-    options.set_storage_type(storage_type::device)
-           .set_initial_location(true);
+    options.set_storage_type(storage_type::device);
 
     operators.add(host_input1, host_input2, device_output, options);
-
-The following table details the behavior for all combinations:
-
-.. list-table:: ExecutionOptions Behavior
-   :widths: 15 15 25 25 20
-   :header-rows: 1
-
-   * - `set_storage_type`
-     - `set_initial_location`
-     - Input Locations (Before)
-     - Input Locations (After)
-     - Output Location
-   * - `device`
-     - `true`
-     - `input1: host, input2: host`
-     - `input1: host, input2: host`
-     - `device`
-   * - `device`
-     - `false`
-     - `input1: host, input2: host`
-     - `input1: device, input2: device`
-     - `device`
-   * - `host`
-     - `true`
-     - `input1: host, input2: device`
-     - `input1: host, input2: host`
-     - `host`
-   * - `host`
-     - `false`
-     - `input1: device, input2: device`
-     - `input1: device, input2: device`
-     - `host`
+    // host_input1 and host_input2 are still in host memory.
 
 Serialization
 -------------
@@ -246,12 +215,7 @@ HEonGPU includes a high-performance serialization module for all major objects (
 
 Since HEonGPU 1.3, ``save`` writes the binary format version 2 by default. It starts with a 16 byte header: the magic number ``HEGP``, the format version, the object type, the scheme and the identity of the context the object belongs to (see `Context Identity`_). ``load`` checks the header and throws ``SerializationError`` for data that is not an HEonGPU object of the expected type and scheme, and ``ContextMismatchError`` for data of another context.
 
-``load`` also reads the format version 1 written by HEonGPU 1.2 and earlier. To write data that older HEonGPU versions can read, pass the format explicitly:
-
-.. code-block:: cpp
-
-    ciphertext.save(stream);                                        // version 2
-    ciphertext.save(stream, heongpu::serialization_format::v1);   // version 1, deprecated
+``load`` also reads the format version 1 written by HEonGPU 1.2 and earlier. HEonGPU 2.0 writes the format version 2 only, which HEonGPU 1.3 and later read.
 
 Error Handling
 --------------

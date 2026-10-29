@@ -55,18 +55,19 @@ HEonGPU follows `semantic versioning <https://semver.org/>`_:
 
 APIs that will be removed are first marked ``[[deprecated]]``, with the replacement in the warning, for at least one minor version, and removed in the next major version.
 
-Deprecated since 1.7.0, removed in 2.0:
+Removed in 2.0, with the replacements to use:
 
-* CKKS ``rotate_rows``, ``rotate_rows_inplace`` and ``rotate_rows_hoisted``: use ``rotate``, ``rotate_inplace`` and ``rotate_hoisted``. CKKS slots are not split into rows; BFV keeps ``rotate_rows`` and ``rotate_columns``.
-* The CKKS bootstrapping functions that take the switch keys by pointer (``regular_bootstrapping``, ``slim_bootstrapping``, ``bit_bootstrapping`` and the gates such as ``AND_bootstrapping``): use the overloads with ``CKKSBootstrappingKeys``.
-* ``serialization_format::v1`` for writing; 2.0 still reads data in this format.
-* ``keyswitching_type::KEYSWITCHING_METHOD_I``: every context uses hybrid key switching. 2.0 removes ``keyswitching_type`` from the public API.
-* The upper case values ``storage_type::HOST``/``DEVICE``, ``encoding::SLOT``/``COEFFICIENT``, ``arithmetic_bootstrapping_type::NONE``/``REGULAR_BOOTSTRAPPING``/``SLIM_BOOTSTRAPPING`` and ``logic_bootstrapping_type::NONE``/``BIT_BOOTSTRAPPING``/``GATE_BOOTSTRAPPING``: use the lower case values (``storage_type::device``, ``encoding::slot``, ``arithmetic_bootstrapping_type::regular``, ...).
-* ``bootstrapping_key_indexs``: use ``bootstrapping_key_indices`` (since 1.2).
+* CKKS ``rotate_rows``, ``rotate_rows_inplace`` and ``rotate_rows_hoisted``: ``rotate``, ``rotate_inplace`` and ``rotate_hoisted``. CKKS slots are not split into rows; BFV keeps ``rotate_rows`` and ``rotate_columns``.
+* The CKKS bootstrapping functions that took the switch keys by pointer (``regular_bootstrapping``, ``slim_bootstrapping``, ``bit_bootstrapping`` and the gates such as ``AND_bootstrapping``): the overloads with ``CKKSBootstrappingKeys``.
+* ``bootstrapping_key_indexs``: ``bootstrapping_key_indices``.
+* ``get_seed``, ``set_seed``, ``get_offset`` and ``set_offset`` of the encryptors, decryptors and key generators, which had no effect: nothing; the random numbers come from ``RandomNumberGenerator``.
+* The upper case values ``storage_type::HOST``/``DEVICE``, ``encoding::SLOT``/``COEFFICIENT``, ``arithmetic_bootstrapping_type::NONE``/``REGULAR_BOOTSTRAPPING``/``SLIM_BOOTSTRAPPING`` and ``logic_bootstrapping_type::NONE``/``BIT_BOOTSTRAPPING``/``GATE_BOOTSTRAPPING``: the lower case values (``storage_type::device``, ``encoding::slot``, ``arithmetic_bootstrapping_type::regular``, ...).
+* ``serialization_format::v1``: ``save`` writes the format version 2 only. ``load`` still reads data of the format version 1.
+* ``keyswitching_type``: nothing; every context uses hybrid key switching, and ``to_string()`` of a context no longer shows it.
 
-2.0 will also take the inputs of the operations by ``const`` reference, which does not change code that calls them.
+The inputs of the operations, of encoding, encryption, decryption, key generation and multiparty computation are taken by ``const`` reference. Code that calls them compiles unchanged, and the result of one call can be passed directly to the next. An operation never changes its inputs: an input in host memory is read from a temporary copy on the device and stays in host memory, also with ``set_initial_location(false)``, which now only applies to the object an ``*_inplace`` operation changes. Code that relied on ``set_initial_location(false)`` to move inputs to the device moves them with ``store_in_device()`` instead. An encryptor or decryptor created with a key in host memory copies the key to the device and leaves the key in host memory.
 
-Serialized data stays readable: HEonGPU 1.x reads the data written by every earlier 1.x version. A newer version can write data that older versions cannot read; ``save(stream, heongpu::serialization_format::v1)`` writes data for HEonGPU 1.2 and earlier until 2.0; it is deprecated since 1.7.0, and 2.0 keeps reading such data.
+Serialized data stays readable: HEonGPU 2.0 reads the data written by every 1.x version, and HEonGPU 1.3 and later read the data written by 2.0.
 
 Supported toolchain: CUDA 12.8 or newer, a C++20 compiler (tested with GCC 11.4) and CMake 4.0 or newer.
 
@@ -74,7 +75,7 @@ Supported toolchain: CUDA 12.8 or newer, a C++20 compiler (tested with GCC 11.4)
 
 * A generated context is not changed afterwards and can be shared by threads.
 * Keys and operators can be shared by threads that run operations on their own ciphertexts and plaintexts and their own CUDA streams, as the multi-stream examples do.
-* An object that an operation writes, or moves between host and device memory, must not be used by another thread at the same time.
+* Operations do not change their inputs, so threads can share them. An object that an operation writes, or that is moved between host and device memory, must not be used by another thread at the same time.
 * The memory pool is thread-safe. Call ``heongpu::initialize()`` and ``heongpu::shutdown()`` while no other thread uses HEonGPU.
 * Key generation, encryption and multiparty computation can run from several threads. They draw from one process-wide random number generator. It takes one request at a time on the host but does not wait for the GPU, so the GPU work of requests on different CUDA streams runs concurrently. The numbers of a seed, as the common polynomials of multiparty computation, are drawn without other threads drawing in between and are the same on every GPU and every kind of CUDA stream.
 

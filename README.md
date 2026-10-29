@@ -520,47 +520,20 @@ In HEonGPU, Fully Homomorphic Encryption (FHE) operations rely on an efficient s
 
 ### How Storage Management Works
 
-The `ExecutionOptions` struct in HEonGPU determines how input data is handled during and after GPU computations. Specifically:
+Objects can be stored in host or device memory, and the operations take them from either. The `ExecutionOptions` struct sets where the results go:
 
-- `set_storage_type`: Defines where the output data should reside after the operation (`storage_type::device` or `storage_type::host`).
-
-- `set_initial_location`: Determines whether the input data should return to its original location after the computation.
+- `set_storage_type`: where the output of an operation is stored (`storage_type::device` or `storage_type::host`), and where the object an `*_inplace` operation changes ends up.
 
 ```c++
 // ...
 ExecutionOptions options;
-options.set_storage_type(storage_type::device)
-       .set_initial_location(true);
+options.set_storage_type(storage_type::device);
 
 operators.add(input1, input2, output, options);
 // ...
 ```
 
-- Simple case:
-  - If `input1` and `input2` are initially on the `HOST`, they will be copied to the `DEVICE` for the computation.
-  - After the operation, since `set_initial_location(true)` is specified, both `input1` and `input2` will return to the `HOST`.
-  - The `output` will remain on the `DEVICE`, as specified by `set_storage_type(storage_type::device)`.
-
-- All case:
-
-<div align="center">
-
-| `set_storage_type` | `set_initial_location` | Input Locations (Before)            | Input Locations (After)             | Output Location After Computation |
-|:------------------:|:----------------------:|:-----------------------------------:|:-----------------------------------:|:---------------------------------:|
-| `DEVICE`           | `true`                | `input1: HOST, input2: HOST`        | `input1: HOST, input2: HOST`        | `DEVICE`                             |
-| `DEVICE`           | `false`               | `input1: HOST, input2: HOST`        | `input1: DEVICE, input2: DEVICE`    | `DEVICE`                             |
-| `DEVICE`           | `true`                | `input1: HOST, input2: DEVICE`      | `input1: HOST, input2: DEVICE`      | `DEVICE`                             |
-| `DEVICE`           | `false`               | `input1: HOST, input2: DEVICE`      | `input1: DEVICE, input2: DEVICE`    | `DEVICE`                             |
-| `DEVICE`           | `true`                | `input1: DEVICE, input2: DEVICE`    | `input1: DEVICE, input2: DEVICE`    | `DEVICE`                             |
-| `DEVICE`           | `false`               | `input1: DEVICE, input2: DEVICE`    | `input1: DEVICE, input2: DEVICE`    | `DEVICE`                             |
-| `HOST`             | `true`                | `input1: HOST, input2: HOST`        | `input1: HOST, input2: HOST`        | `HOST`                               |
-| `HOST`             | `false`               | `input1: HOST, input2: HOST`        | `input1: DEVICE, input2: DEVICE`    | `HOST`                               |
-| `HOST`             | `true`                | `input1: HOST, input2: DEVICE`      | `input1: HOST, input2: HOST`        | `HOST`                               |
-| `HOST`             | `false`               | `input1: HOST, input2: DEVICE`      | `input1: DEVICE, input2: DEVICE`    | `HOST`                               |
-| `HOST`             | `true`                | `input1: DEVICE, input2: DEVICE`    | `input1: DEVICE, input2: DEVICE`    | `HOST`                               |
-| `HOST`             | `false`               | `input1: DEVICE, input2: DEVICE`    | `input1: DEVICE, input2: DEVICE`    | `HOST`                               |
-
-</div>
+The inputs of an operation are taken by `const` reference and never change: an input in host memory is read from a temporary copy on the device and stays in host memory. To keep an input on the device for later operations, move it there once with `store_in_device()`. `set_initial_location` only applies to the object an `*_inplace` operation changes.
 
 ## Using HEonGPU in a downstream CMake project
 
@@ -598,16 +571,16 @@ HEonGPU follows [semantic versioning](https://semver.org/):
 - **Minor versions** (1.4, 1.5, ...) add features without breaking code that compiles against the previous minor version. They can change the ABI, so rebuild code that uses HEonGPU; the shared library is versioned accordingly (`libheongpu.so.1.4`).
 - **Patch versions** (1.4.1, ...) fix bugs without changing the API or the ABI.
 
-APIs that will be removed are first marked `[[deprecated]]`, with the replacement in the warning, for at least one minor version, and removed in the next major version. The documentation (Advanced Topics) lists the deprecated APIs.
+APIs that will be removed are first marked `[[deprecated]]`, with the replacement in the warning, for at least one minor version, and removed in the next major version. HEonGPU 2.0 removed the APIs deprecated in 1.x; the documentation (Advanced Topics) lists them with their replacements.
 
-Serialized data stays readable: HEonGPU 1.x reads the data written by every earlier 1.x version. A newer version can write data that older versions cannot read; `save(stream, heongpu::serialization_format::v1)` writes data for HEonGPU 1.2 and earlier until 2.0; it is deprecated since 1.7.0, and 2.0 keeps reading such data.
+Serialized data stays readable: HEonGPU 2.0 reads the data written by every 1.x version, and HEonGPU 1.3 and later read the data written by 2.0. HEonGPU 2.0 writes the format version 2 only; data of the format version 1, written by HEonGPU 1.2 and earlier, can still be loaded.
 
 Supported toolchain: CUDA 12.8 or newer, a C++20 compiler (tested with GCC 11.4) and CMake 4.0 or newer.
 
 ### Thread safety
 - A generated context is not changed afterwards and can be shared by threads.
 - Keys and operators can be shared by threads that run operations on their own ciphertexts and plaintexts and their own CUDA streams, as the multi-stream examples do.
-- An object that an operation writes, or moves between host and device memory, must not be used by another thread at the same time.
+- Operations do not change their inputs, so threads can share them. An object that an operation writes, or that is moved between host and device memory, must not be used by another thread at the same time.
 - The memory pool is thread-safe. Call `heongpu::initialize()` and `heongpu::shutdown()` while no other thread uses HEonGPU.
 - Key generation, encryption and multiparty computation can run from several threads. They draw from one process-wide random number generator. It takes one request at a time on the host but does not wait for the GPU, so the GPU work of requests on different CUDA streams runs concurrently. The numbers of a seed, as the common polynomials of multiparty computation, are drawn without other threads drawing in between and are the same on every GPU and every kind of CUDA stream.
 
@@ -627,7 +600,7 @@ Please use the below BibTeX, to cite HEonGPU in academic papers.
 
 Please use the below BibTeX, to cite key-switching optimizations in academic papers.
 
-Note: `heongpu::keyswitching_type::KEYSWITCHING_METHOD_III` is available only in release [`v1.1.3`](https://github.com/Alisah-Ozcan/HEonGPU/releases/tag/v1.1.3) and earlier.
+Note: the key switching method of this paper is available only in release [`v1.1.3`](https://github.com/Alisah-Ozcan/HEonGPU/releases/tag/v1.1.3) and earlier.
 
 ```
 @misc{cryptoeprint:2025/124,
