@@ -116,26 +116,14 @@ TYPED_TEST(RNSSecretKey, PrivateRandomnessExactWeightCopyAndSerialization)
         SCOPED_TRACE(weight);
         heongpu::Secretkey<S> ungenerated(context, weight);
         heongpu::Secretkey<S> first(ungenerated), second(ungenerated);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        generator.set_seed(12345);
-#pragma GCC diagnostic pop
         generator.generate_secret_key(
             first, heongpu::ExecutionOptions().set_stream(stream));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        generator.set_seed(12345);
-#pragma GCC diagnostic pop
         generator.generate_secret_key(
             second, heongpu::ExecutionOptions().set_stream(stream));
         auto bytes = save(first);
         if (weight != 1)
             EXPECT_NE(bytes, save(second));
         heongpu::Secretkey<S> third(ungenerated);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        other_generator.set_seed(12345);
-#pragma GCC diagnostic pop
         other_generator.generate_secret_key(third);
         if (weight != 1)
             EXPECT_NE(bytes, save(third));

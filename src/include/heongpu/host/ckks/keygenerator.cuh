@@ -119,52 +119,6 @@ namespace heongpu
             generate_ckks_switch_key(swk, new_sk, old_sk, options);
         }
 
-        /**
-         * @brief Returns the legacy seed value retained for API compatibility.
-         * This value is independent of secret key randomness.
-         *
-         * @return int Seed of the key generator.
-         */
-        [[deprecated("Has no effect: random numbers come from "
-                     "heongpu::RandomNumberGenerator.")]] inline int
-        get_seed() const noexcept
-        {
-            return seed_;
-        }
-
-        /**
-         * @brief Sets the legacy seed value retained for API compatibility.
-         * This does not make secret key generation deterministic.
-         */
-        [[deprecated("Has no effect: random numbers come from "
-                     "heongpu::RandomNumberGenerator.")]] inline void
-        set_seed(int new_seed)
-        {
-            seed_ = new_seed;
-        }
-
-        /**
-         * @brief Returns the offset of the key generator (no effect).
-         *
-         * @return int Offset of the key generator.
-         */
-        [[deprecated("Has no effect: random numbers come from "
-                     "heongpu::RandomNumberGenerator.")]] inline int
-        get_offset() const noexcept
-        {
-            return offset_;
-        }
-
-        /**
-         * @brief Sets the offset of the key generator with new offset (no effect).
-         */
-        [[deprecated("Has no effect: random numbers come from "
-                     "heongpu::RandomNumberGenerator.")]] inline void
-        set_offset(int new_offset)
-        {
-            offset_ = new_offset;
-        }
-
         HEKeyGenerator() = delete;
         HEKeyGenerator(const HEKeyGenerator& copy) = delete;
         HEKeyGenerator(HEKeyGenerator&& source) = delete;
@@ -280,8 +234,6 @@ namespace heongpu
 
       private:
         HEContext<Scheme::CKKS> context_;
-        int seed_;
-        int offset_; // Unused, see get_offset()
 
         RNGSeed new_seed_;
     };

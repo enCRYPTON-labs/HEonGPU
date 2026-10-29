@@ -27,11 +27,6 @@ namespace heongpu
             throw StateError("Secretkey is not generated! Call "
                              "HEKeyGenerator::generate_secret_key first.");
 
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        seed_ = gen();
-        offset_ = gen();
-
         if (secret_key.storage_type_ == storage_type::device)
         {
             secret_key_ = secret_key.device_locations_;

@@ -22,11 +22,6 @@ namespace heongpu
         context_ = std::move(context);
         public_key.validate_context(context_);
 
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        seed_ = gen();
-        offset_ = gen();
-
         if (public_key.storage_type_ == storage_type::device)
         {
             public_key_ = public_key.device_locations_;

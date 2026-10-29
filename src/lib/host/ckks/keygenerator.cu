@@ -22,11 +22,6 @@ namespace heongpu
 
         context_ = std::move(context);
 
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        seed_ = gen();
-        offset_ = gen();
-
         new_seed_ = RNGSeed();
     }
 

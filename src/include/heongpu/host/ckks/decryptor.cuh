@@ -94,50 +94,6 @@ namespace heongpu
                 options, false);
         }
 
-        /**
-         * @brief Returns the seed of the decryptor.
-         *
-         * @return int Seed of the decryptor.
-         */
-        [[deprecated("Has no effect: random numbers come from "
-                     "heongpu::RandomNumberGenerator.")]] inline int
-        get_seed() const noexcept
-        {
-            return seed_;
-        }
-
-        /**
-         * @brief Sets the seed of the decryptor with new seed.
-         */
-        [[deprecated("Has no effect: random numbers come from "
-                     "heongpu::RandomNumberGenerator.")]] inline void
-        set_seed(int new_seed)
-        {
-            seed_ = new_seed;
-        }
-
-        /**
-         * @brief Returns the offset of the decryptor (no effect).
-         *
-         * @return int Offset of the decryptor.
-         */
-        [[deprecated("Has no effect: random numbers come from "
-                     "heongpu::RandomNumberGenerator.")]] inline int
-        get_offset() const noexcept
-        {
-            return offset_;
-        }
-
-        /**
-         * @brief Sets the offset of the decryptor with new offset (no effect).
-         */
-        [[deprecated("Has no effect: random numbers come from "
-                     "heongpu::RandomNumberGenerator.")]] inline void
-        set_offset(int new_offset)
-        {
-            offset_ = new_offset;
-        }
-
         HEDecryptor() = default;
         HEDecryptor(const HEDecryptor& copy) = default;
         HEDecryptor(HEDecryptor&& source) = default;
@@ -178,8 +134,6 @@ namespace heongpu
 
       private:
         HEContext<Scheme::CKKS> context_;
-        int seed_;
-        int offset_; // Unused, see get_offset()
 
         DeviceVector<Data64> secret_key_;
     };
