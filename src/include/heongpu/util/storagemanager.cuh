@@ -188,6 +188,16 @@ namespace heongpu
      * @param is_input_output_same A flag indicating whether the input and
      * output storage should remain consistent for each object.
      */
+    inline void synchronize_input_stream(cudaStream_t stream)
+    {
+        cudaError_t error = cudaStreamSynchronize(stream);
+        if (error != cudaSuccess)
+        {
+            throw SystemError(
+                error_message("CUDA error: ", cudaGetErrorString(error)));
+        }
+    }
+
     /**
      * @brief Runs function on a const input of an operation, on the device.
      *
@@ -215,6 +225,9 @@ namespace heongpu
             function(const_cast<T&>(object));
             return;
         }
+        // Earlier work on the stream, such as an encoding stored in host
+        // memory, may still be writing the host data.
+        synchronize_input_stream(options.stream_);
         T device_copy(object);
         device_copy.store_in_device(options.stream_);
         function(device_copy);
@@ -318,6 +331,7 @@ namespace heongpu
             function(const_cast<std::vector<T>&>(objects));
             return;
         }
+        synchronize_input_stream(options.stream_);
         std::vector<T> device_copies(objects);
         for (T& copy : device_copies)
         {

@@ -106,8 +106,8 @@ namespace heongpu
         }
     }
 
-    Ciphertext<Scheme::CKKS>&
-    HEOperator<Scheme::CKKS>::rescaled(Ciphertext<Scheme::CKKS>& input,
+    const Ciphertext<Scheme::CKKS>&
+    HEOperator<Scheme::CKKS>::rescaled(const Ciphertext<Scheme::CKKS>& input,
                                        Ciphertext<Scheme::CKKS>& storage,
                                        const ExecutionOptions& options)
     {
@@ -129,8 +129,8 @@ namespace heongpu
         return storage;
     }
 
-    Ciphertext<Scheme::CKKS>& HEOperator<Scheme::CKKS>::dropped(
-        Ciphertext<Scheme::CKKS>& input, int depth,
+    const Ciphertext<Scheme::CKKS>& HEOperator<Scheme::CKKS>::dropped(
+        const Ciphertext<Scheme::CKKS>& input, int depth,
         Ciphertext<Scheme::CKKS>& storage, const ExecutionOptions& options)
     {
         if (input.depth_ == depth)
@@ -194,12 +194,11 @@ namespace heongpu
         }
     }
 
-    void HEOperator<Scheme::CKKS>::prepare(Ciphertext<Scheme::CKKS>*& input1,
-                                           Ciphertext<Scheme::CKKS>*& input2,
-                                           Ciphertext<Scheme::CKKS>& storage1,
-                                           Ciphertext<Scheme::CKKS>& storage2,
-                                           bool keep_rescale,
-                                           const ExecutionOptions& options)
+    void HEOperator<Scheme::CKKS>::prepare(
+        const Ciphertext<Scheme::CKKS>*& input1,
+        const Ciphertext<Scheme::CKKS>*& input2,
+        Ciphertext<Scheme::CKKS>& storage1, Ciphertext<Scheme::CKKS>& storage2,
+        bool keep_rescale, const ExecutionOptions& options)
     {
         bool both_rescale = input1->rescale_required_ &&
                             input2->rescale_required_ &&
@@ -221,11 +220,12 @@ namespace heongpu
         check_level_scale(*input2);
     }
 
-    void HEOperator<Scheme::CKKS>::prepare(Ciphertext<Scheme::CKKS>*& input1,
-                                           Plaintext<Scheme::CKKS>*& input2,
-                                           Ciphertext<Scheme::CKKS>& storage1,
-                                           Plaintext<Scheme::CKKS>& storage2,
-                                           const ExecutionOptions& options)
+    void
+    HEOperator<Scheme::CKKS>::prepare(const Ciphertext<Scheme::CKKS>*& input1,
+                                      const Plaintext<Scheme::CKKS>*& input2,
+                                      Ciphertext<Scheme::CKKS>& storage1,
+                                      Plaintext<Scheme::CKKS>& storage2,
+                                      const ExecutionOptions& options)
     {
         input1 = &rescaled(*input1, storage1, options);
         if (input1->depth_ < input2->depth_)
@@ -246,16 +246,16 @@ namespace heongpu
         check_level_scale(*input2);
     }
 
-    Ciphertext<Scheme::CKKS>&
-    HEOperator<Scheme::CKKS>::automatic_input(Ciphertext<Scheme::CKKS>& input,
-                                              Ciphertext<Scheme::CKKS>& storage,
-                                              const ExecutionOptions& options)
+    const Ciphertext<Scheme::CKKS>& HEOperator<Scheme::CKKS>::automatic_input(
+        const Ciphertext<Scheme::CKKS>& input,
+        Ciphertext<Scheme::CKKS>& storage, const ExecutionOptions& options)
     {
         if (!automatic())
         {
             return input;
         }
-        Ciphertext<Scheme::CKKS>& first = rescaled(input, storage, options);
+        const Ciphertext<Scheme::CKKS>& first =
+            rescaled(input, storage, options);
         check_level_scale(first);
         return first;
     }
@@ -270,13 +270,15 @@ namespace heongpu
         return context_->level_scales_[input.level() - depth];
     }
 
-    __host__ void HEOperator<Scheme::CKKS>::add(
-        Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& input2,
-        Ciphertext<Scheme::CKKS>& output, const ExecutionOptions& options)
+    __host__ void
+    HEOperator<Scheme::CKKS>::add(const Ciphertext<Scheme::CKKS>& input1,
+                                  const Ciphertext<Scheme::CKKS>& input2,
+                                  Ciphertext<Scheme::CKKS>& output,
+                                  const ExecutionOptions& options)
     {
         if (run_automatic(input1, input2, true, options,
-                          [&](Ciphertext<Scheme::CKKS>& first,
-                              Ciphertext<Scheme::CKKS>& second)
+                          [&](const Ciphertext<Scheme::CKKS>& first,
+                              const Ciphertext<Scheme::CKKS>& second)
                           { add(first, second, output, options); }))
         {
             return;
@@ -380,13 +382,15 @@ namespace heongpu
             options, (&input1 == &output));
     }
 
-    __host__ void HEOperator<Scheme::CKKS>::sub(
-        Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& input2,
-        Ciphertext<Scheme::CKKS>& output, const ExecutionOptions& options)
+    __host__ void
+    HEOperator<Scheme::CKKS>::sub(const Ciphertext<Scheme::CKKS>& input1,
+                                  const Ciphertext<Scheme::CKKS>& input2,
+                                  Ciphertext<Scheme::CKKS>& output,
+                                  const ExecutionOptions& options)
     {
         if (run_automatic(input1, input2, true, options,
-                          [&](Ciphertext<Scheme::CKKS>& first,
-                              Ciphertext<Scheme::CKKS>& second)
+                          [&](const Ciphertext<Scheme::CKKS>& first,
+                              const Ciphertext<Scheme::CKKS>& second)
                           { sub(first, second, output, options); }))
         {
             return;
@@ -491,7 +495,7 @@ namespace heongpu
     }
 
     __host__ void
-    HEOperator<Scheme::CKKS>::negate(Ciphertext<Scheme::CKKS>& input1,
+    HEOperator<Scheme::CKKS>::negate(const Ciphertext<Scheme::CKKS>& input1,
                                      Ciphertext<Scheme::CKKS>& output,
                                      const ExecutionOptions& options)
     {
@@ -1219,8 +1223,8 @@ namespace heongpu
 
     __host__ void
     HEOperator<Scheme::CKKS>::relinearize_external_product_inplace_ckks(
-        Ciphertext<Scheme::CKKS>& input1, Relinkey<Scheme::CKKS>& relin_key,
-        const cudaStream_t stream)
+        Ciphertext<Scheme::CKKS>& input1,
+        const Relinkey<Scheme::CKKS>& relin_key, const cudaStream_t stream)
     {
         int first_rns_mod_count = context_->Q_prime_size;
         int current_rns_mod_count = context_->Q_prime_size - input1.depth_;
@@ -1595,11 +1599,10 @@ namespace heongpu
         HEONGPU_CUDA_CHECK(cudaGetLastError());
     }
 
-    __host__ void
-    HEOperator<Scheme::CKKS>::rotate_ckks(Ciphertext<Scheme::CKKS>& input1,
-                                          Ciphertext<Scheme::CKKS>& output,
-                                          Galoiskey<Scheme::CKKS>& galois_key,
-                                          int shift, const cudaStream_t stream)
+    __host__ void HEOperator<Scheme::CKKS>::rotate_ckks(
+        Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& output,
+        const Galoiskey<Scheme::CKKS>& galois_key, int shift,
+        const cudaStream_t stream)
     {
         int galoiselt =
             steps_to_galois_elt(shift, context_->n, galois_key.group_order_);
@@ -1640,7 +1643,7 @@ namespace heongpu
                         " (needed for shift ", shift,
                         ")! Generate the Galoiskey with this shift."));
                 }
-                required_galoiselt.push_back(galois_key.galois_elt[index]);
+                required_galoiselt.push_back(galois_key.galois_elt.at(index));
             }
 
             Ciphertext<Scheme::CKKS>* current_input = &input1;
@@ -1655,12 +1658,13 @@ namespace heongpu
 
     __host__ std::vector<Ciphertext<Scheme::CKKS>>
     HEOperator<Scheme::CKKS>::rotate_hoisted(
-        Ciphertext<Scheme::CKKS>& input1, Galoiskey<Scheme::CKKS>& galois_key,
+        const Ciphertext<Scheme::CKKS>& input1,
+        const Galoiskey<Scheme::CKKS>& galois_key,
         const std::vector<int>& shifts, const ExecutionOptions& options)
     {
         std::vector<Ciphertext<Scheme::CKKS>> rotated;
         if (run_automatic(input1, options,
-                          [&](Ciphertext<Scheme::CKKS>& first) {
+                          [&](const Ciphertext<Scheme::CKKS>& first) {
                               rotated = rotate_hoisted(first, galois_key,
                                                        shifts, options);
                           }))
@@ -1805,8 +1809,9 @@ namespace heongpu
 
     __host__ void HEOperator<Scheme::CKKS>::apply_galois_decomposed(
         Ciphertext<Scheme::CKKS>& input1, GaloisDecomposition& decomposition,
-        Ciphertext<Scheme::CKKS>& output, Galoiskey<Scheme::CKKS>& galois_key,
-        int galois_elt, const cudaStream_t stream)
+        Ciphertext<Scheme::CKKS>& output,
+        const Galoiskey<Scheme::CKKS>& galois_key, int galois_elt,
+        const cudaStream_t stream)
     {
         int first_rns_mod_count = context_->Q_prime_size;
         int current_rns_mod_count = context_->Q_prime_size - input1.depth_;
@@ -1838,7 +1843,7 @@ namespace heongpu
             keyswitch_multiply_accumulate_leveled_kernel<<<
                 dim3((context_->n >> 8), current_rns_mod_count, 1), 256, 0,
                 stream>>>(decomposition.digits.data(),
-                          galois_key.device_location_[galois_elt].data(),
+                          galois_key.device_location_.at(galois_elt).data(),
                           key_switched.data(), context_->modulus_->data(),
                           first_rns_mod_count, current_decomp_count,
                           current_rns_mod_count, iteration_count_1,
@@ -1848,7 +1853,7 @@ namespace heongpu
         else
         {
             DeviceVector<Data64> key_location(
-                galois_key.host_location_[galois_elt], stream);
+                galois_key.host_location_.at(galois_elt), stream);
             keyswitch_multiply_accumulate_leveled_kernel<<<
                 dim3((context_->n >> 8), current_rns_mod_count, 1), 256, 0,
                 stream>>>(decomposition.digits.data(), key_location.data(),
@@ -1924,7 +1929,7 @@ namespace heongpu
 
     __host__ void HEOperator<Scheme::CKKS>::apply_galois_ckks(
         Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& output,
-        Galoiskey<Scheme::CKKS>& galois_key, int galois_elt,
+        const Galoiskey<Scheme::CKKS>& galois_key, int galois_elt,
         const cudaStream_t stream)
     {
         GaloisDecomposition decomposition =
@@ -1935,7 +1940,7 @@ namespace heongpu
 
     __host__ void HEOperator<Scheme::CKKS>::switchkey_ckks(
         Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& output,
-        Switchkey<Scheme::CKKS>& switch_key, const cudaStream_t stream)
+        const Switchkey<Scheme::CKKS>& switch_key, const cudaStream_t stream)
     {
         int first_rns_mod_count = context_->Q_prime_size;
         int current_rns_mod_count = context_->Q_prime_size - input1.depth_;
@@ -2129,7 +2134,7 @@ namespace heongpu
 
     __host__ void HEOperator<Scheme::CKKS>::conjugate_ckks(
         Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& output,
-        Galoiskey<Scheme::CKKS>& conjugate_key, const cudaStream_t stream)
+        const Galoiskey<Scheme::CKKS>& conjugate_key, const cudaStream_t stream)
     {
         int first_rns_mod_count = context_->Q_prime_size;
         int current_rns_mod_count = context_->Q_prime_size - input1.depth_;
@@ -2339,7 +2344,7 @@ namespace heongpu
 
     __host__ Ciphertext<Scheme::CKKS>
     HEOperator<Scheme::CKKS>::operator_from_ciphertext(
-        Ciphertext<Scheme::CKKS>& input, cudaStream_t stream)
+        const Ciphertext<Scheme::CKKS>& input, cudaStream_t stream)
     {
         Ciphertext<Scheme::CKKS> cipher;
 
@@ -2695,18 +2700,27 @@ namespace heongpu
     }
 
     __host__ Ciphertext<Scheme::CKKS> HEOperator<Scheme::CKKS>::multiply_matrix(
-        Ciphertext<Scheme::CKKS>& cipher,
+        const Ciphertext<Scheme::CKKS>& cipher,
         std::vector<heongpu::DeviceVector<Data64>>& matrix,
         std::vector<std::vector<std::vector<int>>>& diags_matrices_bsgs_,
         std::vector<std::vector<int>>& diags_matrices_bsgs_rot_n1_,
         std::vector<std::vector<int>>& diags_matrices_bsgs_rot_n2_,
-        Galoiskey<Scheme::CKKS>& galois_key, const ExecutionOptions& options)
+        const Galoiskey<Scheme::CKKS>& galois_key,
+        const ExecutionOptions& options)
     {
-        cudaStream_t old_stream = cipher.stream();
-        cipher.switch_stream(options.stream_);
-        Ciphertext<Scheme::CKKS> result;
-        result = cipher;
-        cipher.switch_stream(old_stream);
+        // The copy runs on the stream of cipher, after the work that wrote
+        // it; the stream of the operation waits for it.
+        Ciphertext<Scheme::CKKS> result = cipher;
+        if (cipher.stream() != options.stream_)
+        {
+            cudaEvent_t copied;
+            HEONGPU_CUDA_CHECK(
+                cudaEventCreateWithFlags(&copied, cudaEventDisableTiming));
+            HEONGPU_CUDA_CHECK(cudaEventRecord(copied, cipher.stream()));
+            HEONGPU_CUDA_CHECK(cudaStreamWaitEvent(options.stream_, copied, 0));
+            HEONGPU_CUDA_CHECK(cudaEventDestroy(copied));
+            result.switch_stream(options.stream_);
+        }
 
         int matrix_count = diags_matrices_bsgs_.size();
         int n = context_->n;
@@ -2888,7 +2902,7 @@ namespace heongpu
                             dim3((n >> 8), current_rns_mod_count, 1), 256, 0,
                             stream>>>(
                             temp3.data(),
-                            galois_key.device_location_[galois_elt].data(),
+                            galois_key.device_location_.at(galois_elt).data(),
                             temp4.data(), context_->modulus_->data(),
                             first_rns_mod_count, current_decomp_count,
                             current_rns_mod_count, iteration_count_1,
@@ -2899,7 +2913,7 @@ namespace heongpu
                     else
                     {
                         DeviceVector<Data64> key_location(
-                            galois_key.host_location_[galois_elt], stream);
+                            galois_key.host_location_.at(galois_elt), stream);
                         keyswitch_multiply_accumulate_leveled_kernel<<<
                             dim3((n >> 8), current_rns_mod_count, 1), 256, 0,
                             stream>>>(temp3.data(), key_location.data(),
@@ -3050,7 +3064,8 @@ namespace heongpu
                             dim3((n >> 8), current_rns_mod_count, 1), 256, 0,
                             stream>>>(
                             temp3_gs.data(),
-                            galois_key.device_location_[galois_elt_gs].data(),
+                            galois_key.device_location_.at(galois_elt_gs)
+                                .data(),
                             temp4_gs.data(), context_->modulus_->data(),
                             first_rns_mod_count, current_decomp_count,
                             current_rns_mod_count, iteration_count_1,
@@ -3061,7 +3076,8 @@ namespace heongpu
                     else
                     {
                         DeviceVector<Data64> key_location(
-                            galois_key.host_location_[galois_elt_gs], stream);
+                            galois_key.host_location_.at(galois_elt_gs),
+                            stream);
                         keyswitch_multiply_accumulate_leveled_kernel<<<
                             dim3((n >> 8), current_rns_mod_count, 1), 256, 0,
                             stream>>>(temp3_gs.data(), key_location.data(),
@@ -3162,7 +3178,8 @@ namespace heongpu
 
     __host__ std::vector<Ciphertext<Scheme::CKKS>>
     HEOperator<Scheme::CKKS>::coeff_to_slot(
-        Ciphertext<Scheme::CKKS>& cipher, Galoiskey<Scheme::CKKS>& galois_key,
+        Ciphertext<Scheme::CKKS>& cipher,
+        const Galoiskey<Scheme::CKKS>& galois_key,
         CKKSEncodingTransformContext& transform_context,
         const ExecutionOptions& options)
     {
@@ -3224,9 +3241,10 @@ namespace heongpu
     }
 
     __host__ std::vector<Ciphertext<Scheme::CKKS>>
-    HEOperator<Scheme::CKKS>::coeff_to_slot(Ciphertext<Scheme::CKKS>& cipher,
-                                            Galoiskey<Scheme::CKKS>& galois_key,
-                                            const ExecutionOptions& options)
+    HEOperator<Scheme::CKKS>::coeff_to_slot(
+        Ciphertext<Scheme::CKKS>& cipher,
+        const Galoiskey<Scheme::CKKS>& galois_key,
+        const ExecutionOptions& options)
     {
         cipher.validate_context(context_);
 
@@ -3272,7 +3290,8 @@ namespace heongpu
 
     __host__ Ciphertext<Scheme::CKKS>
     HEOperator<Scheme::CKKS>::solo_coeff_to_slot(
-        Ciphertext<Scheme::CKKS>& cipher, Galoiskey<Scheme::CKKS>& galois_key,
+        Ciphertext<Scheme::CKKS>& cipher,
+        const Galoiskey<Scheme::CKKS>& galois_key,
         const ExecutionOptions& options)
     {
         if (cipher.encoding_ != encoding::coefficient)
@@ -3299,7 +3318,7 @@ namespace heongpu
 
     __host__ Ciphertext<Scheme::CKKS> HEOperator<Scheme::CKKS>::slot_to_coeff(
         Ciphertext<Scheme::CKKS>& cipher0, Ciphertext<Scheme::CKKS>& cipher1,
-        Galoiskey<Scheme::CKKS>& galois_key,
+        const Galoiskey<Scheme::CKKS>& galois_key,
         CKKSEncodingTransformContext& transform_context,
         const ExecutionOptions& options)
     {
@@ -3361,7 +3380,8 @@ namespace heongpu
 
     __host__ Ciphertext<Scheme::CKKS> HEOperator<Scheme::CKKS>::slot_to_coeff(
         Ciphertext<Scheme::CKKS>& cipher0, Ciphertext<Scheme::CKKS>& cipher1,
-        Galoiskey<Scheme::CKKS>& galois_key, const ExecutionOptions& options)
+        const Galoiskey<Scheme::CKKS>& galois_key,
+        const ExecutionOptions& options)
     {
         cipher0.validate_context(context_);
         cipher1.validate_context(context_);
@@ -3402,7 +3422,8 @@ namespace heongpu
 
     __host__ Ciphertext<Scheme::CKKS>
     HEOperator<Scheme::CKKS>::solo_slot_to_coeff(
-        Ciphertext<Scheme::CKKS>& cipher, Galoiskey<Scheme::CKKS>& galois_key,
+        const Ciphertext<Scheme::CKKS>& cipher,
+        const Galoiskey<Scheme::CKKS>& galois_key,
         const ExecutionOptions& options)
     {
         if (cipher.encoding_ != encoding::slot)
@@ -3497,7 +3518,7 @@ namespace heongpu
 
     __host__ Ciphertext<Scheme::CKKS>
     HEOperator<Scheme::CKKS>::eval_mod(Ciphertext<Scheme::CKKS>& cipher,
-                                       Relinkey<Scheme::CKKS>& relin_key,
+                                       const Relinkey<Scheme::CKKS>& relin_key,
                                        const ExecutionOptions& options)
     {
         return eval_mod(cipher, sine_poly_,
@@ -3506,9 +3527,11 @@ namespace heongpu
                         relin_key, options);
     }
 
-    __host__ Ciphertext<Scheme::CKKS> HEOperator<Scheme::CKKS>::eval_mod(
-        Ciphertext<Scheme::CKKS>& cipher, const Polynomial& poly, double shift,
-        Relinkey<Scheme::CKKS>& relin_key, const ExecutionOptions& options)
+    __host__ Ciphertext<Scheme::CKKS>
+    HEOperator<Scheme::CKKS>::eval_mod(Ciphertext<Scheme::CKKS>& cipher,
+                                       const Polynomial& poly, double shift,
+                                       const Relinkey<Scheme::CKKS>& relin_key,
+                                       const ExecutionOptions& options)
     {
         double prev_scale = cipher.scale_;
         Ciphertext<Scheme::CKKS> cipher_taylor = cipher;
@@ -3546,7 +3569,7 @@ namespace heongpu
 
     __host__ void HEOperator<Scheme::CKKS>::gen_power(
         std::unordered_map<int, Ciphertext<Scheme::CKKS>>& cipher, int power,
-        PolyType type, Relinkey<Scheme::CKKS>& relin_key,
+        PolyType type, const Relinkey<Scheme::CKKS>& relin_key,
         const ExecutionOptions& options)
     {
         if (cipher.count(power))
@@ -3740,7 +3763,8 @@ namespace heongpu
         int target_level, double target_scale, double base_scale,
         const Polynomial& pol, int log_split,
         std::unordered_map<int, Ciphertext<Scheme::CKKS>>& powered_ciphers,
-        Relinkey<Scheme::CKKS>& relin_key, const ExecutionOptions& options)
+        const Relinkey<Scheme::CKKS>& relin_key,
+        const ExecutionOptions& options)
     {
         int degree = pol.degree();
         int split = 1 << log_split;
@@ -3881,7 +3905,8 @@ namespace heongpu
     __host__ Ciphertext<Scheme::CKKS> HEOperator<Scheme::CKKS>::evaluate_poly(
         Ciphertext<Scheme::CKKS>& cipher, double target_scale,
         double base_scale, const Polynomial& pol,
-        Relinkey<Scheme::CKKS>& relin_key, const ExecutionOptions& options)
+        const Relinkey<Scheme::CKKS>& relin_key,
+        const ExecutionOptions& options)
     {
         cudaStream_t old_stream = cipher.stream();
         cipher.switch_stream(options.stream_);
@@ -3946,10 +3971,10 @@ namespace heongpu
 
     __host__ Ciphertext<Scheme::CKKS>
     HEOperator<Scheme::CKKS>::evaluate_in_basis(
-        Ciphertext<Scheme::CKKS>& input1,
+        const Ciphertext<Scheme::CKKS>& input1,
         const std::vector<double>& coefficients, PolyType type,
-        Relinkey<Scheme::CKKS>& relin_key, const ExecutionOptions& options,
-        double target_scale)
+        const Relinkey<Scheme::CKKS>& relin_key,
+        const ExecutionOptions& options, double target_scale)
     {
         std::vector<Complex64> coeffs(coefficients.size());
         for (size_t i = 0; i < coefficients.size(); i++)
@@ -3971,13 +3996,14 @@ namespace heongpu
 
     __host__ Ciphertext<Scheme::CKKS>
     HEOperator<Scheme::CKKS>::evaluate_polynomial(
-        Ciphertext<Scheme::CKKS>& input1,
+        const Ciphertext<Scheme::CKKS>& input1,
         const std::vector<double>& coefficients,
-        Relinkey<Scheme::CKKS>& relin_key, const ExecutionOptions& options)
+        const Relinkey<Scheme::CKKS>& relin_key,
+        const ExecutionOptions& options)
     {
         input1.validate_context(context_);
         Ciphertext<Scheme::CKKS> storage;
-        Ciphertext<Scheme::CKKS>& input =
+        const Ciphertext<Scheme::CKKS>& input =
             automatic_input(input1, storage, options);
         int degree = static_cast<int>(coefficients.size()) - 1;
         int depth = polynomial_depth(degree);
@@ -3996,13 +4022,14 @@ namespace heongpu
 
     __host__ Ciphertext<Scheme::CKKS>
     HEOperator<Scheme::CKKS>::evaluate_chebyshev(
-        Ciphertext<Scheme::CKKS>& input1,
+        const Ciphertext<Scheme::CKKS>& input1,
         const std::vector<double>& coefficients, double a, double b,
-        Relinkey<Scheme::CKKS>& relin_key, const ExecutionOptions& options)
+        const Relinkey<Scheme::CKKS>& relin_key,
+        const ExecutionOptions& options)
     {
         input1.validate_context(context_);
         Ciphertext<Scheme::CKKS> storage;
-        Ciphertext<Scheme::CKKS>& input =
+        const Ciphertext<Scheme::CKKS>& input =
             automatic_input(input1, storage, options);
         if (!(a < b))
         {
@@ -4043,9 +4070,9 @@ namespace heongpu
 
     __host__ Ciphertext<Scheme::CKKS>
     HEOperator<Scheme::CKKS>::evaluate_chebyshev(
-        Ciphertext<Scheme::CKKS>& input1,
+        const Ciphertext<Scheme::CKKS>& input1,
         const std::function<double(double)>& function, double a, double b,
-        int degree, Relinkey<Scheme::CKKS>& relin_key,
+        int degree, const Relinkey<Scheme::CKKS>& relin_key,
         const ExecutionOptions& options)
     {
         if (degree < 1 || !(a < b))
@@ -5101,8 +5128,9 @@ namespace heongpu
 
     __host__ Ciphertext<Scheme::CKKS>
     HEArithmeticOperator<Scheme::CKKS>::regular_bootstrapping_ckks(
-        Ciphertext<Scheme::CKKS>& input1, Galoiskey<Scheme::CKKS>& galois_key,
-        Relinkey<Scheme::CKKS>& relin_key,
+        const Ciphertext<Scheme::CKKS>& input1,
+        const Galoiskey<Scheme::CKKS>& galois_key,
+        const Relinkey<Scheme::CKKS>& relin_key,
         Switchkey<Scheme::CKKS>* swk_dense_to_sparse,
         Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
         const ExecutionOptions& options)
@@ -5199,8 +5227,9 @@ namespace heongpu
 
     __host__ Ciphertext<Scheme::CKKS>
     HEArithmeticOperator<Scheme::CKKS>::slim_bootstrapping_ckks(
-        Ciphertext<Scheme::CKKS>& input1, Galoiskey<Scheme::CKKS>& galois_key,
-        Relinkey<Scheme::CKKS>& relin_key,
+        const Ciphertext<Scheme::CKKS>& input1,
+        const Galoiskey<Scheme::CKKS>& galois_key,
+        const Relinkey<Scheme::CKKS>& relin_key,
         Switchkey<Scheme::CKKS>* swk_dense_to_sparse,
         Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
         const ExecutionOptions& options)
@@ -5462,8 +5491,9 @@ namespace heongpu
 
     __host__ Ciphertext<Scheme::CKKS>
     HELogicOperator<Scheme::CKKS>::bit_bootstrapping_ckks(
-        Ciphertext<Scheme::CKKS>& input1, Galoiskey<Scheme::CKKS>& galois_key,
-        Relinkey<Scheme::CKKS>& relin_key,
+        const Ciphertext<Scheme::CKKS>& input1,
+        const Galoiskey<Scheme::CKKS>& galois_key,
+        const Relinkey<Scheme::CKKS>& relin_key,
         Switchkey<Scheme::CKKS>* swk_dense_to_sparse,
         Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
         const ExecutionOptions& options)
@@ -5483,9 +5513,10 @@ namespace heongpu
 
     __host__ Ciphertext<Scheme::CKKS>
     HELogicOperator<Scheme::CKKS>::gate_bootstrapping(
-        logic_gate gate_type, Ciphertext<Scheme::CKKS>& input1,
-        Ciphertext<Scheme::CKKS>& input2, Galoiskey<Scheme::CKKS>& galois_key,
-        Relinkey<Scheme::CKKS>& relin_key,
+        logic_gate gate_type, const Ciphertext<Scheme::CKKS>& input1,
+        const Ciphertext<Scheme::CKKS>& input2,
+        const Galoiskey<Scheme::CKKS>& galois_key,
+        const Relinkey<Scheme::CKKS>& relin_key,
         Switchkey<Scheme::CKKS>* swk_dense_to_sparse,
         Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
         const ExecutionOptions& options)
@@ -5515,7 +5546,7 @@ namespace heongpu
                                       swk_sparse_to_dense, options);
         }
 
-        for (Ciphertext<Scheme::CKKS>* input : {&input1, &input2})
+        for (const Ciphertext<Scheme::CKKS>* input : {&input1, &input2})
         {
             int current_decomp_count = context_->Q_size - input->depth_;
             if (current_decomp_count != (level + 1))
@@ -5538,8 +5569,9 @@ namespace heongpu
 
     __host__ Ciphertext<Scheme::CKKS>
     HELogicOperator<Scheme::CKKS>::logic_bootstrapping(
-        Ciphertext<Scheme::CKKS>& input1, int function_index,
-        Galoiskey<Scheme::CKKS>& galois_key, Relinkey<Scheme::CKKS>& relin_key,
+        const Ciphertext<Scheme::CKKS>& input1, int function_index,
+        const Galoiskey<Scheme::CKKS>& galois_key,
+        const Relinkey<Scheme::CKKS>& relin_key,
         Switchkey<Scheme::CKKS>* swk_dense_to_sparse,
         Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
         const ExecutionOptions& options)

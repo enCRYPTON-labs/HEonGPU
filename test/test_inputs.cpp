@@ -295,3 +295,173 @@ TEST(Inputs, TFHE_MUX_With_A_Control_Input_In_Host_Memory)
     decryptor.decrypt(output, result);
     EXPECT_EQ(result, expected);
 }
+
+TEST(Inputs, CKKS_Operations_Leave_Their_Inputs)
+{
+    constexpr auto S = heongpu::Scheme::CKKS;
+    using Ciphertext = heongpu::Ciphertext<S>;
+    using Mode = heongpu::rescale_mode;
+    for (Mode mode : {Mode::manual, Mode::automatic})
+    {
+        SCOPED_TRACE(heongpu::detail::name(mode));
+        heongpu::HEParams<S> params;
+        params.multiplicative_depth = 3;
+        params.rescale_mode = mode;
+        auto context = params.make_context();
+        context->generate();
+        heongpu::HEKeyGenerator<S> keygen(context);
+        auto secret_key = keygen.secret_key();
+        auto public_key = keygen.public_key(secret_key);
+        auto relin_key0 = keygen.relin_key(secret_key);
+        auto galois_key0 = keygen.galois_key(secret_key);
+        heongpu::HEEncoder<S> encoder(context);
+        heongpu::HEEncryptor<S> encryptor(context, public_key);
+        heongpu::HEArithmeticOperator<S> operators(context, encoder);
+
+        std::vector<double> message(context->get_poly_modulus_degree() / 2);
+        for (std::size_t i = 0; i < message.size(); i++)
+        {
+            message[i] = std::sin(0.01 * double(i));
+        }
+        auto plain0 = mode == Mode::automatic
+                          ? encoder.encode(message)
+                          : encoder.encode(message, params.scale());
+        auto x0 = encryptor.encrypt(plain0);
+        auto y0 = encryptor.encrypt(plain0);
+        // A product that needs a rescaling, for the automatic mode.
+        auto z0 = operators.multiply(x0, y0);
+        operators.relinearize_inplace(z0, relin_key0);
+        auto plain_z0 = mode == Mode::automatic
+                            ? encoder.encode(message, z0.depth() + 1)
+                            : plain0;
+
+        for (placement where : placements)
+        {
+            SCOPED_TRACE(static_cast<int>(where));
+            const auto options = options_for(where);
+            const auto x = placed(x0, where);
+            const auto y = placed(y0, where);
+            const auto z = placed(z0, where);
+            const auto plain = placed(plain0, where);
+            const auto plain_z = placed(plain_z0, where);
+            const auto relin_key = placed(relin_key0, where);
+            const auto galois_key = placed(galois_key0, where);
+            Ciphertext out(context);
+
+            expect_unchanged(
+                "add", [&] { operators.add(x, y, out, options); }, x, y);
+            expect_unchanged(
+                "sub", [&] { operators.sub(x, y, out, options); }, x, y);
+            expect_unchanged(
+                "negate", [&] { operators.negate(x, out, options); }, x);
+            expect_unchanged(
+                "add_plain",
+                [&] { operators.add_plain(x, plain, out, options); }, x, plain);
+            expect_unchanged(
+                "sub_plain",
+                [&] { operators.sub_plain(x, plain, out, options); }, x, plain);
+            expect_unchanged(
+                "multiply_plain",
+                [&] { operators.multiply_plain(x, plain, out, options); }, x,
+                plain);
+            expect_unchanged(
+                "multiply", [&] { operators.multiply(x, y, out, options); }, x,
+                y);
+            expect_unchanged(
+                "mod_drop", [&] { operators.mod_drop(x, out, options); }, x);
+            expect_unchanged(
+                "rotate",
+                [&] { operators.rotate(x, out, galois_key, 1, options); }, x,
+                galois_key);
+            expect_unchanged(
+                "rotate_hoisted",
+                [&] {
+                    operators.rotate_hoisted(x, galois_key, {1, 2}, options);
+                },
+                x, galois_key);
+            expect_unchanged(
+                "evaluate_polynomial",
+                [&] {
+                    operators.evaluate_polynomial(x, {0.5, 1.0, 0.25},
+                                                  relin_key, options);
+                },
+                x, relin_key);
+            expect_unchanged(
+                "add_inplace",
+                [&]
+                {
+                    Ciphertext w = x;
+                    operators.add_inplace(w, y, options);
+                },
+                x, y);
+            if (mode == Mode::automatic)
+            {
+                expect_unchanged(
+                    "add after rescaling",
+                    [&] { operators.add(z, x, out, options); }, z, x);
+                expect_unchanged(
+                    "multiply after rescaling",
+                    [&] { operators.multiply(z, y, out, options); }, z, y);
+                expect_unchanged(
+                    "add_plain after rescaling",
+                    [&] { operators.add_plain(z, plain_z, out, options); }, z,
+                    plain_z);
+                expect_unchanged(
+                    "rotate after rescaling",
+                    [&] { operators.rotate(z, out, galois_key, 1, options); },
+                    z, galois_key);
+            }
+        }
+    }
+}
+
+// In rescale_mode::automatic, add_plain_inplace and sub_plain_inplace of a
+// ciphertext that needs a rescaling give the rescaled sum and difference.
+TEST(Inputs, CKKS_Automatic_Plain_Inplace_After_Rescaling)
+{
+    constexpr auto S = heongpu::Scheme::CKKS;
+    heongpu::HEParams<S> params;
+    params.multiplicative_depth = 3;
+    params.rescale_mode = heongpu::rescale_mode::automatic;
+    auto context = params.make_context();
+    context->generate();
+    heongpu::HEKeyGenerator<S> keygen(context);
+    auto secret_key = keygen.secret_key();
+    auto public_key = keygen.public_key(secret_key);
+    auto relin_key = keygen.relin_key(secret_key);
+    heongpu::HEEncoder<S> encoder(context);
+    heongpu::HEEncryptor<S> encryptor(context, public_key);
+    heongpu::HEDecryptor<S> decryptor(context, secret_key);
+    heongpu::HEArithmeticOperator<S> operators(context, encoder);
+
+    std::vector<double> a(context->get_poly_modulus_degree() / 2), b(a.size());
+    for (std::size_t i = 0; i < a.size(); i++)
+    {
+        a[i] = std::sin(0.01 * double(i));
+        b[i] = std::cos(0.02 * double(i));
+    }
+    auto plain_a = encoder.encode(a);
+    auto x = encryptor.encrypt(plain_a);
+    auto square = operators.multiply(x, x);
+    operators.relinearize_inplace(square, relin_key);
+    ASSERT_TRUE(square.rescale_required());
+    auto plain_b = encoder.encode(b, square.depth() + 1);
+
+    for (bool add : {true, false})
+    {
+        auto result = square;
+        if (add)
+            operators.add_plain_inplace(result, plain_b);
+        else
+            operators.sub_plain_inplace(result, plain_b);
+        EXPECT_FALSE(result.rescale_required());
+        auto decrypted = decryptor.decrypt(result);
+        std::vector<double> values;
+        encoder.decode(values, decrypted);
+        for (std::size_t i = 0; i < a.size(); i++)
+        {
+            double expected = a[i] * a[i] + (add ? b[i] : -b[i]);
+            ASSERT_NEAR(values[i], expected, 1e-4) << i;
+        }
+    }
+}

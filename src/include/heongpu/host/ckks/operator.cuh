@@ -108,8 +108,8 @@ namespace heongpu
          * @param input2 Second input ciphertext to be added.
          * @param output Ciphertext where the result of the addition is stored.
          */
-        __host__ void add(Ciphertext<Scheme::CKKS>& input1,
-                          Ciphertext<Scheme::CKKS>& input2,
+        __host__ void add(const Ciphertext<Scheme::CKKS>& input1,
+                          const Ciphertext<Scheme::CKKS>& input2,
                           Ciphertext<Scheme::CKKS>& output,
                           const ExecutionOptions& options = ExecutionOptions());
 
@@ -123,7 +123,7 @@ namespace heongpu
          */
         __host__ void
         add_inplace(Ciphertext<Scheme::CKKS>& input1,
-                    Ciphertext<Scheme::CKKS>& input2,
+                    const Ciphertext<Scheme::CKKS>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -141,8 +141,8 @@ namespace heongpu
          * @param output Ciphertext where the result of the subtraction is
          * stored.
          */
-        __host__ void sub(Ciphertext<Scheme::CKKS>& input1,
-                          Ciphertext<Scheme::CKKS>& input2,
+        __host__ void sub(const Ciphertext<Scheme::CKKS>& input1,
+                          const Ciphertext<Scheme::CKKS>& input2,
                           Ciphertext<Scheme::CKKS>& output,
                           const ExecutionOptions& options = ExecutionOptions());
 
@@ -155,7 +155,7 @@ namespace heongpu
          */
         __host__ void
         sub_inplace(Ciphertext<Scheme::CKKS>& input1,
-                    Ciphertext<Scheme::CKKS>& input2,
+                    const Ciphertext<Scheme::CKKS>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -171,7 +171,7 @@ namespace heongpu
          * @param output Ciphertext where the result of the negation is stored.
          */
         __host__ void
-        negate(Ciphertext<Scheme::CKKS>& input1,
+        negate(const Ciphertext<Scheme::CKKS>& input1,
                Ciphertext<Scheme::CKKS>& output,
                const ExecutionOptions& options = ExecutionOptions());
 
@@ -198,14 +198,14 @@ namespace heongpu
          * @param output Ciphertext where the result of the addition is stored.
          */
         __host__ void
-        add_plain(Ciphertext<Scheme::CKKS>& input1,
-                  Plaintext<Scheme::CKKS>& input2,
+        add_plain(const Ciphertext<Scheme::CKKS>& input1,
+                  const Plaintext<Scheme::CKKS>& input2,
                   Ciphertext<Scheme::CKKS>& output,
                   const ExecutionOptions& options = ExecutionOptions())
         {
             if (run_automatic(input1, input2, options,
-                              [&](Ciphertext<Scheme::CKKS>& first,
-                                  Plaintext<Scheme::CKKS>& second)
+                              [&](const Ciphertext<Scheme::CKKS>& first,
+                                  const Plaintext<Scheme::CKKS>& second)
                               { add_plain(first, second, output, options); }))
             {
                 return;
@@ -285,18 +285,18 @@ namespace heongpu
          */
         __host__ void
         add_plain_inplace(Ciphertext<Scheme::CKKS>& input1,
-                          Plaintext<Scheme::CKKS>& input2,
+                          const Plaintext<Scheme::CKKS>& input2,
                           const ExecutionOptions& options = ExecutionOptions())
         {
             if (run_automatic(input1, input2, options,
-                              [&](Ciphertext<Scheme::CKKS>& first,
-                                  Plaintext<Scheme::CKKS>& second)
+                              [&](const Ciphertext<Scheme::CKKS>& first,
+                                  const Plaintext<Scheme::CKKS>& second)
                               {
-                                  add_plain_inplace(first, second, options);
                                   if (&first != &input1)
                                   {
-                                      input1 = std::move(first);
+                                      input1 = first;
                                   }
+                                  add_plain_inplace(input1, second, options);
                               }))
             {
                 return;
@@ -354,7 +354,7 @@ namespace heongpu
          * @param output Ciphertext where the result of the addition is stored.
          */
         __host__ void
-        add_plain(Ciphertext<Scheme::CKKS>& input1, double input2,
+        add_plain(const Ciphertext<Scheme::CKKS>& input1, double input2,
                   Ciphertext<Scheme::CKKS>& output,
                   const ExecutionOptions& options = ExecutionOptions())
         {
@@ -439,14 +439,14 @@ namespace heongpu
          * stored.
          */
         __host__ void
-        sub_plain(Ciphertext<Scheme::CKKS>& input1,
-                  Plaintext<Scheme::CKKS>& input2,
+        sub_plain(const Ciphertext<Scheme::CKKS>& input1,
+                  const Plaintext<Scheme::CKKS>& input2,
                   Ciphertext<Scheme::CKKS>& output,
                   const ExecutionOptions& options = ExecutionOptions())
         {
             if (run_automatic(input1, input2, options,
-                              [&](Ciphertext<Scheme::CKKS>& first,
-                                  Plaintext<Scheme::CKKS>& second)
+                              [&](const Ciphertext<Scheme::CKKS>& first,
+                                  const Plaintext<Scheme::CKKS>& second)
                               { sub_plain(first, second, output, options); }))
             {
                 return;
@@ -526,18 +526,18 @@ namespace heongpu
          */
         __host__ void
         sub_plain_inplace(Ciphertext<Scheme::CKKS>& input1,
-                          Plaintext<Scheme::CKKS>& input2,
+                          const Plaintext<Scheme::CKKS>& input2,
                           const ExecutionOptions& options = ExecutionOptions())
         {
             if (run_automatic(input1, input2, options,
-                              [&](Ciphertext<Scheme::CKKS>& first,
-                                  Plaintext<Scheme::CKKS>& second)
+                              [&](const Ciphertext<Scheme::CKKS>& first,
+                                  const Plaintext<Scheme::CKKS>& second)
                               {
-                                  sub_plain_inplace(first, second, options);
                                   if (&first != &input1)
                                   {
-                                      input1 = std::move(first);
+                                      input1 = first;
                                   }
+                                  sub_plain_inplace(input1, second, options);
                               }))
             {
                 return;
@@ -594,7 +594,7 @@ namespace heongpu
          * stored.
          */
         __host__ void
-        sub_plain(Ciphertext<Scheme::CKKS>& input1, double input2,
+        sub_plain(const Ciphertext<Scheme::CKKS>& input1, double input2,
                   Ciphertext<Scheme::CKKS>& output,
                   const ExecutionOptions& options = ExecutionOptions())
         {
@@ -678,7 +678,7 @@ namespace heongpu
          * @param output Ciphertext where the result of the addition is stored.
          */
         __host__ void
-        add_plain_complex(Ciphertext<Scheme::CKKS>& input1, Complex64 c,
+        add_plain_complex(const Ciphertext<Scheme::CKKS>& input1, Complex64 c,
                           Ciphertext<Scheme::CKKS>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
@@ -726,14 +726,14 @@ namespace heongpu
          * stored.
          */
         __host__ void
-        multiply(Ciphertext<Scheme::CKKS>& input1,
-                 Ciphertext<Scheme::CKKS>& input2,
+        multiply(const Ciphertext<Scheme::CKKS>& input1,
+                 const Ciphertext<Scheme::CKKS>& input2,
                  Ciphertext<Scheme::CKKS>& output,
                  const ExecutionOptions& options = ExecutionOptions())
         {
             if (run_automatic(input1, input2, false, options,
-                              [&](Ciphertext<Scheme::CKKS>& first,
-                                  Ciphertext<Scheme::CKKS>& second)
+                              [&](const Ciphertext<Scheme::CKKS>& first,
+                                  const Ciphertext<Scheme::CKKS>& second)
                               { multiply(first, second, output, options); }))
             {
                 return;
@@ -810,7 +810,7 @@ namespace heongpu
          */
         __host__ void
         multiply_inplace(Ciphertext<Scheme::CKKS>& input1,
-                         Ciphertext<Scheme::CKKS>& input2,
+                         const Ciphertext<Scheme::CKKS>& input2,
                          const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -829,14 +829,14 @@ namespace heongpu
          * stored.
          */
         __host__ void
-        multiply_plain(Ciphertext<Scheme::CKKS>& input1,
-                       Plaintext<Scheme::CKKS>& input2,
+        multiply_plain(const Ciphertext<Scheme::CKKS>& input1,
+                       const Plaintext<Scheme::CKKS>& input2,
                        Ciphertext<Scheme::CKKS>& output,
                        const ExecutionOptions& options = ExecutionOptions())
         {
             if (run_automatic(input1, input2, options,
-                              [&](Ciphertext<Scheme::CKKS>& first,
-                                  Plaintext<Scheme::CKKS>& second) {
+                              [&](const Ciphertext<Scheme::CKKS>& first,
+                                  const Plaintext<Scheme::CKKS>& second) {
                                   multiply_plain(first, second, output,
                                                  options);
                               }))
@@ -931,7 +931,8 @@ namespace heongpu
          * @param input2 Plaintext to be multiplied with the ciphertext.
          */
         __host__ void multiply_plain_inplace(
-            Ciphertext<Scheme::CKKS>& input1, Plaintext<Scheme::CKKS>& input2,
+            Ciphertext<Scheme::CKKS>& input1,
+            const Plaintext<Scheme::CKKS>& input2,
             const ExecutionOptions& options = ExecutionOptions())
         {
             input2.validate_context(context_);
@@ -951,14 +952,14 @@ namespace heongpu
          * stored.
          */
         __host__ void
-        multiply_plain(Ciphertext<Scheme::CKKS>& input1, double input2,
+        multiply_plain(const Ciphertext<Scheme::CKKS>& input1, double input2,
                        Ciphertext<Scheme::CKKS>& output, double scale,
                        const ExecutionOptions& options = ExecutionOptions())
         {
             // The constant gets the scale of the level, so that the
             // rescaled product has the scale of the next level.
             if (run_automatic(input1, options,
-                              [&](Ciphertext<Scheme::CKKS>& first)
+                              [&](const Ciphertext<Scheme::CKKS>& first)
                               {
                                   check_level_scale(first);
                                   multiply_plain(
@@ -1046,7 +1047,7 @@ namespace heongpu
          * stored.
          */
         __host__ void multiply_plain_complex(
-            Ciphertext<Scheme::CKKS>& input1, Complex64 c,
+            const Ciphertext<Scheme::CKKS>& input1, Complex64 c,
             Ciphertext<Scheme::CKKS>& output,
             const ExecutionOptions& options = ExecutionOptions())
         {
@@ -1092,7 +1093,7 @@ namespace heongpu
          * @param output Ciphertext where the scaled result is stored.
          */
         __host__ void
-        scale_up(Ciphertext<Scheme::CKKS>& input, double scale,
+        scale_up(const Ciphertext<Scheme::CKKS>& input, double scale,
                  Ciphertext<Scheme::CKKS>& output,
                  const ExecutionOptions& options = ExecutionOptions())
         {
@@ -1137,7 +1138,7 @@ namespace heongpu
          * @param output Ciphertext where the result is stored.
          */
         __host__ void
-        mult_i(Ciphertext<Scheme::CKKS>& input1,
+        mult_i(const Ciphertext<Scheme::CKKS>& input1,
                Ciphertext<Scheme::CKKS>& output,
                const ExecutionOptions& options = ExecutionOptions())
         {
@@ -1182,7 +1183,7 @@ namespace heongpu
          * @param output Ciphertext where the result is stored.
          */
         __host__ void
-        div_i(Ciphertext<Scheme::CKKS>& input1,
+        div_i(const Ciphertext<Scheme::CKKS>& input1,
               Ciphertext<Scheme::CKKS>& output,
               const ExecutionOptions& options = ExecutionOptions())
         {
@@ -1227,7 +1228,8 @@ namespace heongpu
          * @param relin_key The Relinkey object used for relinearization.
          */
         __host__ void relinearize_inplace(
-            Ciphertext<Scheme::CKKS>& input1, Relinkey<Scheme::CKKS>& relin_key,
+            Ciphertext<Scheme::CKKS>& input1,
+            const Relinkey<Scheme::CKKS>& relin_key,
             const ExecutionOptions& options = ExecutionOptions())
         {
             relin_key.validate_context(context_);
@@ -1274,13 +1276,13 @@ namespace heongpu
          * @param shift Number of positions to shift the slots.
          */
         __host__ void
-        rotate(Ciphertext<Scheme::CKKS>& input1,
+        rotate(const Ciphertext<Scheme::CKKS>& input1,
                Ciphertext<Scheme::CKKS>& output,
-               Galoiskey<Scheme::CKKS>& galois_key, int shift,
+               const Galoiskey<Scheme::CKKS>& galois_key, int shift,
                const ExecutionOptions& options = ExecutionOptions())
         {
             if (run_automatic(input1, options,
-                              [&](Ciphertext<Scheme::CKKS>& first) {
+                              [&](const Ciphertext<Scheme::CKKS>& first) {
                                   rotate(first, output, galois_key, shift,
                                          options);
                               }))
@@ -1343,7 +1345,7 @@ namespace heongpu
          */
         __host__ void
         rotate_inplace(Ciphertext<Scheme::CKKS>& input1,
-                       Galoiskey<Scheme::CKKS>& galois_key, int shift,
+                       const Galoiskey<Scheme::CKKS>& galois_key, int shift,
                        const ExecutionOptions& options = ExecutionOptions())
         {
             galois_key.validate_context(context_);
@@ -1370,13 +1372,13 @@ namespace heongpu
          * @param galois_elt The Galois element to apply.
          */
         __host__ void
-        apply_galois(Ciphertext<Scheme::CKKS>& input1,
+        apply_galois(const Ciphertext<Scheme::CKKS>& input1,
                      Ciphertext<Scheme::CKKS>& output,
-                     Galoiskey<Scheme::CKKS>& galois_key, int galois_elt,
+                     const Galoiskey<Scheme::CKKS>& galois_key, int galois_elt,
                      const ExecutionOptions& options = ExecutionOptions())
         {
             if (run_automatic(input1, options,
-                              [&](Ciphertext<Scheme::CKKS>& first) {
+                              [&](const Ciphertext<Scheme::CKKS>& first) {
                                   apply_galois(first, output, galois_key,
                                                galois_elt, options);
                               }))
@@ -1448,7 +1450,7 @@ namespace heongpu
          */
         __host__ void apply_galois_inplace(
             Ciphertext<Scheme::CKKS>& input1,
-            Galoiskey<Scheme::CKKS>& galois_key, int galois_elt,
+            const Galoiskey<Scheme::CKKS>& galois_key, int galois_elt,
             const ExecutionOptions& options = ExecutionOptions())
         {
             galois_key.validate_context(context_);
@@ -1468,13 +1470,13 @@ namespace heongpu
          * @param switch_key Switch key used for the key switching operation.
          */
         __host__ void
-        keyswitch(Ciphertext<Scheme::CKKS>& input1,
+        keyswitch(const Ciphertext<Scheme::CKKS>& input1,
                   Ciphertext<Scheme::CKKS>& output,
-                  Switchkey<Scheme::CKKS>& switch_key,
+                  const Switchkey<Scheme::CKKS>& switch_key,
                   const ExecutionOptions& options = ExecutionOptions())
         {
             if (run_automatic(input1, options,
-                              [&](Ciphertext<Scheme::CKKS>& first) {
+                              [&](const Ciphertext<Scheme::CKKS>& first) {
                                   keyswitch(first, output, switch_key, options);
                               }))
             {
@@ -1544,13 +1546,13 @@ namespace heongpu
          * @param conjugate_key Switch key used for the conjugation operation.
          */
         __host__ void
-        conjugate(Ciphertext<Scheme::CKKS>& input1,
+        conjugate(const Ciphertext<Scheme::CKKS>& input1,
                   Ciphertext<Scheme::CKKS>& output,
-                  Galoiskey<Scheme::CKKS>& conjugate_key,
+                  const Galoiskey<Scheme::CKKS>& conjugate_key,
                   const ExecutionOptions& options = ExecutionOptions())
         {
             if (run_automatic(input1, options,
-                              [&](Ciphertext<Scheme::CKKS>& first) {
+                              [&](const Ciphertext<Scheme::CKKS>& first) {
                                   conjugate(first, output, conjugate_key,
                                             options);
                               }))
@@ -1670,13 +1672,13 @@ namespace heongpu
          * stored.
          */
         __host__ void
-        mod_drop(Ciphertext<Scheme::CKKS>& input1,
+        mod_drop(const Ciphertext<Scheme::CKKS>& input1,
                  Ciphertext<Scheme::CKKS>& output,
                  const ExecutionOptions& options = ExecutionOptions())
         {
             // The automatic mode keeps the scale of the level.
             if (run_automatic(input1, options,
-                              [&](Ciphertext<Scheme::CKKS>& first)
+                              [&](const Ciphertext<Scheme::CKKS>& first)
                               {
                                   Ciphertext<Scheme::CKKS> storage;
                                   output = dropped(first, first.depth_ + 1,
@@ -1743,7 +1745,7 @@ namespace heongpu
          * stored.
          */
         __host__ void
-        mod_drop(Plaintext<Scheme::CKKS>& input1,
+        mod_drop(const Plaintext<Scheme::CKKS>& input1,
                  Plaintext<Scheme::CKKS>& output,
                  const ExecutionOptions& options = ExecutionOptions())
         {
@@ -1865,8 +1867,8 @@ namespace heongpu
          * rotations for the larger steps.
          */
         __host__ Ciphertext<Scheme::CKKS>
-        sum_slots(Ciphertext<Scheme::CKKS>& input1,
-                  Galoiskey<Scheme::CKKS>& galois_key,
+        sum_slots(const Ciphertext<Scheme::CKKS>& input1,
+                  const Galoiskey<Scheme::CKKS>& galois_key,
                   const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::CKKS> result = input1;
@@ -1886,10 +1888,10 @@ namespace heongpu
          * then calls sum_slots.
          */
         __host__ Ciphertext<Scheme::CKKS>
-        inner_product(Ciphertext<Scheme::CKKS>& input1,
-                      Ciphertext<Scheme::CKKS>& input2,
-                      Relinkey<Scheme::CKKS>& relin_key,
-                      Galoiskey<Scheme::CKKS>& galois_key,
+        inner_product(const Ciphertext<Scheme::CKKS>& input1,
+                      const Ciphertext<Scheme::CKKS>& input2,
+                      const Relinkey<Scheme::CKKS>& relin_key,
+                      const Galoiskey<Scheme::CKKS>& galois_key,
                       const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::CKKS> product(context_, options);
@@ -1905,9 +1907,9 @@ namespace heongpu
          * result is one level lower than input1, and then calls sum_slots.
          */
         __host__ Ciphertext<Scheme::CKKS>
-        inner_product(Ciphertext<Scheme::CKKS>& input1,
-                      Plaintext<Scheme::CKKS>& input2,
-                      Galoiskey<Scheme::CKKS>& galois_key,
+        inner_product(const Ciphertext<Scheme::CKKS>& input1,
+                      const Plaintext<Scheme::CKKS>& input2,
+                      const Galoiskey<Scheme::CKKS>& galois_key,
                       const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::CKKS> product(context_, options);
@@ -1926,8 +1928,8 @@ namespace heongpu
          * rotate does.
          */
         __host__ std::vector<Ciphertext<Scheme::CKKS>>
-        rotate_hoisted(Ciphertext<Scheme::CKKS>& input1,
-                       Galoiskey<Scheme::CKKS>& galois_key,
+        rotate_hoisted(const Ciphertext<Scheme::CKKS>& input1,
+                       const Galoiskey<Scheme::CKKS>& galois_key,
                        const std::vector<int>& shifts,
                        const ExecutionOptions& options = ExecutionOptions());
 
@@ -1945,9 +1947,9 @@ namespace heongpu
          * @throws LevelMismatchError if input1 does not have enough levels.
          */
         __host__ Ciphertext<Scheme::CKKS> evaluate_polynomial(
-            Ciphertext<Scheme::CKKS>& input1,
+            const Ciphertext<Scheme::CKKS>& input1,
             const std::vector<double>& coefficients,
-            Relinkey<Scheme::CKKS>& relin_key,
+            const Relinkey<Scheme::CKKS>& relin_key,
             const ExecutionOptions& options = ExecutionOptions());
 
         /**
@@ -1963,9 +1965,9 @@ namespace heongpu
          * @throws LevelMismatchError if input1 does not have enough levels.
          */
         __host__ Ciphertext<Scheme::CKKS> evaluate_chebyshev(
-            Ciphertext<Scheme::CKKS>& input1,
+            const Ciphertext<Scheme::CKKS>& input1,
             const std::vector<double>& coefficients, double a, double b,
-            Relinkey<Scheme::CKKS>& relin_key,
+            const Relinkey<Scheme::CKKS>& relin_key,
             const ExecutionOptions& options = ExecutionOptions());
 
         /**
@@ -1974,9 +1976,9 @@ namespace heongpu
          * input1; see chebyshev_coefficients and evaluate_chebyshev.
          */
         __host__ Ciphertext<Scheme::CKKS> evaluate_chebyshev(
-            Ciphertext<Scheme::CKKS>& input1,
+            const Ciphertext<Scheme::CKKS>& input1,
             const std::function<double(double)>& function, double a, double b,
-            int degree, Relinkey<Scheme::CKKS>& relin_key,
+            int degree, const Relinkey<Scheme::CKKS>& relin_key,
             const ExecutionOptions& options = ExecutionOptions());
 
         /**
@@ -1994,7 +1996,8 @@ namespace heongpu
          * @brief Returns input1 + input2; see add(input1, input2, output).
          */
         __host__ Ciphertext<Scheme::CKKS>
-        add(Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& input2,
+        add(const Ciphertext<Scheme::CKKS>& input1,
+            const Ciphertext<Scheme::CKKS>& input2,
             const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::CKKS> output(context_, options);
@@ -2006,7 +2009,8 @@ namespace heongpu
          * @brief Returns input1 - input2; see sub(input1, input2, output).
          */
         __host__ Ciphertext<Scheme::CKKS>
-        sub(Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& input2,
+        sub(const Ciphertext<Scheme::CKKS>& input1,
+            const Ciphertext<Scheme::CKKS>& input2,
             const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::CKKS> output(context_, options);
@@ -2018,8 +2022,8 @@ namespace heongpu
          * @brief Returns input1 * input2; see multiply(input1, input2, output).
          */
         __host__ Ciphertext<Scheme::CKKS>
-        multiply(Ciphertext<Scheme::CKKS>& input1,
-                 Ciphertext<Scheme::CKKS>& input2,
+        multiply(const Ciphertext<Scheme::CKKS>& input1,
+                 const Ciphertext<Scheme::CKKS>& input2,
                  const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::CKKS> output(context_, options);
@@ -2031,7 +2035,7 @@ namespace heongpu
          * @brief Returns -input1; see negate(input1, output).
          */
         __host__ Ciphertext<Scheme::CKKS>
-        negate(Ciphertext<Scheme::CKKS>& input1,
+        negate(const Ciphertext<Scheme::CKKS>& input1,
                const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::CKKS> output(context_, options);
@@ -2043,8 +2047,8 @@ namespace heongpu
          * @brief Returns the result of add_plain(input1, input2, output).
          */
         __host__ Ciphertext<Scheme::CKKS>
-        add_plain(Ciphertext<Scheme::CKKS>& input1,
-                  Plaintext<Scheme::CKKS>& input2,
+        add_plain(const Ciphertext<Scheme::CKKS>& input1,
+                  const Plaintext<Scheme::CKKS>& input2,
                   const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::CKKS> output(context_, options);
@@ -2056,8 +2060,8 @@ namespace heongpu
          * @brief Returns the result of sub_plain(input1, input2, output).
          */
         __host__ Ciphertext<Scheme::CKKS>
-        sub_plain(Ciphertext<Scheme::CKKS>& input1,
-                  Plaintext<Scheme::CKKS>& input2,
+        sub_plain(const Ciphertext<Scheme::CKKS>& input1,
+                  const Plaintext<Scheme::CKKS>& input2,
                   const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::CKKS> output(context_, options);
@@ -2069,8 +2073,8 @@ namespace heongpu
          * @brief Returns the result of multiply_plain(input1, input2, output).
          */
         __host__ Ciphertext<Scheme::CKKS>
-        multiply_plain(Ciphertext<Scheme::CKKS>& input1,
-                       Plaintext<Scheme::CKKS>& input2,
+        multiply_plain(const Ciphertext<Scheme::CKKS>& input1,
+                       const Plaintext<Scheme::CKKS>& input2,
                        const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::CKKS> output(context_, options);
@@ -2083,8 +2087,8 @@ namespace heongpu
          * galois_key, shift).
          */
         __host__ Ciphertext<Scheme::CKKS>
-        rotate(Ciphertext<Scheme::CKKS>& input1,
-               Galoiskey<Scheme::CKKS>& galois_key, int shift,
+        rotate(const Ciphertext<Scheme::CKKS>& input1,
+               const Galoiskey<Scheme::CKKS>& galois_key, int shift,
                const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::CKKS> output(context_, options);
@@ -2096,7 +2100,7 @@ namespace heongpu
          * @brief Returns the result of add_plain(input1, input2, output).
          */
         __host__ Ciphertext<Scheme::CKKS>
-        add_plain(Ciphertext<Scheme::CKKS>& input1, double input2,
+        add_plain(const Ciphertext<Scheme::CKKS>& input1, double input2,
                   const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::CKKS> output(context_, options);
@@ -2108,7 +2112,7 @@ namespace heongpu
          * @brief Returns the result of sub_plain(input1, input2, output).
          */
         __host__ Ciphertext<Scheme::CKKS>
-        sub_plain(Ciphertext<Scheme::CKKS>& input1, double input2,
+        sub_plain(const Ciphertext<Scheme::CKKS>& input1, double input2,
                   const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::CKKS> output(context_, options);
@@ -2121,7 +2125,7 @@ namespace heongpu
          * scale).
          */
         __host__ Ciphertext<Scheme::CKKS>
-        multiply_plain(Ciphertext<Scheme::CKKS>& input1, double input2,
+        multiply_plain(const Ciphertext<Scheme::CKKS>& input1, double input2,
                        double scale,
                        const ExecutionOptions& options = ExecutionOptions())
         {
@@ -2135,7 +2139,7 @@ namespace heongpu
          * output).
          */
         __host__ Ciphertext<Scheme::CKKS>
-        mod_drop(Ciphertext<Scheme::CKKS>& input1,
+        mod_drop(const Ciphertext<Scheme::CKKS>& input1,
                  const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::CKKS> output(context_, options);
@@ -2148,7 +2152,7 @@ namespace heongpu
          * output).
          */
         __host__ Plaintext<Scheme::CKKS>
-        mod_drop(Plaintext<Scheme::CKKS>& input1,
+        mod_drop(const Plaintext<Scheme::CKKS>& input1,
                  const ExecutionOptions& options = ExecutionOptions())
         {
             Plaintext<Scheme::CKKS> output(context_, options);
@@ -2161,8 +2165,8 @@ namespace heongpu
          * output, conjugate_key).
          */
         __host__ Ciphertext<Scheme::CKKS>
-        conjugate(Ciphertext<Scheme::CKKS>& input1,
-                  Galoiskey<Scheme::CKKS>& conjugate_key,
+        conjugate(const Ciphertext<Scheme::CKKS>& input1,
+                  const Galoiskey<Scheme::CKKS>& conjugate_key,
                   const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::CKKS> output(context_, options);
@@ -2249,8 +2253,8 @@ namespace heongpu
         ///////////////////////////////////////////////////
 
         __host__ void relinearize_external_product_inplace_ckks(
-            Ciphertext<Scheme::CKKS>& input1, Relinkey<Scheme::CKKS>& relin_key,
-            const cudaStream_t stream);
+            Ciphertext<Scheme::CKKS>& input1,
+            const Relinkey<Scheme::CKKS>& relin_key, const cudaStream_t stream);
 
         ///////////////////////////////////////////////////
 
@@ -2273,7 +2277,7 @@ namespace heongpu
         apply_galois_decomposed(Ciphertext<Scheme::CKKS>& input1,
                                 GaloisDecomposition& decomposition,
                                 Ciphertext<Scheme::CKKS>& output,
-                                Galoiskey<Scheme::CKKS>& galois_key,
+                                const Galoiskey<Scheme::CKKS>& galois_key,
                                 int galois_elt, const cudaStream_t stream);
 
         // The ModUp of key switching: splits input, the depth_-th level
@@ -2284,30 +2288,31 @@ namespace heongpu
 
         __host__ void rotate_ckks(Ciphertext<Scheme::CKKS>& input1,
                                   Ciphertext<Scheme::CKKS>& output,
-                                  Galoiskey<Scheme::CKKS>& galois_key,
+                                  const Galoiskey<Scheme::CKKS>& galois_key,
                                   int shift, const cudaStream_t stream);
 
         ///////////////////////////////////////////////////
 
-        __host__ void apply_galois_ckks(Ciphertext<Scheme::CKKS>& input1,
-                                        Ciphertext<Scheme::CKKS>& output,
-                                        Galoiskey<Scheme::CKKS>& galois_key,
-                                        int galois_elt,
-                                        const cudaStream_t stream);
+        __host__ void
+        apply_galois_ckks(Ciphertext<Scheme::CKKS>& input1,
+                          Ciphertext<Scheme::CKKS>& output,
+                          const Galoiskey<Scheme::CKKS>& galois_key,
+                          int galois_elt, const cudaStream_t stream);
 
         ///////////////////////////////////////////////////
 
         __host__ void switchkey_ckks(Ciphertext<Scheme::CKKS>& input1,
                                      Ciphertext<Scheme::CKKS>& output,
-                                     Switchkey<Scheme::CKKS>& switch_key,
+                                     const Switchkey<Scheme::CKKS>& switch_key,
                                      const cudaStream_t stream);
 
         ///////////////////////////////////////////////////
 
-        __host__ void conjugate_ckks(Ciphertext<Scheme::CKKS>& input1,
-                                     Ciphertext<Scheme::CKKS>& output,
-                                     Galoiskey<Scheme::CKKS>& conjugate_key,
-                                     const cudaStream_t stream);
+        __host__ void
+        conjugate_ckks(Ciphertext<Scheme::CKKS>& input1,
+                       Ciphertext<Scheme::CKKS>& output,
+                       const Galoiskey<Scheme::CKKS>& conjugate_key,
+                       const cudaStream_t stream);
 
         ///////////////////////////////////////////////////
 
@@ -2363,19 +2368,20 @@ namespace heongpu
 
         // Returns input rescaled if it needs a rescaling: input itself, or
         // storage holding the rescaled copy.
-        Ciphertext<Scheme::CKKS>& rescaled(Ciphertext<Scheme::CKKS>& input,
-                                           Ciphertext<Scheme::CKKS>& storage,
-                                           const ExecutionOptions& options);
+        const Ciphertext<Scheme::CKKS>&
+        rescaled(const Ciphertext<Scheme::CKKS>& input,
+                 Ciphertext<Scheme::CKKS>& storage,
+                 const ExecutionOptions& options);
 
         // Returns input, which does not need a rescaling, brought down to
         // depth with the scale of that level: it is dropped to the level
         // above, multiplied by the integer closest to the target scale times
         // the prime of that level over its scale, and rescaled. Returns input
         // itself if it is at depth, else storage.
-        Ciphertext<Scheme::CKKS>& dropped(Ciphertext<Scheme::CKKS>& input,
-                                          int depth,
-                                          Ciphertext<Scheme::CKKS>& storage,
-                                          const ExecutionOptions& options);
+        const Ciphertext<Scheme::CKKS>&
+        dropped(const Ciphertext<Scheme::CKKS>& input, int depth,
+                Ciphertext<Scheme::CKKS>& storage,
+                const ExecutionOptions& options);
 
         // Throws ParameterError unless input has the scale of its level, or
         // its square if input needs a rescaling.
@@ -2385,16 +2391,16 @@ namespace heongpu
         // Brings two operands to the same level and to the scales of that
         // level. Both are rescaled first if they need it, unless both need
         // it at the same level and keep_rescale is true.
-        void prepare(Ciphertext<Scheme::CKKS>*& input1,
-                     Ciphertext<Scheme::CKKS>*& input2,
+        void prepare(const Ciphertext<Scheme::CKKS>*& input1,
+                     const Ciphertext<Scheme::CKKS>*& input2,
                      Ciphertext<Scheme::CKKS>& storage1,
                      Ciphertext<Scheme::CKKS>& storage2, bool keep_rescale,
                      const ExecutionOptions& options);
 
         // Brings a ciphertext and a plaintext to the same level and checks
         // their scales; the ciphertext is rescaled first if it needs it.
-        void prepare(Ciphertext<Scheme::CKKS>*& input1,
-                     Plaintext<Scheme::CKKS>*& input2,
+        void prepare(const Ciphertext<Scheme::CKKS>*& input1,
+                     const Plaintext<Scheme::CKKS>*& input2,
                      Ciphertext<Scheme::CKKS>& storage1,
                      Plaintext<Scheme::CKKS>& storage2,
                      const ExecutionOptions& options);
@@ -2402,8 +2408,8 @@ namespace heongpu
         // The input of an operation that plans its own levels: in
         // rescale_mode::automatic, input rescaled if it needs it, with the
         // scale of its level.
-        Ciphertext<Scheme::CKKS>&
-        automatic_input(Ciphertext<Scheme::CKKS>& input,
+        const Ciphertext<Scheme::CKKS>&
+        automatic_input(const Ciphertext<Scheme::CKKS>& input,
                         Ciphertext<Scheme::CKKS>& storage,
                         const ExecutionOptions& options);
 
@@ -2416,17 +2422,18 @@ namespace heongpu
         // as in rescale_mode::manual and returns true; returns false
         // otherwise.
         template <typename Operation>
-        bool run_automatic(Ciphertext<Scheme::CKKS>& input1,
-                           Ciphertext<Scheme::CKKS>& input2, bool keep_rescale,
-                           const ExecutionOptions& options, Operation operation)
+        bool run_automatic(const Ciphertext<Scheme::CKKS>& input1,
+                           const Ciphertext<Scheme::CKKS>& input2,
+                           bool keep_rescale, const ExecutionOptions& options,
+                           Operation operation)
         {
             if (!automatic())
             {
                 return false;
             }
             Ciphertext<Scheme::CKKS> storage1, storage2;
-            Ciphertext<Scheme::CKKS>* first = &input1;
-            Ciphertext<Scheme::CKKS>* second = &input2;
+            const Ciphertext<Scheme::CKKS>* first = &input1;
+            const Ciphertext<Scheme::CKKS>* second = &input2;
             prepare(first, second, storage1, storage2, keep_rescale, options);
             ManualScope manual;
             operation(*first, *second);
@@ -2434,8 +2441,8 @@ namespace heongpu
         }
 
         template <typename Operation>
-        bool run_automatic(Ciphertext<Scheme::CKKS>& input1,
-                           Plaintext<Scheme::CKKS>& input2,
+        bool run_automatic(const Ciphertext<Scheme::CKKS>& input1,
+                           const Plaintext<Scheme::CKKS>& input2,
                            const ExecutionOptions& options, Operation operation)
         {
             if (!automatic())
@@ -2444,8 +2451,8 @@ namespace heongpu
             }
             Ciphertext<Scheme::CKKS> storage1;
             Plaintext<Scheme::CKKS> storage2;
-            Ciphertext<Scheme::CKKS>* first = &input1;
-            Plaintext<Scheme::CKKS>* second = &input2;
+            const Ciphertext<Scheme::CKKS>* first = &input1;
+            const Plaintext<Scheme::CKKS>* second = &input2;
             prepare(first, second, storage1, storage2, options);
             ManualScope manual;
             operation(*first, *second);
@@ -2455,7 +2462,7 @@ namespace heongpu
         // For operations of one ciphertext, which is rescaled first if it
         // needs it.
         template <typename Operation>
-        bool run_automatic(Ciphertext<Scheme::CKKS>& input1,
+        bool run_automatic(const Ciphertext<Scheme::CKKS>& input1,
                            const ExecutionOptions& options, Operation operation)
         {
             if (!automatic())
@@ -2463,7 +2470,7 @@ namespace heongpu
                 return false;
             }
             Ciphertext<Scheme::CKKS> storage;
-            Ciphertext<Scheme::CKKS>& first =
+            const Ciphertext<Scheme::CKKS>& first =
                 rescaled(input1, storage, options);
             ManualScope manual;
             operation(first);
@@ -2492,7 +2499,7 @@ namespace heongpu
 
         // Just for copy parameters, not memory!
         __host__ Ciphertext<Scheme::CKKS>
-        operator_from_ciphertext(Ciphertext<Scheme::CKKS>& input,
+        operator_from_ciphertext(const Ciphertext<Scheme::CKKS>& input,
                                  cudaStream_t stream = cudaStreamDefault);
 
         __host__ std::vector<int> rotation_index_generator(uint64_t n, int K,
@@ -2698,46 +2705,46 @@ namespace heongpu
         ///////////////////////////////////////////////////
 
         __host__ Ciphertext<Scheme::CKKS> multiply_matrix(
-            Ciphertext<Scheme::CKKS>& cipher,
+            const Ciphertext<Scheme::CKKS>& cipher,
             std::vector<heongpu::DeviceVector<Data64>>& matrix,
             std::vector<std::vector<std::vector<int>>>& diags_matrices_bsgs_,
             std::vector<std::vector<int>>& diags_matrices_bsgs_rot_n1_,
             std::vector<std::vector<int>>& diags_matrices_bsgs_rot_n2_,
-            Galoiskey<Scheme::CKKS>& galois_key,
+            const Galoiskey<Scheme::CKKS>& galois_key,
             const ExecutionOptions& options = ExecutionOptions());
 
         __host__ std::vector<Ciphertext<Scheme::CKKS>>
         coeff_to_slot(Ciphertext<Scheme::CKKS>& cipher,
-                      Galoiskey<Scheme::CKKS>& galois_key,
+                      const Galoiskey<Scheme::CKKS>& galois_key,
                       CKKSEncodingTransformContext& transform_context,
                       const ExecutionOptions& options = ExecutionOptions());
 
         __host__ std::vector<Ciphertext<Scheme::CKKS>>
         coeff_to_slot(Ciphertext<Scheme::CKKS>& cipher,
-                      Galoiskey<Scheme::CKKS>& galois_key,
+                      const Galoiskey<Scheme::CKKS>& galois_key,
                       const ExecutionOptions& options = ExecutionOptions());
 
         __host__ Ciphertext<Scheme::CKKS> solo_coeff_to_slot(
             Ciphertext<Scheme::CKKS>& cipher,
-            Galoiskey<Scheme::CKKS>& galois_key,
+            const Galoiskey<Scheme::CKKS>& galois_key,
             const ExecutionOptions& options = ExecutionOptions());
 
         __host__ Ciphertext<Scheme::CKKS>
         slot_to_coeff(Ciphertext<Scheme::CKKS>& cipher0,
                       Ciphertext<Scheme::CKKS>& cipher1,
-                      Galoiskey<Scheme::CKKS>& galois_key,
+                      const Galoiskey<Scheme::CKKS>& galois_key,
                       CKKSEncodingTransformContext& transform_context,
                       const ExecutionOptions& options = ExecutionOptions());
 
         __host__ Ciphertext<Scheme::CKKS>
         slot_to_coeff(Ciphertext<Scheme::CKKS>& cipher0,
                       Ciphertext<Scheme::CKKS>& cipher1,
-                      Galoiskey<Scheme::CKKS>& galois_key,
+                      const Galoiskey<Scheme::CKKS>& galois_key,
                       const ExecutionOptions& options = ExecutionOptions());
 
         __host__ Ciphertext<Scheme::CKKS> solo_slot_to_coeff(
-            Ciphertext<Scheme::CKKS>& cipher,
-            Galoiskey<Scheme::CKKS>& galois_key,
+            const Ciphertext<Scheme::CKKS>& cipher,
+            const Galoiskey<Scheme::CKKS>& galois_key,
             const ExecutionOptions& options = ExecutionOptions());
 
         __host__ Ciphertext<Scheme::CKKS>
@@ -2748,17 +2755,18 @@ namespace heongpu
 
         __host__ Ciphertext<Scheme::CKKS>
         eval_mod(Ciphertext<Scheme::CKKS>& cipher,
-                 Relinkey<Scheme::CKKS>& relin_key,
+                 const Relinkey<Scheme::CKKS>& relin_key,
                  const ExecutionOptions& options = ExecutionOptions());
 
         __host__ Ciphertext<Scheme::CKKS>
         eval_mod(Ciphertext<Scheme::CKKS>& cipher, const Polynomial& poly,
-                 double shift, Relinkey<Scheme::CKKS>& relin_key,
+                 double shift, const Relinkey<Scheme::CKKS>& relin_key,
                  const ExecutionOptions& options = ExecutionOptions());
 
         __host__ void
         gen_power(std::unordered_map<int, Ciphertext<Scheme::CKKS>>& cipher,
-                  int power, PolyType type, Relinkey<Scheme::CKKS>& relin_key,
+                  int power, PolyType type,
+                  const Relinkey<Scheme::CKKS>& relin_key,
                   const ExecutionOptions& options = ExecutionOptions());
 
         static Switchkey<Scheme::CKKS>*
@@ -2772,9 +2780,10 @@ namespace heongpu
         __host__ Ciphertext<Scheme::CKKS>
         // Evaluates the polynomial with the result at target_scale; 0 for the
         // scale of input1.
-        evaluate_in_basis(Ciphertext<Scheme::CKKS>& input1,
+        evaluate_in_basis(const Ciphertext<Scheme::CKKS>& input1,
                           const std::vector<double>& coefficients,
-                          PolyType type, Relinkey<Scheme::CKKS>& relin_key,
+                          PolyType type,
+                          const Relinkey<Scheme::CKKS>& relin_key,
                           const ExecutionOptions& options,
                           double target_scale = 0.0);
 
@@ -2783,7 +2792,7 @@ namespace heongpu
         __host__ Ciphertext<Scheme::CKKS>
         evaluate_poly(Ciphertext<Scheme::CKKS>& cipher, double target_scale,
                       double base_scale, const Polynomial& pol,
-                      Relinkey<Scheme::CKKS>& relin_key,
+                      const Relinkey<Scheme::CKKS>& relin_key,
                       const ExecutionOptions& options);
 
         __host__ Ciphertext<Scheme::CKKS> evaluate_poly_from_polynomial_basis(
@@ -2795,7 +2804,7 @@ namespace heongpu
             int target_level, double target_scale, double base_scale,
             const Polynomial& pol, int log_split,
             std::unordered_map<int, Ciphertext<Scheme::CKKS>>& powered_ciphers,
-            Relinkey<Scheme::CKKS>& relin_key,
+            const Relinkey<Scheme::CKKS>& relin_key,
             const ExecutionOptions& options = ExecutionOptions());
     };
 
@@ -2871,7 +2880,7 @@ namespace heongpu
          * initialized.
          */
         __host__ Ciphertext<Scheme::CKKS> regular_bootstrapping(
-            Ciphertext<Scheme::CKKS>& input1, CKKSBootstrappingKeys& keys,
+            const Ciphertext<Scheme::CKKS>& input1, CKKSBootstrappingKeys& keys,
             const ExecutionOptions& options = ExecutionOptions())
         {
             return regular_bootstrapping_ckks(
@@ -2892,7 +2901,7 @@ namespace heongpu
          * @return Ciphertext Bootstrapped ciphertext.
          */
         __host__ Ciphertext<Scheme::CKKS>
-        slim_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
+        slim_bootstrapping(const Ciphertext<Scheme::CKKS>& input1,
                            CKKSBootstrappingKeys& keys,
                            const ExecutionOptions& options = ExecutionOptions())
         {
@@ -2907,17 +2916,17 @@ namespace heongpu
 
       private:
         __host__ Ciphertext<Scheme::CKKS>
-        regular_bootstrapping_ckks(Ciphertext<Scheme::CKKS>& input1,
-                                   Galoiskey<Scheme::CKKS>& galois_key,
-                                   Relinkey<Scheme::CKKS>& relin_key,
+        regular_bootstrapping_ckks(const Ciphertext<Scheme::CKKS>& input1,
+                                   const Galoiskey<Scheme::CKKS>& galois_key,
+                                   const Relinkey<Scheme::CKKS>& relin_key,
                                    Switchkey<Scheme::CKKS>* swk_dense_to_sparse,
                                    Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
                                    const ExecutionOptions& options);
 
         __host__ Ciphertext<Scheme::CKKS>
-        slim_bootstrapping_ckks(Ciphertext<Scheme::CKKS>& input1,
-                                Galoiskey<Scheme::CKKS>& galois_key,
-                                Relinkey<Scheme::CKKS>& relin_key,
+        slim_bootstrapping_ckks(const Ciphertext<Scheme::CKKS>& input1,
+                                const Galoiskey<Scheme::CKKS>& galois_key,
+                                const Relinkey<Scheme::CKKS>& relin_key,
                                 Switchkey<Scheme::CKKS>* swk_dense_to_sparse,
                                 Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
                                 const ExecutionOptions& options);
@@ -2947,7 +2956,7 @@ namespace heongpu
          * @param output Output ciphertext.
          * @param options Execution options.
          */
-        __host__ void NOT(Ciphertext<Scheme::CKKS>& input1,
+        __host__ void NOT(const Ciphertext<Scheme::CKKS>& input1,
                           Ciphertext<Scheme::CKKS>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
@@ -3006,10 +3015,10 @@ namespace heongpu
          * @param relin_key Relinearization key.
          * @param options Execution options.
          */
-        __host__ void AND(Ciphertext<Scheme::CKKS>& input1,
-                          Ciphertext<Scheme::CKKS>& input2,
+        __host__ void AND(const Ciphertext<Scheme::CKKS>& input1,
+                          const Ciphertext<Scheme::CKKS>& input2,
                           Ciphertext<Scheme::CKKS>& output,
-                          Relinkey<Scheme::CKKS>& relin_key,
+                          const Relinkey<Scheme::CKKS>& relin_key,
                           const ExecutionOptions& options = ExecutionOptions())
         {
             relin_key.validate_context(context_);
@@ -3059,8 +3068,8 @@ namespace heongpu
          */
         __host__ void
         AND_inplace(Ciphertext<Scheme::CKKS>& input1,
-                    Ciphertext<Scheme::CKKS>& input2,
-                    Relinkey<Scheme::CKKS>& relin_key,
+                    const Ciphertext<Scheme::CKKS>& input2,
+                    const Relinkey<Scheme::CKKS>& relin_key,
                     const ExecutionOptions& options = ExecutionOptions())
         {
             relin_key.validate_context(context_);
@@ -3079,8 +3088,8 @@ namespace heongpu
          * @param output Output ciphertext.
          * @param options Execution options.
          */
-        __host__ void AND(Ciphertext<Scheme::CKKS>& input1,
-                          Plaintext<Scheme::CKKS>& input2,
+        __host__ void AND(const Ciphertext<Scheme::CKKS>& input1,
+                          const Plaintext<Scheme::CKKS>& input2,
                           Ciphertext<Scheme::CKKS>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
@@ -3126,7 +3135,7 @@ namespace heongpu
          */
         __host__ void
         AND_inplace(Ciphertext<Scheme::CKKS>& input1,
-                    Plaintext<Scheme::CKKS>& input2,
+                    const Plaintext<Scheme::CKKS>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
             input2.validate_context(context_);
@@ -3145,10 +3154,10 @@ namespace heongpu
          * @param relin_key Relinearization key.
          * @param options Execution options.
          */
-        __host__ void OR(Ciphertext<Scheme::CKKS>& input1,
-                         Ciphertext<Scheme::CKKS>& input2,
+        __host__ void OR(const Ciphertext<Scheme::CKKS>& input1,
+                         const Ciphertext<Scheme::CKKS>& input2,
                          Ciphertext<Scheme::CKKS>& output,
-                         Relinkey<Scheme::CKKS>& relin_key,
+                         const Relinkey<Scheme::CKKS>& relin_key,
                          const ExecutionOptions& options = ExecutionOptions())
         {
             relin_key.validate_context(context_);
@@ -3210,8 +3219,8 @@ namespace heongpu
          */
         __host__ void
         OR_inplace(Ciphertext<Scheme::CKKS>& input1,
-                   Ciphertext<Scheme::CKKS>& input2,
-                   Relinkey<Scheme::CKKS>& relin_key,
+                   const Ciphertext<Scheme::CKKS>& input2,
+                   const Relinkey<Scheme::CKKS>& relin_key,
                    const ExecutionOptions& options = ExecutionOptions())
         {
             relin_key.validate_context(context_);
@@ -3230,8 +3239,8 @@ namespace heongpu
          * @param output Output ciphertext.
          * @param options Execution options.
          */
-        __host__ void OR(Ciphertext<Scheme::CKKS>& input1,
-                         Plaintext<Scheme::CKKS>& input2,
+        __host__ void OR(const Ciphertext<Scheme::CKKS>& input1,
+                         const Plaintext<Scheme::CKKS>& input2,
                          Ciphertext<Scheme::CKKS>& output,
                          const ExecutionOptions& options = ExecutionOptions())
         {
@@ -3289,7 +3298,7 @@ namespace heongpu
          */
         __host__ void
         OR_inplace(Ciphertext<Scheme::CKKS>& input1,
-                   Plaintext<Scheme::CKKS>& input2,
+                   const Plaintext<Scheme::CKKS>& input2,
                    const ExecutionOptions& options = ExecutionOptions())
         {
             input2.validate_context(context_);
@@ -3308,10 +3317,10 @@ namespace heongpu
          * @param relin_key Relinearization key.
          * @param options Execution options.
          */
-        __host__ void XOR(Ciphertext<Scheme::CKKS>& input1,
-                          Ciphertext<Scheme::CKKS>& input2,
+        __host__ void XOR(const Ciphertext<Scheme::CKKS>& input1,
+                          const Ciphertext<Scheme::CKKS>& input2,
                           Ciphertext<Scheme::CKKS>& output,
-                          Relinkey<Scheme::CKKS>& relin_key,
+                          const Relinkey<Scheme::CKKS>& relin_key,
                           const ExecutionOptions& options = ExecutionOptions())
         {
             relin_key.validate_context(context_);
@@ -3375,8 +3384,8 @@ namespace heongpu
          */
         __host__ void
         XOR_inplace(Ciphertext<Scheme::CKKS>& input1,
-                    Ciphertext<Scheme::CKKS>& input2,
-                    Relinkey<Scheme::CKKS>& relin_key,
+                    const Ciphertext<Scheme::CKKS>& input2,
+                    const Relinkey<Scheme::CKKS>& relin_key,
                     const ExecutionOptions& options = ExecutionOptions())
         {
             relin_key.validate_context(context_);
@@ -3395,8 +3404,8 @@ namespace heongpu
          * @param output Output ciphertext.
          * @param options Execution options.
          */
-        __host__ void XOR(Ciphertext<Scheme::CKKS>& input1,
-                          Plaintext<Scheme::CKKS>& input2,
+        __host__ void XOR(const Ciphertext<Scheme::CKKS>& input1,
+                          const Plaintext<Scheme::CKKS>& input2,
                           Ciphertext<Scheme::CKKS>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
@@ -3456,7 +3465,7 @@ namespace heongpu
          */
         __host__ void
         XOR_inplace(Ciphertext<Scheme::CKKS>& input1,
-                    Plaintext<Scheme::CKKS>& input2,
+                    const Plaintext<Scheme::CKKS>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
             input2.validate_context(context_);
@@ -3475,10 +3484,10 @@ namespace heongpu
          * @param relin_key Relinearization key.
          * @param options Execution options.
          */
-        __host__ void NAND(Ciphertext<Scheme::CKKS>& input1,
-                           Ciphertext<Scheme::CKKS>& input2,
+        __host__ void NAND(const Ciphertext<Scheme::CKKS>& input1,
+                           const Ciphertext<Scheme::CKKS>& input2,
                            Ciphertext<Scheme::CKKS>& output,
-                           Relinkey<Scheme::CKKS>& relin_key,
+                           const Relinkey<Scheme::CKKS>& relin_key,
                            const ExecutionOptions& options = ExecutionOptions())
         {
             relin_key.validate_context(context_);
@@ -3530,8 +3539,8 @@ namespace heongpu
          */
         __host__ void
         NAND_inplace(Ciphertext<Scheme::CKKS>& input1,
-                     Ciphertext<Scheme::CKKS>& input2,
-                     Relinkey<Scheme::CKKS>& relin_key,
+                     const Ciphertext<Scheme::CKKS>& input2,
+                     const Relinkey<Scheme::CKKS>& relin_key,
                      const ExecutionOptions& options = ExecutionOptions())
         {
             relin_key.validate_context(context_);
@@ -3550,8 +3559,8 @@ namespace heongpu
          * @param output Output ciphertext.
          * @param options Execution options.
          */
-        __host__ void NAND(Ciphertext<Scheme::CKKS>& input1,
-                           Plaintext<Scheme::CKKS>& input2,
+        __host__ void NAND(const Ciphertext<Scheme::CKKS>& input1,
+                           const Plaintext<Scheme::CKKS>& input2,
                            Ciphertext<Scheme::CKKS>& output,
                            const ExecutionOptions& options = ExecutionOptions())
         {
@@ -3600,7 +3609,7 @@ namespace heongpu
          */
         __host__ void
         NAND_inplace(Ciphertext<Scheme::CKKS>& input1,
-                     Plaintext<Scheme::CKKS>& input2,
+                     const Plaintext<Scheme::CKKS>& input2,
                      const ExecutionOptions& options = ExecutionOptions())
         {
             input2.validate_context(context_);
@@ -3619,10 +3628,10 @@ namespace heongpu
          * @param relin_key Relinearization key.
          * @param options Execution options.
          */
-        __host__ void NOR(Ciphertext<Scheme::CKKS>& input1,
-                          Ciphertext<Scheme::CKKS>& input2,
+        __host__ void NOR(const Ciphertext<Scheme::CKKS>& input1,
+                          const Ciphertext<Scheme::CKKS>& input2,
                           Ciphertext<Scheme::CKKS>& output,
-                          Relinkey<Scheme::CKKS>& relin_key,
+                          const Relinkey<Scheme::CKKS>& relin_key,
                           const ExecutionOptions& options = ExecutionOptions())
         {
             relin_key.validate_context(context_);
@@ -3687,8 +3696,8 @@ namespace heongpu
          */
         __host__ void
         NOR_inplace(Ciphertext<Scheme::CKKS>& input1,
-                    Ciphertext<Scheme::CKKS>& input2,
-                    Relinkey<Scheme::CKKS>& relin_key,
+                    const Ciphertext<Scheme::CKKS>& input2,
+                    const Relinkey<Scheme::CKKS>& relin_key,
                     const ExecutionOptions& options = ExecutionOptions())
         {
             relin_key.validate_context(context_);
@@ -3707,8 +3716,8 @@ namespace heongpu
          * @param output Output ciphertext.
          * @param options Execution options.
          */
-        __host__ void NOR(Ciphertext<Scheme::CKKS>& input1,
-                          Plaintext<Scheme::CKKS>& input2,
+        __host__ void NOR(const Ciphertext<Scheme::CKKS>& input1,
+                          const Plaintext<Scheme::CKKS>& input2,
                           Ciphertext<Scheme::CKKS>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
@@ -3769,7 +3778,7 @@ namespace heongpu
          */
         __host__ void
         NOR_inplace(Ciphertext<Scheme::CKKS>& input1,
-                    Plaintext<Scheme::CKKS>& input2,
+                    const Plaintext<Scheme::CKKS>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
             input2.validate_context(context_);
@@ -3788,10 +3797,10 @@ namespace heongpu
          * @param relin_key Relinearization key.
          * @param options Execution options.
          */
-        __host__ void XNOR(Ciphertext<Scheme::CKKS>& input1,
-                           Ciphertext<Scheme::CKKS>& input2,
+        __host__ void XNOR(const Ciphertext<Scheme::CKKS>& input1,
+                           const Ciphertext<Scheme::CKKS>& input2,
                            Ciphertext<Scheme::CKKS>& output,
-                           Relinkey<Scheme::CKKS>& relin_key,
+                           const Relinkey<Scheme::CKKS>& relin_key,
                            const ExecutionOptions& options = ExecutionOptions())
         {
             relin_key.validate_context(context_);
@@ -3858,8 +3867,8 @@ namespace heongpu
          */
         __host__ void
         XNOR_inplace(Ciphertext<Scheme::CKKS>& input1,
-                     Ciphertext<Scheme::CKKS>& input2,
-                     Relinkey<Scheme::CKKS>& relin_key,
+                     const Ciphertext<Scheme::CKKS>& input2,
+                     const Relinkey<Scheme::CKKS>& relin_key,
                      const ExecutionOptions& options = ExecutionOptions())
         {
             relin_key.validate_context(context_);
@@ -3878,8 +3887,8 @@ namespace heongpu
          * @param output Output ciphertext.
          * @param options Execution options.
          */
-        __host__ void XNOR(Ciphertext<Scheme::CKKS>& input1,
-                           Plaintext<Scheme::CKKS>& input2,
+        __host__ void XNOR(const Ciphertext<Scheme::CKKS>& input1,
+                           const Plaintext<Scheme::CKKS>& input2,
                            Ciphertext<Scheme::CKKS>& output,
                            const ExecutionOptions& options = ExecutionOptions())
         {
@@ -3946,7 +3955,7 @@ namespace heongpu
          */
         __host__ void
         XNOR_inplace(Ciphertext<Scheme::CKKS>& input1,
-                     Plaintext<Scheme::CKKS>& input2,
+                     const Plaintext<Scheme::CKKS>& input2,
                      const ExecutionOptions& options = ExecutionOptions())
         {
             input2.validate_context(context_);
@@ -4004,7 +4013,7 @@ namespace heongpu
          * @return Ciphertext Bootstrapped ciphertext.
          */
         __host__ Ciphertext<Scheme::CKKS>
-        bit_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
+        bit_bootstrapping(const Ciphertext<Scheme::CKKS>& input1,
                           CKKSBootstrappingKeys& keys,
                           const ExecutionOptions& options = ExecutionOptions())
         {
@@ -4026,8 +4035,8 @@ namespace heongpu
          * @return Ciphertext Bootstrapped result.
          */
         __host__ Ciphertext<Scheme::CKKS>
-        AND_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
-                          Ciphertext<Scheme::CKKS>& input2,
+        AND_bootstrapping(const Ciphertext<Scheme::CKKS>& input1,
+                          const Ciphertext<Scheme::CKKS>& input2,
                           CKKSBootstrappingKeys& keys,
                           const ExecutionOptions& options = ExecutionOptions())
         {
@@ -4047,8 +4056,8 @@ namespace heongpu
          * @return Ciphertext Bootstrapped result.
          */
         __host__ Ciphertext<Scheme::CKKS>
-        OR_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
-                         Ciphertext<Scheme::CKKS>& input2,
+        OR_bootstrapping(const Ciphertext<Scheme::CKKS>& input1,
+                         const Ciphertext<Scheme::CKKS>& input2,
                          CKKSBootstrappingKeys& keys,
                          const ExecutionOptions& options = ExecutionOptions())
         {
@@ -4068,8 +4077,8 @@ namespace heongpu
          * @return Ciphertext Bootstrapped result.
          */
         __host__ Ciphertext<Scheme::CKKS>
-        XOR_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
-                          Ciphertext<Scheme::CKKS>& input2,
+        XOR_bootstrapping(const Ciphertext<Scheme::CKKS>& input1,
+                          const Ciphertext<Scheme::CKKS>& input2,
                           CKKSBootstrappingKeys& keys,
                           const ExecutionOptions& options = ExecutionOptions())
         {
@@ -4089,8 +4098,8 @@ namespace heongpu
          * @return Ciphertext Bootstrapped result.
          */
         __host__ Ciphertext<Scheme::CKKS>
-        NAND_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
-                           Ciphertext<Scheme::CKKS>& input2,
+        NAND_bootstrapping(const Ciphertext<Scheme::CKKS>& input1,
+                           const Ciphertext<Scheme::CKKS>& input2,
                            CKKSBootstrappingKeys& keys,
                            const ExecutionOptions& options = ExecutionOptions())
         {
@@ -4110,8 +4119,8 @@ namespace heongpu
          * @return Ciphertext Bootstrapped result.
          */
         __host__ Ciphertext<Scheme::CKKS>
-        NOR_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
-                          Ciphertext<Scheme::CKKS>& input2,
+        NOR_bootstrapping(const Ciphertext<Scheme::CKKS>& input1,
+                          const Ciphertext<Scheme::CKKS>& input2,
                           CKKSBootstrappingKeys& keys,
                           const ExecutionOptions& options = ExecutionOptions())
         {
@@ -4131,8 +4140,8 @@ namespace heongpu
          * @return Ciphertext Bootstrapped result.
          */
         __host__ Ciphertext<Scheme::CKKS>
-        XNOR_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
-                           Ciphertext<Scheme::CKKS>& input2,
+        XNOR_bootstrapping(const Ciphertext<Scheme::CKKS>& input1,
+                           const Ciphertext<Scheme::CKKS>& input2,
                            CKKSBootstrappingKeys& keys,
                            const ExecutionOptions& options = ExecutionOptions())
         {
@@ -4160,16 +4169,16 @@ namespace heongpu
         };
 
         __host__ Ciphertext<Scheme::CKKS>
-        bit_bootstrapping_ckks(Ciphertext<Scheme::CKKS>& input1,
-                               Galoiskey<Scheme::CKKS>& galois_key,
-                               Relinkey<Scheme::CKKS>& relin_key,
+        bit_bootstrapping_ckks(const Ciphertext<Scheme::CKKS>& input1,
+                               const Galoiskey<Scheme::CKKS>& galois_key,
+                               const Relinkey<Scheme::CKKS>& relin_key,
                                Switchkey<Scheme::CKKS>* swk_dense_to_sparse,
                                Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
                                const ExecutionOptions& options);
 
         __host__ Ciphertext<Scheme::CKKS> gate_bootstrapping(
-            logic_gate gate_type, Ciphertext<Scheme::CKKS>& input1,
-            Ciphertext<Scheme::CKKS>& input2, CKKSBootstrappingKeys& keys,
+            logic_gate gate_type, const Ciphertext<Scheme::CKKS>& input1,
+            const Ciphertext<Scheme::CKKS>& input2, CKKSBootstrappingKeys& keys,
             const ExecutionOptions& options)
         {
             keys.galois_key.validate_context(context_);
@@ -4183,18 +4192,18 @@ namespace heongpu
         }
 
         __host__ Ciphertext<Scheme::CKKS> gate_bootstrapping(
-            logic_gate gate_type, Ciphertext<Scheme::CKKS>& input1,
-            Ciphertext<Scheme::CKKS>& input2,
-            Galoiskey<Scheme::CKKS>& galois_key,
-            Relinkey<Scheme::CKKS>& relin_key,
+            logic_gate gate_type, const Ciphertext<Scheme::CKKS>& input1,
+            const Ciphertext<Scheme::CKKS>& input2,
+            const Galoiskey<Scheme::CKKS>& galois_key,
+            const Relinkey<Scheme::CKKS>& relin_key,
             Switchkey<Scheme::CKKS>* swk_dense_to_sparse,
             Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
             const ExecutionOptions& options = ExecutionOptions());
 
         __host__ Ciphertext<Scheme::CKKS> logic_bootstrapping(
-            Ciphertext<Scheme::CKKS>& input1, int function_index,
-            Galoiskey<Scheme::CKKS>& galois_key,
-            Relinkey<Scheme::CKKS>& relin_key,
+            const Ciphertext<Scheme::CKKS>& input1, int function_index,
+            const Galoiskey<Scheme::CKKS>& galois_key,
+            const Relinkey<Scheme::CKKS>& relin_key,
             Switchkey<Scheme::CKKS>* swk_dense_to_sparse,
             Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
             const ExecutionOptions& options = ExecutionOptions());
