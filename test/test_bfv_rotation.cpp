@@ -347,7 +347,6 @@ static void check_rotations(int p_count)
         // CPU RAM.
         // heongpu::HEContext<heongpu::Scheme::BFV> context =
         // heongpu::GenHEContext<heongpu::Scheme::BFV>(
-        // heongpu::keyswitching_type::KEYSWITCHING_METHOD_I,
         // heongpu::sec_level_type::none);
         // context->set_poly_modulus_degree(poly_modulus_degree);
         // context->set_coeff_modulus_bit_sizes({58, 58, 58, 58, 58, 58, 58, 58,

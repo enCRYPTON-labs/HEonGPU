@@ -46,6 +46,16 @@ namespace heongpu
                                                 serialized_object object,
                                                 scheme_type scheme);
 
+        // Writes the key switching byte that contexts and keys store after
+        // the scheme. Every context uses hybrid key switching; earlier
+        // versions wrote 0x1 for one P prime and 0x2 for more, with the same
+        // data layout.
+        void write_keyswitching_byte(std::ostream& os);
+
+        // Reads the key switching byte and throws SerializationError unless
+        // it is 0x1 or 0x2.
+        void read_keyswitching_byte(std::istream& is, const char* object_name);
+
         // Throws ContextMismatchError when the context identity read from a
         // stream differs from the one of the object it is loaded into. An
         // identity of 0 on either side is unknown and not checked.

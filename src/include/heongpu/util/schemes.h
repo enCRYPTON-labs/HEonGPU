@@ -112,17 +112,6 @@ namespace heongpu
         sec256 = 0x3
     };
 
-    enum class keyswitching_type : std::uint8_t
-    {
-        NONE = 0x0,
-        // Earlier versions used it for one P prime. It is method II with
-        // digits of one prime; data with it loads as KEYSWITCHING_METHOD_II.
-        KEYSWITCHING_METHOD_I
-        [[deprecated("Every context uses KEYSWITCHING_METHOD_II.")]] = 0x1,
-        // Hybrid key switching, used by every context.
-        KEYSWITCHING_METHOD_II = 0x2,
-    };
-
     enum class arithmetic_bootstrapping_type : std::uint8_t
     {
         none = 0x0,

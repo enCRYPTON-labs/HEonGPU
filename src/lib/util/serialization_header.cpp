@@ -143,6 +143,26 @@ namespace heongpu
             return context_id;
         }
 
+        void write_keyswitching_byte(std::ostream& os)
+        {
+            const char hybrid = 0x2;
+            os.write(&hybrid, 1);
+        }
+
+        void read_keyswitching_byte(std::istream& is, const char* object_name)
+        {
+            char method = 0;
+            is.read(&method, 1);
+            if (!is || (method != 0x1 && method != 0x2))
+            {
+                throw SerializationError(error_message(
+                    "Invalid ", object_name,
+                    " binary! Unknown key switching method ",
+                    static_cast<int>(static_cast<unsigned char>(method)),
+                    "; expected 1 or 2."));
+            }
+        }
+
         void validate_loaded_context_identity(std::uint64_t object_id,
                                               std::uint64_t loaded_id,
                                               const char* object_name)

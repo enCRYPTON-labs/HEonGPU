@@ -310,6 +310,27 @@ TYPED_TEST(SerializationFormat, Decrypted_Plaintext_Can_Be_Saved)
     EXPECT_EQ(save(loaded), binary);
 }
 
+// Contexts and keys store a key switching byte, 1 or 2 in every version; data
+// with another value is rejected.
+TYPED_TEST(SerializationFormat, Unknown_Key_Switching_Byte_Is_Rejected)
+{
+    constexpr auto S = TestFixture::S;
+    auto& a = this->a;
+    for (char method : {0, 3})
+    {
+        std::string context_binary = save(*a.context);
+        context_binary[header_size + 2] = method;
+        auto context = heongpu::GenHEContext<S>();
+        EXPECT_THROW(load(*context, context_binary),
+                     heongpu::SerializationError);
+
+        std::string key_binary = save(a.relin_key);
+        key_binary[header_size + 1] = method;
+        heongpu::Relinkey<S> key;
+        EXPECT_THROW(load(key, key_binary), heongpu::SerializationError);
+    }
+}
+
 // 1 is the format v1, which HEonGPU 2.0 no longer writes.
 TYPED_TEST(SerializationFormat, Unknown_Format_Is_Rejected)
 {

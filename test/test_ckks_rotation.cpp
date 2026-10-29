@@ -434,7 +434,6 @@ TEST(HEonGPU, CKKS_Ciphertext_Rotation_Large_Rings)
         // CPU RAM.
         // heongpu::HEContext<heongpu::Scheme::CKKS>
         // context(heongpu::scheme_type::ckks,
-        // heongpu::keyswitching_type::KEYSWITCHING_METHOD_II,
         // heongpu::sec_level_type::none);
         // context->set_poly_modulus_degree(poly_modulus_degree);
         // context->set_coeff_modulus_bit_sizes({59, 45, 45, 45, 45, 45, 45, 45,

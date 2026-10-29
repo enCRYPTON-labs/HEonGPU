@@ -100,10 +100,10 @@ namespace heongpu
          */
         Relinkey(const Relinkey& copy)
             : context_(copy.context_), context_id_(copy.context_id_),
-              scheme_(copy.scheme_), key_type(copy.key_type),
-              ring_size(copy.ring_size), Q_prime_size_(copy.Q_prime_size_),
-              Q_size_(copy.Q_size_), d_(copy.d_), d_tilda_(copy.d_tilda_),
-              r_prime_(copy.r_prime_), storage_type_(copy.storage_type_),
+              scheme_(copy.scheme_), ring_size(copy.ring_size),
+              Q_prime_size_(copy.Q_prime_size_), Q_size_(copy.Q_size_),
+              d_(copy.d_), d_tilda_(copy.d_tilda_), r_prime_(copy.r_prime_),
+              storage_type_(copy.storage_type_),
               relinkey_size_(copy.relinkey_size_),
               relin_key_generated_(copy.relin_key_generated_)
         {
@@ -138,7 +138,6 @@ namespace heongpu
             : context_(std::move(assign.context_)),
               context_id_(assign.context_id_),
               scheme_(std::move(assign.scheme_)),
-              key_type(std::move(assign.key_type)),
               ring_size(std::move(assign.ring_size)),
               Q_prime_size_(std::move(assign.Q_prime_size_)),
               Q_size_(std::move(assign.Q_size_)), d_(std::move(assign.d_)),
@@ -176,7 +175,6 @@ namespace heongpu
                 context_ = copy.context_;
                 context_id_ = copy.context_id_;
                 scheme_ = copy.scheme_;
-                key_type = copy.key_type;
                 ring_size = copy.ring_size;
                 Q_prime_size_ = copy.Q_prime_size_;
                 Q_size_ = copy.Q_size_;
@@ -224,7 +222,6 @@ namespace heongpu
                 context_ = std::move(assign.context_);
                 context_id_ = assign.context_id_;
                 scheme_ = std::move(assign.scheme_);
-                key_type = std::move(assign.key_type);
                 ring_size = std::move(assign.ring_size);
                 Q_prime_size_ = std::move(assign.Q_prime_size_);
                 Q_size_ = std::move(assign.Q_size_);
@@ -284,7 +281,6 @@ namespace heongpu
         }
 
         scheme_type scheme_;
-        keyswitching_type key_type;
 
         int ring_size;
 
@@ -473,9 +469,9 @@ namespace heongpu
          */
         Galoiskey(const Galoiskey& copy)
             : context_(copy.context_), context_id_(copy.context_id_),
-              scheme_(copy.scheme_), key_type(copy.key_type),
-              ring_size(copy.ring_size), Q_prime_size_(copy.Q_prime_size_),
-              Q_size_(copy.Q_size_), d_(copy.d_), customized(copy.customized),
+              scheme_(copy.scheme_), ring_size(copy.ring_size),
+              Q_prime_size_(copy.Q_prime_size_), Q_size_(copy.Q_size_),
+              d_(copy.d_), customized(copy.customized),
               group_order_(copy.group_order_),
               storage_type_(copy.storage_type_),
               galoiskey_size_(copy.galoiskey_size_),
@@ -532,7 +528,6 @@ namespace heongpu
             : context_(std::move(assign.context_)),
               context_id_(assign.context_id_),
               scheme_(std::move(assign.scheme_)),
-              key_type(std::move(assign.key_type)),
               ring_size(std::move(assign.ring_size)),
               Q_prime_size_(std::move(assign.Q_prime_size_)),
               Q_size_(std::move(assign.Q_size_)), d_(std::move(assign.d_)),
@@ -587,7 +582,6 @@ namespace heongpu
                 context_ = copy.context_;
                 context_id_ = copy.context_id_;
                 scheme_ = copy.scheme_;
-                key_type = copy.key_type;
                 ring_size = copy.ring_size;
                 Q_prime_size_ = copy.Q_prime_size_;
                 Q_size_ = copy.Q_size_;
@@ -657,7 +651,6 @@ namespace heongpu
                 context_ = std::move(assign.context_);
                 context_id_ = assign.context_id_;
                 scheme_ = std::move(assign.scheme_);
-                key_type = std::move(assign.key_type);
                 ring_size = std::move(assign.ring_size);
                 Q_prime_size_ = std::move(assign.Q_prime_size_);
                 Q_size_ = std::move(assign.Q_size_);
@@ -737,7 +730,6 @@ namespace heongpu
         }
 
         scheme_type scheme_;
-        keyswitching_type key_type;
 
         int ring_size;
 
@@ -903,7 +895,6 @@ namespace heongpu
         }
 
         scheme_type scheme_;
-        keyswitching_type key_type;
 
         int ring_size;
 

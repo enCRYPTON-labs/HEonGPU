@@ -20,7 +20,6 @@ namespace heongpu
 
         context_ = context;
         scheme_ = context->scheme_;
-        key_type = context->keyswitching_type_;
 
         ring_size = context->n;
         Q_prime_size_ = context->Q_prime_size;
@@ -91,7 +90,7 @@ namespace heongpu
 
             os.write((char*) &scheme_, sizeof(scheme_));
 
-            os.write((char*) &key_type, sizeof(key_type));
+            detail::write_keyswitching_byte(os);
 
             os.write((char*) &ring_size, sizeof(ring_size));
 
@@ -161,10 +160,7 @@ namespace heongpu
                                   static_cast<int>(scheme_), "."));
             }
 
-            is.read((char*) &key_type, sizeof(key_type));
-            // Keys of KEYSWITCHING_METHOD_I, from earlier versions, have the
-            // layout of method II with single prime digits.
-            key_type = keyswitching_type::KEYSWITCHING_METHOD_II;
+            detail::read_keyswitching_byte(is, "Relinkey");
 
             is.read((char*) &ring_size, sizeof(ring_size));
 
@@ -325,7 +321,6 @@ namespace heongpu
 
         context_ = context;
         scheme_ = context->scheme_;
-        key_type = context->keyswitching_type_;
 
         ring_size = context->n;
         Q_prime_size_ = context->Q_prime_size;
@@ -363,7 +358,6 @@ namespace heongpu
 
         context_ = context;
         scheme_ = context->scheme_;
-        key_type = context->keyswitching_type_;
 
         ring_size = context->n;
         Q_prime_size_ = context->Q_prime_size;
@@ -399,7 +393,6 @@ namespace heongpu
 
         context_ = context;
         scheme_ = context->scheme_;
-        key_type = context->keyswitching_type_;
 
         ring_size = context->n;
         Q_prime_size_ = context->Q_prime_size;
@@ -512,7 +505,7 @@ namespace heongpu
 
             os.write((char*) &scheme_, sizeof(scheme_));
 
-            os.write((char*) &key_type, sizeof(key_type));
+            detail::write_keyswitching_byte(os);
 
             os.write((char*) &ring_size, sizeof(ring_size));
 
@@ -634,10 +627,7 @@ namespace heongpu
                                   static_cast<int>(scheme_), "."));
             }
 
-            is.read((char*) &key_type, sizeof(key_type));
-            // Keys of KEYSWITCHING_METHOD_I, from earlier versions, have the
-            // layout of method II with single prime digits.
-            key_type = keyswitching_type::KEYSWITCHING_METHOD_II;
+            detail::read_keyswitching_byte(is, "Galoiskey");
 
             is.read((char*) &ring_size, sizeof(ring_size));
 
@@ -750,7 +740,6 @@ namespace heongpu
 
         context_ = context;
         scheme_ = context->scheme_;
-        key_type = context->keyswitching_type_;
 
         ring_size = context->n;
         Q_prime_size_ = context->Q_prime_size;
@@ -821,7 +810,7 @@ namespace heongpu
 
             os.write((char*) &scheme_, sizeof(scheme_));
 
-            os.write((char*) &key_type, sizeof(key_type));
+            detail::write_keyswitching_byte(os);
 
             os.write((char*) &ring_size, sizeof(ring_size));
 
@@ -880,10 +869,7 @@ namespace heongpu
 
             is.read((char*) &scheme_, sizeof(scheme_));
 
-            is.read((char*) &key_type, sizeof(key_type));
-            // Keys of KEYSWITCHING_METHOD_I, from earlier versions, have the
-            // layout of method II with single prime digits.
-            key_type = keyswitching_type::KEYSWITCHING_METHOD_II;
+            detail::read_keyswitching_byte(is, "Switchkey");
 
             is.read((char*) &ring_size, sizeof(ring_size));
 

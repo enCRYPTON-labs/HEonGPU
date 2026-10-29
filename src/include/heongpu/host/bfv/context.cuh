@@ -204,7 +204,6 @@ namespace heongpu
 
         scheme_type scheme_;
         sec_level_type sec_level_;
-        keyswitching_type keyswitching_type_;
 
         int n;
         int n_power;

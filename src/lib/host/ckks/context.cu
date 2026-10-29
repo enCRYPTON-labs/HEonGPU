@@ -16,7 +16,6 @@ namespace heongpu
         {
             scheme_ = scheme_type::ckks;
             sec_level_ = sec_level;
-            keyswitching_type_ = keyswitching_type::NONE;
         }
         else
         {
@@ -66,10 +65,6 @@ namespace heongpu
                 throw std::logic_error(
                     "log_P_bases_bit_sizes cannot be empty!");
             }
-
-            // Digits of P_size primes; with one P prime they are single
-            // primes, which earlier versions called KEYSWITCHING_METHOD_I.
-            keyswitching_type_ = keyswitching_type::KEYSWITCHING_METHOD_II;
 
             validate_key_switching_digits(log_Q_bases_bit_sizes,
                                           log_P_bases_bit_sizes);
@@ -173,10 +168,6 @@ namespace heongpu
                 throw std::logic_error(
                     "log_P_bases_bit_sizes cannot be empty!");
             }
-
-            // Digits of P_size primes; with one P prime they are single
-            // primes, which earlier versions called KEYSWITCHING_METHOD_I.
-            keyswitching_type_ = keyswitching_type::KEYSWITCHING_METHOD_II;
 
             validate_key_switching_digits(log_Q_bases_bit_sizes,
                                           log_P_bases_bit_sizes);
@@ -601,7 +592,7 @@ namespace heongpu
 
             os.write((char*) &sec_level_, sizeof(sec_level_));
 
-            os.write((char*) &keyswitching_type_, sizeof(keyswitching_type_));
+            detail::write_keyswitching_byte(os);
 
             os.write((char*) &n, sizeof(n));
 
@@ -666,10 +657,7 @@ namespace heongpu
 
             is.read((char*) &sec_level_, sizeof(sec_level_));
 
-            is.read((char*) &keyswitching_type_, sizeof(keyswitching_type_));
-            // KEYSWITCHING_METHOD_I of earlier versions is method II with
-            // single prime digits.
-            keyswitching_type_ = keyswitching_type::KEYSWITCHING_METHOD_II;
+            detail::read_keyswitching_byte(is, "HEContext");
 
             is.read((char*) &n, sizeof(n));
 
@@ -756,8 +744,7 @@ namespace heongpu
         bits(Q_mod_bit_sizes_);
         stream << " bits, P=";
         bits(P_mod_bit_sizes_);
-        stream << " bits, " << detail::name(keyswitching_type_)
-               << ", security=" << detail::name(sec_level_);
+        stream << " bits, security=" << detail::name(sec_level_);
         if (rescale_mode_ != rescale_mode::manual)
         {
             stream << ", rescale=" << detail::name(rescale_mode_);

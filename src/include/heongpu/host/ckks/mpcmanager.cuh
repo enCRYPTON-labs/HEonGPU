@@ -189,8 +189,7 @@ namespace heongpu
             Secretkey<Scheme::CKKS>& sk,
             const ExecutionOptions& options = ExecutionOptions())
         {
-            if ((rk_s1_common.scheme_ != rk_new.scheme_) ||
-                (rk_s1_common.key_type != rk_new.key_type))
+            if (rk_s1_common.scheme_ != rk_new.scheme_)
             {
                 throw std::invalid_argument("Invalid relinkey parameters!");
             }

@@ -31,8 +31,7 @@ int main(int argc, char* argv[])
     // heongpu::HEContext<heongpu::Scheme::CKKS> context =
     // heongpu::GenHEContext<heongpu::Scheme::CKKS>(
     //    heongpu::sec_level_type::sec128);
-    // The key switching method is selected from the P modulus size: one P
-    // prime selects KEYSWITCHING_METHOD_I, more select KEYSWITCHING_METHOD_II.
+    // Key switching splits Q into digits of as many primes as P has.
 
     // A recommended approach is to align the initial scale and the primes in
     // the coeff_modulus closely. After multiplication and rescaling, this

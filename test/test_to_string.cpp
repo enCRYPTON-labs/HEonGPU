@@ -40,7 +40,7 @@ TEST(HEonGPU, CKKS_To_String)
 
     const std::string context_text =
         "HEContext<CKKS>(N=4096, Q=40+30+30 bits, P=40 bits, "
-        "KEYSWITCHING_METHOD_II, security=none, id=0x" +
+        "security=none, id=0x" +
         hex(context->context_id()) + ")";
     EXPECT_EQ(context->to_string(), context_text);
     EXPECT_EQ(streamed(*context), context_text);
@@ -92,7 +92,7 @@ TEST(HEonGPU, BFV_To_String)
 
     const std::string context_text =
         "HEContext<BFV>(N=4096, Q=36+36 bits, P=37 bits, t=1032193, "
-        "KEYSWITCHING_METHOD_II, security=none, id=0x" +
+        "security=none, id=0x" +
         hex(context->context_id()) + ")";
     EXPECT_EQ(context->to_string(), context_text);
     EXPECT_EQ(streamed(context), context_text);

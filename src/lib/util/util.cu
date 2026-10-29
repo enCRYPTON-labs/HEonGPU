@@ -28,21 +28,6 @@ namespace heongpu
             return "unknown";
         }
 
-        const char* name(keyswitching_type type)
-        {
-            switch (type)
-            {
-                case keyswitching_type::NONE:
-                    return "NONE";
-                // KEYSWITCHING_METHOD_I, deprecated.
-                case static_cast<keyswitching_type>(0x1):
-                    return "KEYSWITCHING_METHOD_I";
-                case keyswitching_type::KEYSWITCHING_METHOD_II:
-                    return "KEYSWITCHING_METHOD_II";
-            }
-            return "unknown";
-        }
-
         const char* name(storage_type type)
         {
             switch (type)
