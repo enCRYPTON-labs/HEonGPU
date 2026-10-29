@@ -2845,12 +2845,12 @@ namespace heongpu
             return key_indexs_;
         }
 
-        [[deprecated("Use bootstrapping_key_indices() instead.")]] __host__
-            std::vector<int>
-            bootstrapping_key_indexs()
-        {
-            return bootstrapping_key_indices();
-        }
+        /**
+         * @brief Generates the bootstrapping parameters of preset, which must
+         * be a regular or slim preset.
+         */
+        __host__ void
+        generate_bootstrapping_params(const CKKSBootstrappingPreset& preset);
 
         /**
          * @brief Performs regular bootstrapping with non-sparse key support.
@@ -2861,73 +2861,14 @@ namespace heongpu
          *
          * @param input1 Input ciphertext; one above level 0 is brought down
          * to it.
-         * @param galois_key Galois key for rotation operations.
-         * @param relin_key Relinearization key for EvalMod polynomial
-         * evaluation.
-         * @param swk_dense_to_sparse Optional switch key from dense to sparse
-         * representation.
-         * @param swk_sparse_to_dense Optional switch key from sparse to dense
-         * representation.
+         * @param keys Galois key, relinearization key and the optional
+         * switch keys, as made by HEKeyGenerator::bootstrapping_keys.
          * @param options Execution options (stream, storage, etc.).
          * @return Ciphertext Bootstrapped ciphertext with refreshed modulus
          * chain.
          *
          * @throws std::invalid_argument if bootstrapping context not
          * initialized.
-         */
-        [[deprecated("Use the overload with CKKSBootstrappingKeys "
-                     "instead.")]] __host__ Ciphertext<Scheme::CKKS>
-        regular_bootstrapping(
-            Ciphertext<Scheme::CKKS>& input1,
-            Galoiskey<Scheme::CKKS>& galois_key,
-            Relinkey<Scheme::CKKS>& relin_key,
-            Switchkey<Scheme::CKKS>* swk_dense_to_sparse = nullptr,
-            Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
-            const ExecutionOptions& options = ExecutionOptions())
-        {
-            return regular_bootstrapping_ckks(input1, galois_key, relin_key,
-                                              swk_dense_to_sparse,
-                                              swk_sparse_to_dense, options);
-        }
-
-        /**
-         * @brief Performs slim bootstrapping (supports only real numbers).
-         *
-         * @param input1 Input ciphertext at the SlotToCoeff start level or
-         * above; one above it is brought down to it. A lower one is reported
-         * with LevelMismatchError.
-         * @param galois_key Galois key.
-         * @param relin_key Relinearization key.
-         * @param swk_dense_to_sparse Optional dense to sparse switch key.
-         * @param swk_sparse_to_dense Optional sparse to dense switch key.
-         * @param options Execution options.
-         * @return Ciphertext Bootstrapped ciphertext.
-         */
-        [[deprecated("Use the overload with CKKSBootstrappingKeys "
-                     "instead.")]] __host__ Ciphertext<Scheme::CKKS>
-        slim_bootstrapping(
-            Ciphertext<Scheme::CKKS>& input1,
-            Galoiskey<Scheme::CKKS>& galois_key,
-            Relinkey<Scheme::CKKS>& relin_key,
-            Switchkey<Scheme::CKKS>* swk_dense_to_sparse = nullptr,
-            Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
-            const ExecutionOptions& options = ExecutionOptions())
-        {
-            return slim_bootstrapping_ckks(input1, galois_key, relin_key,
-                                           swk_dense_to_sparse,
-                                           swk_sparse_to_dense, options);
-        }
-
-        /**
-         * @brief Generates the bootstrapping parameters of preset, which must
-         * be a regular or slim preset.
-         */
-        __host__ void
-        generate_bootstrapping_params(const CKKSBootstrappingPreset& preset);
-
-        /**
-         * @brief Performs regular bootstrapping with the keys of
-         * HEKeyGenerator::bootstrapping_keys; see regular_bootstrapping.
          */
         __host__ Ciphertext<Scheme::CKKS> regular_bootstrapping(
             Ciphertext<Scheme::CKKS>& input1, CKKSBootstrappingKeys& keys,
@@ -2940,8 +2881,15 @@ namespace heongpu
         }
 
         /**
-         * @brief Performs slim bootstrapping with the keys of
-         * HEKeyGenerator::bootstrapping_keys; see slim_bootstrapping.
+         * @brief Performs slim bootstrapping (supports only real numbers).
+         *
+         * @param input1 Input ciphertext at the SlotToCoeff start level or
+         * above; one above it is brought down to it. A lower one is reported
+         * with LevelMismatchError.
+         * @param keys Galois key, relinearization key and the optional
+         * switch keys, as made by HEKeyGenerator::bootstrapping_keys.
+         * @param options Execution options.
+         * @return Ciphertext Bootstrapped ciphertext.
          */
         __host__ Ciphertext<Scheme::CKKS>
         slim_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
@@ -4036,246 +3984,6 @@ namespace heongpu
             return key_indexs_;
         }
 
-        [[deprecated("Use bootstrapping_key_indices() instead.")]] __host__
-            std::vector<int>
-            bootstrapping_key_indexs()
-        {
-            return bootstrapping_key_indices();
-        }
-
-        /**
-         * @brief Performs bit-level bootstrapping on a ciphertext.(For more
-         * detail please check README.md)
-         *
-         * @param input1 Input ciphertext at the SlotToCoeff start level or
-         * above; one above it is brought down to it. A lower one is reported
-         * with LevelMismatchError.
-         * @param galois_key Galois key for rotations.
-         * @param relin_key Relinearization key.
-         * @param swk_dense_to_sparse Optional dense to sparse switch key.
-         * @param swk_sparse_to_dense Optional sparse to dense switch key.
-         * @param options Execution options.
-         * @return Ciphertext Bootstrapped ciphertext.
-         */
-        [[deprecated("Use the overload with CKKSBootstrappingKeys "
-                     "instead.")]] __host__ Ciphertext<Scheme::CKKS>
-        bit_bootstrapping(
-            Ciphertext<Scheme::CKKS>& input1,
-            Galoiskey<Scheme::CKKS>& galois_key,
-            Relinkey<Scheme::CKKS>& relin_key,
-            Switchkey<Scheme::CKKS>* swk_dense_to_sparse = nullptr,
-            Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
-            const ExecutionOptions& options = ExecutionOptions())
-        {
-            return bit_bootstrapping_ckks(input1, galois_key, relin_key,
-                                          swk_dense_to_sparse,
-                                          swk_sparse_to_dense, options);
-        }
-
-        /**
-         * @brief Bootstrapped logical AND gate.(For more detail please check
-         * README.md)
-         *
-         * @param input1 First input ciphertext.
-         * @param input2 Second input ciphertext.
-         * @param galois_key Galois key for rotations.
-         * @param relin_key Relinearization key.
-         * @param swk_dense_to_sparse Optional dense to sparse switch key.
-         * @param swk_sparse_to_dense Optional sparse to dense switch key.
-         * @param options Execution options.
-         * @return Ciphertext Bootstrapped result.
-         */
-        [[deprecated("Use the overload with CKKSBootstrappingKeys "
-                     "instead.")]] __host__ Ciphertext<Scheme::CKKS>
-        AND_bootstrapping(
-            Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& input2,
-            Galoiskey<Scheme::CKKS>& galois_key,
-            Relinkey<Scheme::CKKS>& relin_key,
-            Switchkey<Scheme::CKKS>* swk_dense_to_sparse = nullptr,
-            Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
-            const ExecutionOptions& options = ExecutionOptions())
-        {
-            galois_key.validate_context(context_);
-            relin_key.validate_context(context_);
-
-            input1.validate_context(context_);
-            input2.validate_context(context_);
-
-            return gate_bootstrapping(
-                logic_gate::AND, input1, input2, galois_key, relin_key,
-                swk_dense_to_sparse, swk_sparse_to_dense, options);
-        }
-
-        /**
-         * @brief Bootstrapped logical OR gate.(For more detail please check
-         * README.md)
-         *
-         * @param input1 First input ciphertext.
-         * @param input2 Second input ciphertext.
-         * @param galois_key Galois key for rotations.
-         * @param relin_key Relinearization key.
-         * @param swk_dense_to_sparse Optional dense to sparse switch key.
-         * @param swk_sparse_to_dense Optional sparse to dense switch key.
-         * @param options Execution options.
-         * @return Ciphertext Bootstrapped result.
-         */
-        [[deprecated("Use the overload with CKKSBootstrappingKeys "
-                     "instead.")]] __host__ Ciphertext<Scheme::CKKS>
-        OR_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
-                         Ciphertext<Scheme::CKKS>& input2,
-                         Galoiskey<Scheme::CKKS>& galois_key,
-                         Relinkey<Scheme::CKKS>& relin_key,
-                         Switchkey<Scheme::CKKS>* swk_dense_to_sparse = nullptr,
-                         Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
-                         const ExecutionOptions& options = ExecutionOptions())
-        {
-            galois_key.validate_context(context_);
-            relin_key.validate_context(context_);
-
-            input1.validate_context(context_);
-            input2.validate_context(context_);
-
-            return gate_bootstrapping(
-                logic_gate::OR, input1, input2, galois_key, relin_key,
-                swk_dense_to_sparse, swk_sparse_to_dense, options);
-        }
-
-        /**
-         * @brief Bootstrapped logical XOR gate.(For more detail please check
-         * README.md)
-         *
-         * @param input1 First input ciphertext.
-         * @param input2 Second input ciphertext.
-         * @param galois_key Galois key for rotations.
-         * @param relin_key Relinearization key.
-         * @param swk_dense_to_sparse Optional dense to sparse switch key.
-         * @param swk_sparse_to_dense Optional sparse to dense switch key.
-         * @param options Execution options.
-         * @return Ciphertext Bootstrapped result.
-         */
-        [[deprecated("Use the overload with CKKSBootstrappingKeys "
-                     "instead.")]] __host__ Ciphertext<Scheme::CKKS>
-        XOR_bootstrapping(
-            Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& input2,
-            Galoiskey<Scheme::CKKS>& galois_key,
-            Relinkey<Scheme::CKKS>& relin_key,
-            Switchkey<Scheme::CKKS>* swk_dense_to_sparse = nullptr,
-            Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
-            const ExecutionOptions& options = ExecutionOptions())
-        {
-            galois_key.validate_context(context_);
-            relin_key.validate_context(context_);
-
-            input1.validate_context(context_);
-            input2.validate_context(context_);
-
-            return gate_bootstrapping(
-                logic_gate::XOR, input1, input2, galois_key, relin_key,
-                swk_dense_to_sparse, swk_sparse_to_dense, options);
-        }
-
-        /**
-         * @brief Bootstrapped logical NAND gate.(For more detail please check
-         * README.md)
-         *
-         * @param input1 First input ciphertext.
-         * @param input2 Second input ciphertext.
-         * @param galois_key Galois key for rotations.
-         * @param relin_key Relinearization key.
-         * @param swk_dense_to_sparse Optional dense to sparse switch key.
-         * @param swk_sparse_to_dense Optional sparse to dense switch key.
-         * @param options Execution options.
-         * @return Ciphertext Bootstrapped result.
-         */
-        [[deprecated("Use the overload with CKKSBootstrappingKeys "
-                     "instead.")]] __host__ Ciphertext<Scheme::CKKS>
-        NAND_bootstrapping(
-            Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& input2,
-            Galoiskey<Scheme::CKKS>& galois_key,
-            Relinkey<Scheme::CKKS>& relin_key,
-            Switchkey<Scheme::CKKS>* swk_dense_to_sparse = nullptr,
-            Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
-            const ExecutionOptions& options = ExecutionOptions())
-        {
-            galois_key.validate_context(context_);
-            relin_key.validate_context(context_);
-
-            input1.validate_context(context_);
-            input2.validate_context(context_);
-
-            return gate_bootstrapping(
-                logic_gate::NAND, input1, input2, galois_key, relin_key,
-                swk_dense_to_sparse, swk_sparse_to_dense, options);
-        }
-
-        /**
-         * @brief Bootstrapped logical NOR gate.(For more detail please check
-         * README.md)
-         *
-         * @param input1 First input ciphertext.
-         * @param input2 Second input ciphertext.
-         * @param galois_key Galois key for rotations.
-         * @param relin_key Relinearization key.
-         * @param swk_dense_to_sparse Optional dense to sparse switch key.
-         * @param swk_sparse_to_dense Optional sparse to dense switch key.
-         * @param options Execution options.
-         * @return Ciphertext Bootstrapped result.
-         */
-        [[deprecated("Use the overload with CKKSBootstrappingKeys "
-                     "instead.")]] __host__ Ciphertext<Scheme::CKKS>
-        NOR_bootstrapping(
-            Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& input2,
-            Galoiskey<Scheme::CKKS>& galois_key,
-            Relinkey<Scheme::CKKS>& relin_key,
-            Switchkey<Scheme::CKKS>* swk_dense_to_sparse = nullptr,
-            Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
-            const ExecutionOptions& options = ExecutionOptions())
-        {
-            galois_key.validate_context(context_);
-            relin_key.validate_context(context_);
-
-            input1.validate_context(context_);
-            input2.validate_context(context_);
-
-            return gate_bootstrapping(
-                logic_gate::NOR, input1, input2, galois_key, relin_key,
-                swk_dense_to_sparse, swk_sparse_to_dense, options);
-        }
-
-        /**
-         * @brief Bootstrapped logical XNOR gate.(For more detail please check
-         * README.md)
-         *
-         * @param input1 First input ciphertext.
-         * @param input2 Second input ciphertext.
-         * @param galois_key Galois key for rotations.
-         * @param relin_key Relinearization key.
-         * @param swk_dense_to_sparse Optional dense to sparse switch key.
-         * @param swk_sparse_to_dense Optional sparse to dense switch key.
-         * @param options Execution options.
-         * @return Ciphertext Bootstrapped result.
-         */
-        [[deprecated("Use the overload with CKKSBootstrappingKeys "
-                     "instead.")]] __host__ Ciphertext<Scheme::CKKS>
-        XNOR_bootstrapping(
-            Ciphertext<Scheme::CKKS>& input1, Ciphertext<Scheme::CKKS>& input2,
-            Galoiskey<Scheme::CKKS>& galois_key,
-            Relinkey<Scheme::CKKS>& relin_key,
-            Switchkey<Scheme::CKKS>* swk_dense_to_sparse = nullptr,
-            Switchkey<Scheme::CKKS>* swk_sparse_to_dense = nullptr,
-            const ExecutionOptions& options = ExecutionOptions())
-        {
-            galois_key.validate_context(context_);
-            relin_key.validate_context(context_);
-
-            input1.validate_context(context_);
-            input2.validate_context(context_);
-
-            return gate_bootstrapping(
-                logic_gate::XNOR, input1, input2, galois_key, relin_key,
-                swk_dense_to_sparse, swk_sparse_to_dense, options);
-        }
-
         /**
          * @brief Generates the bootstrapping parameters of preset, which must
          * be a bit or gate preset.
@@ -4284,8 +3992,16 @@ namespace heongpu
         generate_bootstrapping_params(const CKKSBootstrappingPreset& preset);
 
         /**
-         * @brief Performs bit-level bootstrapping with the keys of
-         * HEKeyGenerator::bootstrapping_keys; see bit_bootstrapping.
+         * @brief Performs bit-level bootstrapping on a ciphertext.(For more
+         * detail please check README.md)
+         *
+         * @param input1 Input ciphertext at the SlotToCoeff start level or
+         * above; one above it is brought down to it. A lower one is reported
+         * with LevelMismatchError.
+         * @param keys Galois key, relinearization key and the optional
+         * switch keys, as made by HEKeyGenerator::bootstrapping_keys.
+         * @param options Execution options.
+         * @return Ciphertext Bootstrapped ciphertext.
          */
         __host__ Ciphertext<Scheme::CKKS>
         bit_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
@@ -4299,8 +4015,15 @@ namespace heongpu
         }
 
         /**
-         * @brief Bootstrapped logical AND gate with the keys of
-         * HEKeyGenerator::bootstrapping_keys; see AND_bootstrapping.
+         * @brief Bootstrapped logical AND gate.(For more detail please check
+         * README.md)
+         *
+         * @param input1 First input ciphertext.
+         * @param input2 Second input ciphertext.
+         * @param keys Galois key, relinearization key and the optional
+         * switch keys, as made by HEKeyGenerator::bootstrapping_keys.
+         * @param options Execution options.
+         * @return Ciphertext Bootstrapped result.
          */
         __host__ Ciphertext<Scheme::CKKS>
         AND_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
@@ -4313,8 +4036,15 @@ namespace heongpu
         }
 
         /**
-         * @brief Bootstrapped logical OR gate with the keys of
-         * HEKeyGenerator::bootstrapping_keys; see OR_bootstrapping.
+         * @brief Bootstrapped logical OR gate.(For more detail please check
+         * README.md)
+         *
+         * @param input1 First input ciphertext.
+         * @param input2 Second input ciphertext.
+         * @param keys Galois key, relinearization key and the optional
+         * switch keys, as made by HEKeyGenerator::bootstrapping_keys.
+         * @param options Execution options.
+         * @return Ciphertext Bootstrapped result.
          */
         __host__ Ciphertext<Scheme::CKKS>
         OR_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
@@ -4327,8 +4057,15 @@ namespace heongpu
         }
 
         /**
-         * @brief Bootstrapped logical XOR gate with the keys of
-         * HEKeyGenerator::bootstrapping_keys; see XOR_bootstrapping.
+         * @brief Bootstrapped logical XOR gate.(For more detail please check
+         * README.md)
+         *
+         * @param input1 First input ciphertext.
+         * @param input2 Second input ciphertext.
+         * @param keys Galois key, relinearization key and the optional
+         * switch keys, as made by HEKeyGenerator::bootstrapping_keys.
+         * @param options Execution options.
+         * @return Ciphertext Bootstrapped result.
          */
         __host__ Ciphertext<Scheme::CKKS>
         XOR_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
@@ -4341,8 +4078,15 @@ namespace heongpu
         }
 
         /**
-         * @brief Bootstrapped logical NAND gate with the keys of
-         * HEKeyGenerator::bootstrapping_keys; see NAND_bootstrapping.
+         * @brief Bootstrapped logical NAND gate.(For more detail please check
+         * README.md)
+         *
+         * @param input1 First input ciphertext.
+         * @param input2 Second input ciphertext.
+         * @param keys Galois key, relinearization key and the optional
+         * switch keys, as made by HEKeyGenerator::bootstrapping_keys.
+         * @param options Execution options.
+         * @return Ciphertext Bootstrapped result.
          */
         __host__ Ciphertext<Scheme::CKKS>
         NAND_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
@@ -4355,8 +4099,15 @@ namespace heongpu
         }
 
         /**
-         * @brief Bootstrapped logical NOR gate with the keys of
-         * HEKeyGenerator::bootstrapping_keys; see NOR_bootstrapping.
+         * @brief Bootstrapped logical NOR gate.(For more detail please check
+         * README.md)
+         *
+         * @param input1 First input ciphertext.
+         * @param input2 Second input ciphertext.
+         * @param keys Galois key, relinearization key and the optional
+         * switch keys, as made by HEKeyGenerator::bootstrapping_keys.
+         * @param options Execution options.
+         * @return Ciphertext Bootstrapped result.
          */
         __host__ Ciphertext<Scheme::CKKS>
         NOR_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
@@ -4369,8 +4120,15 @@ namespace heongpu
         }
 
         /**
-         * @brief Bootstrapped logical XNOR gate with the keys of
-         * HEKeyGenerator::bootstrapping_keys; see XNOR_bootstrapping.
+         * @brief Bootstrapped logical XNOR gate.(For more detail please check
+         * README.md)
+         *
+         * @param input1 First input ciphertext.
+         * @param input2 Second input ciphertext.
+         * @param keys Galois key, relinearization key and the optional
+         * switch keys, as made by HEKeyGenerator::bootstrapping_keys.
+         * @param options Execution options.
+         * @return Ciphertext Bootstrapped result.
          */
         __host__ Ciphertext<Scheme::CKKS>
         XNOR_bootstrapping(Ciphertext<Scheme::CKKS>& input1,
