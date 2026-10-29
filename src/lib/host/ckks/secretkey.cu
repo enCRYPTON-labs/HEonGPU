@@ -535,7 +535,7 @@ namespace heongpu
         }
     }
 
-    int Secretkey<Scheme::CKKS>::memory_size()
+    int Secretkey<Scheme::CKKS>::memory_size() const
     {
         if (storage_type_ == storage_type::device)
         {

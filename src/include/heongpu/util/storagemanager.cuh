@@ -188,6 +188,38 @@ namespace heongpu
      * @param is_input_output_same A flag indicating whether the input and
      * output storage should remain consistent for each object.
      */
+    /**
+     * @brief Runs function on a const input of an operation, on the device.
+     *
+     * An input on the device is passed as it is. For an input in host memory,
+     * function gets a device copy, so that the object itself never changes:
+     * neither its data nor where it is stored, whatever options says. The
+     * operations only read their inputs, although their implementation takes
+     * non-const references, so function must not change the object.
+     *
+     * @param object The input of the operation.
+     * @param function The callable function that reads the input.
+     * @param options Execution options; the stream of the device copy.
+     * @param is_input_output_same Unused: an input that is also the output
+     * of the operation is read before the output is written, from the copy
+     * when it is in host memory.
+     */
+    template <typename T, typename F>
+    void input_storage_manager(const T& object, F function,
+                               ExecutionOptions options,
+                               bool is_input_output_same)
+    {
+        (void) is_input_output_same;
+        if (object.is_on_device())
+        {
+            function(const_cast<T&>(object));
+            return;
+        }
+        T device_copy(object);
+        device_copy.store_in_device(options.stream_);
+        function(device_copy);
+    }
+
     template <typename T, typename F>
     void input_vector_storage_manager(std::vector<T>& objects, F function,
                                       ExecutionOptions options,
@@ -266,6 +298,37 @@ namespace heongpu
      * @param options A set of execution options defining storage behavior and
      * stream configuration.
      */
+    /**
+     * @brief Runs function on const inputs of an operation, on the device; see
+     * input_storage_manager for a const input.
+     */
+    template <typename T, typename F>
+    void input_vector_storage_manager(const std::vector<T>& objects, F function,
+                                      ExecutionOptions options,
+                                      bool is_input_output_same)
+    {
+        (void) is_input_output_same;
+        bool on_device = true;
+        for (const T& object : objects)
+        {
+            on_device = on_device && object.is_on_device();
+        }
+        if (on_device)
+        {
+            function(const_cast<std::vector<T>&>(objects));
+            return;
+        }
+        std::vector<T> device_copies(objects);
+        for (T& copy : device_copies)
+        {
+            if (!copy.is_on_device())
+            {
+                copy.store_in_device(options.stream_);
+            }
+        }
+        function(device_copies);
+    }
+
     template <typename T, typename F>
     void output_storage_manager(T& object, F function, ExecutionOptions options)
     {

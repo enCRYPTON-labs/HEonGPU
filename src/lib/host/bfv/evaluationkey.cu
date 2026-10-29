@@ -79,6 +79,18 @@ namespace heongpu
         }
     }
 
+    const Data64* Relinkey<Scheme::BFV>::data() const
+    {
+        if (storage_type_ == storage_type::device)
+        {
+            return device_location_.data();
+        }
+        else
+        {
+            return host_location_.data();
+        }
+    }
+
     void Relinkey<Scheme::BFV>::save(std::ostream& os,
                                      serialization_format format) const
     {
@@ -200,7 +212,7 @@ namespace heongpu
         }
     }
 
-    int Relinkey<Scheme::BFV>::memory_size()
+    int Relinkey<Scheme::BFV>::memory_size() const
     {
         if (storage_type_ == storage_type::device)
         {
@@ -482,7 +494,31 @@ namespace heongpu
         }
     }
 
+    const Data64* Galoiskey<Scheme::BFV>::data(size_t i) const
+    {
+        if (storage_type_ == storage_type::device)
+        {
+            return device_location_.at(i).data();
+        }
+        else
+        {
+            return host_location_.at(i).data();
+        }
+    }
+
     Data64* Galoiskey<Scheme::BFV>::c_data()
+    {
+        if (storage_type_ == storage_type::device)
+        {
+            return zero_device_location_.data();
+        }
+        else
+        {
+            return zero_host_location_.data();
+        }
+    }
+
+    const Data64* Galoiskey<Scheme::BFV>::c_data() const
     {
         if (storage_type_ == storage_type::device)
         {
@@ -799,6 +835,18 @@ namespace heongpu
         }
     }
 
+    const Data64* Switchkey<Scheme::BFV>::data() const
+    {
+        if (storage_type_ == storage_type::device)
+        {
+            return device_location_.data();
+        }
+        else
+        {
+            return host_location_.data();
+        }
+    }
+
     void Switchkey<Scheme::BFV>::save(std::ostream& os,
                                       serialization_format format) const
     {
@@ -906,7 +954,7 @@ namespace heongpu
         }
     }
 
-    int Switchkey<Scheme::BFV>::memory_size()
+    int Switchkey<Scheme::BFV>::memory_size() const
     {
         if (storage_type_ == storage_type::device)
         {

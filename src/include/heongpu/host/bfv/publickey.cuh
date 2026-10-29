@@ -305,7 +305,7 @@ namespace heongpu
         DeviceVector<Data64> device_locations_; // coefficients are RNS domain
         HostVector<Data64> host_locations_; // coefficients are RNS domain
 
-        int memory_size();
+        int memory_size() const;
         void memory_clear(cudaStream_t stream);
         void memory_set(DeviceVector<Data64>&& new_device_vector);
 

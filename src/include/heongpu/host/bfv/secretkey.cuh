@@ -323,7 +323,7 @@ namespace heongpu
 
         void validate_context(const HEContext<Scheme::BFV>& context);
         void validate_key_data(const HEContext<Scheme::BFV>& context) const;
-        int memory_size();
+        int memory_size() const;
         void memory_clear(cudaStream_t stream);
         void memory_set(DeviceVector<Data64>&& new_device_vector);
 

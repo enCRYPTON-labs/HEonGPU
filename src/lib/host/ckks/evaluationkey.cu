@@ -79,7 +79,31 @@ namespace heongpu
             return host_location_.data();
         }
     }
+
+    const Data64* Relinkey<Scheme::CKKS>::data() const
+    {
+        if (storage_type_ == storage_type::device)
+        {
+            return device_location_.data();
+        }
+        else
+        {
+            return host_location_.data();
+        }
+    }
     Data64* Relinkey<Scheme::CKKS>::data(size_t i)
+    {
+        if (storage_type_ == storage_type::device)
+        {
+            return device_location_leveled_[i].data();
+        }
+        else
+        {
+            return host_location_leveled_[i].data();
+        }
+    }
+
+    const Data64* Relinkey<Scheme::CKKS>::data(size_t i) const
     {
         if (storage_type_ == storage_type::device)
         {
@@ -213,7 +237,7 @@ namespace heongpu
         }
     }
 
-    int Relinkey<Scheme::CKKS>::memory_size()
+    int Relinkey<Scheme::CKKS>::memory_size() const
     {
         if (storage_type_ == storage_type::device)
         {
@@ -636,7 +660,31 @@ namespace heongpu
         }
     }
 
+    const Data64* Galoiskey<Scheme::CKKS>::data(size_t i) const
+    {
+        if (storage_type_ == storage_type::device)
+        {
+            return device_location_.at(i).data();
+        }
+        else
+        {
+            return host_location_.at(i).data();
+        }
+    }
+
     Data64* Galoiskey<Scheme::CKKS>::c_data()
+    {
+        if (storage_type_ == storage_type::device)
+        {
+            return zero_device_location_.data();
+        }
+        else
+        {
+            return zero_host_location_.data();
+        }
+    }
+
+    const Data64* Galoiskey<Scheme::CKKS>::c_data() const
     {
         if (storage_type_ == storage_type::device)
         {
@@ -955,6 +1003,18 @@ namespace heongpu
         }
     }
 
+    const Data64* Switchkey<Scheme::CKKS>::data() const
+    {
+        if (storage_type_ == storage_type::device)
+        {
+            return device_location_.data();
+        }
+        else
+        {
+            return host_location_.data();
+        }
+    }
+
     void Switchkey<Scheme::CKKS>::save(std::ostream& os,
                                        serialization_format format) const
     {
@@ -1062,7 +1122,7 @@ namespace heongpu
         }
     }
 
-    int Switchkey<Scheme::CKKS>::memory_size()
+    int Switchkey<Scheme::CKKS>::memory_size() const
     {
         if (storage_type_ == storage_type::device)
         {

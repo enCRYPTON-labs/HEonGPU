@@ -411,7 +411,7 @@ namespace heongpu
         *this = std::move(temporary);
     }
 
-    int Ciphertext<Scheme::CKKS>::memory_size()
+    int Ciphertext<Scheme::CKKS>::memory_size() const
     {
         if (storage_type_ == storage_type::device)
         {

@@ -55,8 +55,8 @@ namespace heongpu
          * @param input2 Second input ciphertext to be added.
          * @param output Ciphertext where the result of the addition is stored.
          */
-        __host__ void add(Ciphertext<Scheme::BFV>& input1,
-                          Ciphertext<Scheme::BFV>& input2,
+        __host__ void add(const Ciphertext<Scheme::BFV>& input1,
+                          const Ciphertext<Scheme::BFV>& input2,
                           Ciphertext<Scheme::BFV>& output,
                           const ExecutionOptions& options = ExecutionOptions());
 
@@ -70,7 +70,7 @@ namespace heongpu
          */
         __host__ void
         add_inplace(Ciphertext<Scheme::BFV>& input1,
-                    Ciphertext<Scheme::BFV>& input2,
+                    const Ciphertext<Scheme::BFV>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -88,8 +88,8 @@ namespace heongpu
          * @param output Ciphertext where the result of the subtraction is
          * stored.
          */
-        __host__ void sub(Ciphertext<Scheme::BFV>& input1,
-                          Ciphertext<Scheme::BFV>& input2,
+        __host__ void sub(const Ciphertext<Scheme::BFV>& input1,
+                          const Ciphertext<Scheme::BFV>& input2,
                           Ciphertext<Scheme::BFV>& output,
                           const ExecutionOptions& options = ExecutionOptions());
 
@@ -102,7 +102,7 @@ namespace heongpu
          */
         __host__ void
         sub_inplace(Ciphertext<Scheme::BFV>& input1,
-                    Ciphertext<Scheme::BFV>& input2,
+                    const Ciphertext<Scheme::BFV>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -118,7 +118,8 @@ namespace heongpu
          * @param output Ciphertext where the result of the negation is stored.
          */
         __host__ void
-        negate(Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& output,
+        negate(const Ciphertext<Scheme::BFV>& input1,
+               Ciphertext<Scheme::BFV>& output,
                const ExecutionOptions& options = ExecutionOptions());
 
         /**
@@ -144,8 +145,8 @@ namespace heongpu
          * @param output Ciphertext where the result of the addition is stored.
          */
         __host__ void
-        add_plain(Ciphertext<Scheme::BFV>& input1,
-                  Plaintext<Scheme::BFV>& input2,
+        add_plain(const Ciphertext<Scheme::BFV>& input1,
+                  const Plaintext<Scheme::BFV>& input2,
                   Ciphertext<Scheme::BFV>& output,
                   const ExecutionOptions& options = ExecutionOptions())
         {
@@ -211,7 +212,7 @@ namespace heongpu
          */
         __host__ void
         add_plain_inplace(Ciphertext<Scheme::BFV>& input1,
-                          Plaintext<Scheme::BFV>& input2,
+                          const Plaintext<Scheme::BFV>& input2,
                           const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -256,8 +257,8 @@ namespace heongpu
          * stored.
          */
         __host__ void
-        sub_plain(Ciphertext<Scheme::BFV>& input1,
-                  Plaintext<Scheme::BFV>& input2,
+        sub_plain(const Ciphertext<Scheme::BFV>& input1,
+                  const Plaintext<Scheme::BFV>& input2,
                   Ciphertext<Scheme::BFV>& output,
                   const ExecutionOptions& options = ExecutionOptions())
         {
@@ -323,7 +324,7 @@ namespace heongpu
          */
         __host__ void
         sub_plain_inplace(Ciphertext<Scheme::BFV>& input1,
-                          Plaintext<Scheme::BFV>& input2,
+                          const Plaintext<Scheme::BFV>& input2,
                           const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -368,8 +369,8 @@ namespace heongpu
          * stored.
          */
         __host__ void
-        multiply(Ciphertext<Scheme::BFV>& input1,
-                 Ciphertext<Scheme::BFV>& input2,
+        multiply(const Ciphertext<Scheme::BFV>& input1,
+                 const Ciphertext<Scheme::BFV>& input2,
                  Ciphertext<Scheme::BFV>& output,
                  const ExecutionOptions& options = ExecutionOptions())
         {
@@ -427,7 +428,7 @@ namespace heongpu
          */
         __host__ void
         multiply_inplace(Ciphertext<Scheme::BFV>& input1,
-                         Ciphertext<Scheme::BFV>& input2,
+                         const Ciphertext<Scheme::BFV>& input2,
                          const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -446,8 +447,8 @@ namespace heongpu
          * stored.
          */
         __host__ void
-        multiply_plain(Ciphertext<Scheme::BFV>& input1,
-                       Plaintext<Scheme::BFV>& input2,
+        multiply_plain(const Ciphertext<Scheme::BFV>& input1,
+                       const Plaintext<Scheme::BFV>& input2,
                        Ciphertext<Scheme::BFV>& output,
                        const ExecutionOptions& options = ExecutionOptions())
         {
@@ -533,7 +534,8 @@ namespace heongpu
          * @param input2 Plaintext to be multiplied with the ciphertext.
          */
         __host__ void multiply_plain_inplace(
-            Ciphertext<Scheme::BFV>& input1, Plaintext<Scheme::BFV>& input2,
+            Ciphertext<Scheme::BFV>& input1,
+            const Plaintext<Scheme::BFV>& input2,
             const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -550,7 +552,8 @@ namespace heongpu
          * @param relin_key The Relinkey object used for relinearization.
          */
         __host__ void relinearize_inplace(
-            Ciphertext<Scheme::BFV>& input1, Relinkey<Scheme::BFV>& relin_key,
+            Ciphertext<Scheme::BFV>& input1,
+            const Relinkey<Scheme::BFV>& relin_key,
             const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -599,9 +602,9 @@ namespace heongpu
          * @param shift Number of positions to shift the rows.
          */
         __host__ void
-        rotate_rows(Ciphertext<Scheme::BFV>& input1,
+        rotate_rows(const Ciphertext<Scheme::BFV>& input1,
                     Ciphertext<Scheme::BFV>& output,
-                    Galoiskey<Scheme::BFV>& galois_key, int shift,
+                    const Galoiskey<Scheme::BFV>& galois_key, int shift,
                     const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -671,8 +674,9 @@ namespace heongpu
          * @param shift Number of positions to shift the rows.
          */
         __host__ void rotate_rows_inplace(
-            Ciphertext<Scheme::BFV>& input1, Galoiskey<Scheme::BFV>& galois_key,
-            int shift, const ExecutionOptions& options = ExecutionOptions())
+            Ciphertext<Scheme::BFV>& input1,
+            const Galoiskey<Scheme::BFV>& galois_key, int shift,
+            const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
             galois_key.validate_context(context_);
@@ -694,9 +698,9 @@ namespace heongpu
          * @param galois_key Galois key used for the rotation operation.
          */
         __host__ void
-        rotate_columns(Ciphertext<Scheme::BFV>& input1,
+        rotate_columns(const Ciphertext<Scheme::BFV>& input1,
                        Ciphertext<Scheme::BFV>& output,
-                       Galoiskey<Scheme::BFV>& galois_key,
+                       const Galoiskey<Scheme::BFV>& galois_key,
                        const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -754,9 +758,9 @@ namespace heongpu
          * @param galois_elt The Galois element to apply.
          */
         __host__ void
-        apply_galois(Ciphertext<Scheme::BFV>& input1,
+        apply_galois(const Ciphertext<Scheme::BFV>& input1,
                      Ciphertext<Scheme::BFV>& output,
-                     Galoiskey<Scheme::BFV>& galois_key, int galois_elt,
+                     const Galoiskey<Scheme::BFV>& galois_key, int galois_elt,
                      const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -819,8 +823,8 @@ namespace heongpu
          * @param galois_elt The Galois element to apply.
          */
         __host__ void apply_galois_inplace(
-            Ciphertext<Scheme::BFV>& input1, Galoiskey<Scheme::BFV>& galois_key,
-            int galois_elt,
+            Ciphertext<Scheme::BFV>& input1,
+            const Galoiskey<Scheme::BFV>& galois_key, int galois_elt,
             const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -839,9 +843,9 @@ namespace heongpu
          * @param switch_key Switch key used for the key switching operation.
          */
         __host__ void
-        keyswitch(Ciphertext<Scheme::BFV>& input1,
+        keyswitch(const Ciphertext<Scheme::BFV>& input1,
                   Ciphertext<Scheme::BFV>& output,
-                  Switchkey<Scheme::BFV>& switch_key,
+                  const Switchkey<Scheme::BFV>& switch_key,
                   const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -895,8 +899,9 @@ namespace heongpu
         }
 
         __host__ void multiply_power_of_X(
-            Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& output,
-            int index, const ExecutionOptions& options = ExecutionOptions())
+            const Ciphertext<Scheme::BFV>& input1,
+            Ciphertext<Scheme::BFV>& output, int index,
+            const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
 
@@ -952,7 +957,7 @@ namespace heongpu
          * stored.
          */
         __host__ void
-        transform_to_ntt(Plaintext<Scheme::BFV>& input1,
+        transform_to_ntt(const Plaintext<Scheme::BFV>& input1,
                          Plaintext<Scheme::BFV>& output,
                          const ExecutionOptions& options = ExecutionOptions())
         {
@@ -976,7 +981,7 @@ namespace heongpu
                             output,
                             [&](Plaintext<Scheme::BFV>& output_)
                             {
-                                transform_to_ntt_bfv_plain(input1, output,
+                                transform_to_ntt_bfv_plain(input1_, output_,
                                                            options.stream_);
 
                                 output.scheme_ = input1.scheme_;
@@ -1016,7 +1021,7 @@ namespace heongpu
          * stored.
          */
         __host__ void
-        transform_to_ntt(Ciphertext<Scheme::BFV>& input1,
+        transform_to_ntt(const Ciphertext<Scheme::BFV>& input1,
                          Ciphertext<Scheme::BFV>& output,
                          const ExecutionOptions& options = ExecutionOptions())
         {
@@ -1089,7 +1094,7 @@ namespace heongpu
          * stored.
          */
         __host__ void
-        transform_from_ntt(Ciphertext<Scheme::BFV>& input1,
+        transform_from_ntt(const Ciphertext<Scheme::BFV>& input1,
                            Ciphertext<Scheme::BFV>& output,
                            const ExecutionOptions& options = ExecutionOptions())
         {
@@ -1167,8 +1172,8 @@ namespace heongpu
          * Galoiskey(context, log2(row size) - 1) has.
          */
         __host__ Ciphertext<Scheme::BFV>
-        sum_slots(Ciphertext<Scheme::BFV>& input1,
-                  Galoiskey<Scheme::BFV>& galois_key,
+        sum_slots(const Ciphertext<Scheme::BFV>& input1,
+                  const Galoiskey<Scheme::BFV>& galois_key,
                   const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::BFV> result = input1;
@@ -1190,10 +1195,10 @@ namespace heongpu
          * calls sum_slots.
          */
         __host__ Ciphertext<Scheme::BFV>
-        inner_product(Ciphertext<Scheme::BFV>& input1,
-                      Ciphertext<Scheme::BFV>& input2,
-                      Relinkey<Scheme::BFV>& relin_key,
-                      Galoiskey<Scheme::BFV>& galois_key,
+        inner_product(const Ciphertext<Scheme::BFV>& input1,
+                      const Ciphertext<Scheme::BFV>& input2,
+                      const Relinkey<Scheme::BFV>& relin_key,
+                      const Galoiskey<Scheme::BFV>& galois_key,
                       const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::BFV> product(context_, options);
@@ -1208,9 +1213,9 @@ namespace heongpu
          * sum_slots.
          */
         __host__ Ciphertext<Scheme::BFV>
-        inner_product(Ciphertext<Scheme::BFV>& input1,
-                      Plaintext<Scheme::BFV>& input2,
-                      Galoiskey<Scheme::BFV>& galois_key,
+        inner_product(const Ciphertext<Scheme::BFV>& input1,
+                      const Plaintext<Scheme::BFV>& input2,
+                      const Galoiskey<Scheme::BFV>& galois_key,
                       const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::BFV> product(context_, options);
@@ -1228,7 +1233,8 @@ namespace heongpu
          * as rotate_rows does.
          */
         __host__ std::vector<Ciphertext<Scheme::BFV>> rotate_rows_hoisted(
-            Ciphertext<Scheme::BFV>& input1, Galoiskey<Scheme::BFV>& galois_key,
+            const Ciphertext<Scheme::BFV>& input1,
+            const Galoiskey<Scheme::BFV>& galois_key,
             const std::vector<int>& shifts,
             const ExecutionOptions& options = ExecutionOptions());
 
@@ -1239,7 +1245,8 @@ namespace heongpu
          * @brief Returns input1 + input2; see add(input1, input2, output).
          */
         __host__ Ciphertext<Scheme::BFV>
-        add(Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& input2,
+        add(const Ciphertext<Scheme::BFV>& input1,
+            const Ciphertext<Scheme::BFV>& input2,
             const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::BFV> output(context_, options);
@@ -1251,7 +1258,8 @@ namespace heongpu
          * @brief Returns input1 - input2; see sub(input1, input2, output).
          */
         __host__ Ciphertext<Scheme::BFV>
-        sub(Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& input2,
+        sub(const Ciphertext<Scheme::BFV>& input1,
+            const Ciphertext<Scheme::BFV>& input2,
             const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::BFV> output(context_, options);
@@ -1263,8 +1271,8 @@ namespace heongpu
          * @brief Returns input1 * input2; see multiply(input1, input2, output).
          */
         __host__ Ciphertext<Scheme::BFV>
-        multiply(Ciphertext<Scheme::BFV>& input1,
-                 Ciphertext<Scheme::BFV>& input2,
+        multiply(const Ciphertext<Scheme::BFV>& input1,
+                 const Ciphertext<Scheme::BFV>& input2,
                  const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::BFV> output(context_, options);
@@ -1276,7 +1284,7 @@ namespace heongpu
          * @brief Returns -input1; see negate(input1, output).
          */
         __host__ Ciphertext<Scheme::BFV>
-        negate(Ciphertext<Scheme::BFV>& input1,
+        negate(const Ciphertext<Scheme::BFV>& input1,
                const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::BFV> output(context_, options);
@@ -1288,8 +1296,8 @@ namespace heongpu
          * @brief Returns the result of add_plain(input1, input2, output).
          */
         __host__ Ciphertext<Scheme::BFV>
-        add_plain(Ciphertext<Scheme::BFV>& input1,
-                  Plaintext<Scheme::BFV>& input2,
+        add_plain(const Ciphertext<Scheme::BFV>& input1,
+                  const Plaintext<Scheme::BFV>& input2,
                   const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::BFV> output(context_, options);
@@ -1301,8 +1309,8 @@ namespace heongpu
          * @brief Returns the result of sub_plain(input1, input2, output).
          */
         __host__ Ciphertext<Scheme::BFV>
-        sub_plain(Ciphertext<Scheme::BFV>& input1,
-                  Plaintext<Scheme::BFV>& input2,
+        sub_plain(const Ciphertext<Scheme::BFV>& input1,
+                  const Plaintext<Scheme::BFV>& input2,
                   const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::BFV> output(context_, options);
@@ -1314,8 +1322,8 @@ namespace heongpu
          * @brief Returns the result of multiply_plain(input1, input2, output).
          */
         __host__ Ciphertext<Scheme::BFV>
-        multiply_plain(Ciphertext<Scheme::BFV>& input1,
-                       Plaintext<Scheme::BFV>& input2,
+        multiply_plain(const Ciphertext<Scheme::BFV>& input1,
+                       const Plaintext<Scheme::BFV>& input2,
                        const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::BFV> output(context_, options);
@@ -1328,8 +1336,8 @@ namespace heongpu
          * output, galois_key, shift).
          */
         __host__ Ciphertext<Scheme::BFV>
-        rotate_rows(Ciphertext<Scheme::BFV>& input1,
-                    Galoiskey<Scheme::BFV>& galois_key, int shift,
+        rotate_rows(const Ciphertext<Scheme::BFV>& input1,
+                    const Galoiskey<Scheme::BFV>& galois_key, int shift,
                     const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::BFV> output(context_, options);
@@ -1342,8 +1350,8 @@ namespace heongpu
          * rotate_columns(input1, output, galois_key).
          */
         __host__ Ciphertext<Scheme::BFV>
-        rotate_columns(Ciphertext<Scheme::BFV>& input1,
-                       Galoiskey<Scheme::BFV>& galois_key,
+        rotate_columns(const Ciphertext<Scheme::BFV>& input1,
+                       const Galoiskey<Scheme::BFV>& galois_key,
                        const ExecutionOptions& options = ExecutionOptions())
         {
             Ciphertext<Scheme::BFV> output(context_, options);
@@ -1383,10 +1391,9 @@ namespace heongpu
 
         ///////////////////////////////////////////////////
 
-        __host__ void
-        relinearize_external_product_inplace(Ciphertext<Scheme::BFV>& input1,
-                                             Relinkey<Scheme::BFV>& relin_key,
-                                             const cudaStream_t stream);
+        __host__ void relinearize_external_product_inplace(
+            Ciphertext<Scheme::BFV>& input1,
+            const Relinkey<Scheme::BFV>& relin_key, const cudaStream_t stream);
 
         ///////////////////////////////////////////////////
 
@@ -1416,7 +1423,8 @@ namespace heongpu
 
             Ciphertext<Scheme::BFV>& input1, GaloisDecomposition& decomposition,
 
-            Ciphertext<Scheme::BFV>& output, Galoiskey<Scheme::BFV>& galois_key,
+            Ciphertext<Scheme::BFV>& output,
+            const Galoiskey<Scheme::BFV>& galois_key,
 
             int galois_elt, const cudaStream_t stream);
 
@@ -1432,29 +1440,30 @@ namespace heongpu
 
         __host__ void rotate_bfv(Ciphertext<Scheme::BFV>& input1,
                                  Ciphertext<Scheme::BFV>& output,
-                                 Galoiskey<Scheme::BFV>& galois_key, int shift,
-                                 const cudaStream_t stream);
+                                 const Galoiskey<Scheme::BFV>& galois_key,
+                                 int shift, const cudaStream_t stream);
 
         ///////////////////////////////////////////////////
 
         __host__ void apply_galois_bfv(Ciphertext<Scheme::BFV>& input1,
                                        Ciphertext<Scheme::BFV>& output,
-                                       Galoiskey<Scheme::BFV>& galois_key,
+                                       const Galoiskey<Scheme::BFV>& galois_key,
                                        int galois_elt,
                                        const cudaStream_t stream);
 
         ///////////////////////////////////////////////////
 
-        __host__ void rotate_columns_bfv(Ciphertext<Scheme::BFV>& input1,
-                                         Ciphertext<Scheme::BFV>& output,
-                                         Galoiskey<Scheme::BFV>& galois_key,
-                                         const cudaStream_t stream);
+        __host__ void
+        rotate_columns_bfv(Ciphertext<Scheme::BFV>& input1,
+                           Ciphertext<Scheme::BFV>& output,
+                           const Galoiskey<Scheme::BFV>& galois_key,
+                           const cudaStream_t stream);
 
         ///////////////////////////////////////////////////
 
         __host__ void switchkey_bfv(Ciphertext<Scheme::BFV>& input1,
                                     Ciphertext<Scheme::BFV>& output,
-                                    Switchkey<Scheme::BFV>& switch_key,
+                                    const Switchkey<Scheme::BFV>& switch_key,
                                     const cudaStream_t stream);
 
         ///////////////////////////////////////////////////
@@ -1494,7 +1503,7 @@ namespace heongpu
       protected:
         // Just for copy parameters, not memory!
         __host__ Ciphertext<Scheme::BFV>
-        operator_from_ciphertext(Ciphertext<Scheme::BFV>& input,
+        operator_from_ciphertext(const Ciphertext<Scheme::BFV>& input,
                                  cudaStream_t stream = cudaStreamDefault);
     };
 
@@ -1540,7 +1549,7 @@ namespace heongpu
          * @param output Output ciphertext.
          * @param options Execution options.
          */
-        __host__ void NOT(Ciphertext<Scheme::BFV>& input1,
+        __host__ void NOT(const Ciphertext<Scheme::BFV>& input1,
                           Ciphertext<Scheme::BFV>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
@@ -1599,10 +1608,10 @@ namespace heongpu
          * @param relin_key Relinearization key.
          * @param options Execution options.
          */
-        __host__ void AND(Ciphertext<Scheme::BFV>& input1,
-                          Ciphertext<Scheme::BFV>& input2,
+        __host__ void AND(const Ciphertext<Scheme::BFV>& input1,
+                          const Ciphertext<Scheme::BFV>& input2,
                           Ciphertext<Scheme::BFV>& output,
-                          Relinkey<Scheme::BFV>& relin_key,
+                          const Relinkey<Scheme::BFV>& relin_key,
                           const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -1650,8 +1659,8 @@ namespace heongpu
          */
         __host__ void
         AND_inplace(Ciphertext<Scheme::BFV>& input1,
-                    Ciphertext<Scheme::BFV>& input2,
-                    Relinkey<Scheme::BFV>& relin_key,
+                    const Ciphertext<Scheme::BFV>& input2,
+                    const Relinkey<Scheme::BFV>& relin_key,
                     const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -1669,8 +1678,8 @@ namespace heongpu
          * @param output Output ciphertext.
          * @param options Execution options.
          */
-        __host__ void AND(Ciphertext<Scheme::BFV>& input1,
-                          Plaintext<Scheme::BFV>& input2,
+        __host__ void AND(const Ciphertext<Scheme::BFV>& input1,
+                          const Plaintext<Scheme::BFV>& input2,
                           Ciphertext<Scheme::BFV>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
@@ -1713,7 +1722,7 @@ namespace heongpu
          */
         __host__ void
         AND_inplace(Ciphertext<Scheme::BFV>& input1,
-                    Plaintext<Scheme::BFV>& input2,
+                    const Plaintext<Scheme::BFV>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -1731,10 +1740,10 @@ namespace heongpu
          * @param relin_key Relinearization key.
          * @param options Execution options.
          */
-        __host__ void OR(Ciphertext<Scheme::BFV>& input1,
-                         Ciphertext<Scheme::BFV>& input2,
+        __host__ void OR(const Ciphertext<Scheme::BFV>& input1,
+                         const Ciphertext<Scheme::BFV>& input2,
                          Ciphertext<Scheme::BFV>& output,
-                         Relinkey<Scheme::BFV>& relin_key,
+                         const Relinkey<Scheme::BFV>& relin_key,
                          const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -1793,8 +1802,8 @@ namespace heongpu
          */
         __host__ void
         OR_inplace(Ciphertext<Scheme::BFV>& input1,
-                   Ciphertext<Scheme::BFV>& input2,
-                   Relinkey<Scheme::BFV>& relin_key,
+                   const Ciphertext<Scheme::BFV>& input2,
+                   const Relinkey<Scheme::BFV>& relin_key,
                    const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -1812,8 +1821,8 @@ namespace heongpu
          * @param output Output ciphertext.
          * @param options Execution options.
          */
-        __host__ void OR(Ciphertext<Scheme::BFV>& input1,
-                         Plaintext<Scheme::BFV>& input2,
+        __host__ void OR(const Ciphertext<Scheme::BFV>& input1,
+                         const Plaintext<Scheme::BFV>& input2,
                          Ciphertext<Scheme::BFV>& output,
                          const ExecutionOptions& options = ExecutionOptions())
         {
@@ -1868,7 +1877,7 @@ namespace heongpu
          */
         __host__ void
         OR_inplace(Ciphertext<Scheme::BFV>& input1,
-                   Plaintext<Scheme::BFV>& input2,
+                   const Plaintext<Scheme::BFV>& input2,
                    const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -1886,10 +1895,10 @@ namespace heongpu
          * @param relin_key Relinearization key.
          * @param options Execution options.
          */
-        __host__ void XOR(Ciphertext<Scheme::BFV>& input1,
-                          Ciphertext<Scheme::BFV>& input2,
+        __host__ void XOR(const Ciphertext<Scheme::BFV>& input1,
+                          const Ciphertext<Scheme::BFV>& input2,
                           Ciphertext<Scheme::BFV>& output,
-                          Relinkey<Scheme::BFV>& relin_key,
+                          const Relinkey<Scheme::BFV>& relin_key,
                           const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -1950,8 +1959,8 @@ namespace heongpu
          */
         __host__ void
         XOR_inplace(Ciphertext<Scheme::BFV>& input1,
-                    Ciphertext<Scheme::BFV>& input2,
-                    Relinkey<Scheme::BFV>& relin_key,
+                    const Ciphertext<Scheme::BFV>& input2,
+                    const Relinkey<Scheme::BFV>& relin_key,
                     const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -1969,8 +1978,8 @@ namespace heongpu
          * @param output Output ciphertext.
          * @param options Execution options.
          */
-        __host__ void XOR(Ciphertext<Scheme::BFV>& input1,
-                          Plaintext<Scheme::BFV>& input2,
+        __host__ void XOR(const Ciphertext<Scheme::BFV>& input1,
+                          const Plaintext<Scheme::BFV>& input2,
                           Ciphertext<Scheme::BFV>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
@@ -2027,7 +2036,7 @@ namespace heongpu
          */
         __host__ void
         XOR_inplace(Ciphertext<Scheme::BFV>& input1,
-                    Plaintext<Scheme::BFV>& input2,
+                    const Plaintext<Scheme::BFV>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -2045,10 +2054,10 @@ namespace heongpu
          * @param relin_key Relinearization key.
          * @param options Execution options.
          */
-        __host__ void NAND(Ciphertext<Scheme::BFV>& input1,
-                           Ciphertext<Scheme::BFV>& input2,
+        __host__ void NAND(const Ciphertext<Scheme::BFV>& input1,
+                           const Ciphertext<Scheme::BFV>& input2,
                            Ciphertext<Scheme::BFV>& output,
-                           Relinkey<Scheme::BFV>& relin_key,
+                           const Relinkey<Scheme::BFV>& relin_key,
                            const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -2098,8 +2107,8 @@ namespace heongpu
          */
         __host__ void
         NAND_inplace(Ciphertext<Scheme::BFV>& input1,
-                     Ciphertext<Scheme::BFV>& input2,
-                     Relinkey<Scheme::BFV>& relin_key,
+                     const Ciphertext<Scheme::BFV>& input2,
+                     const Relinkey<Scheme::BFV>& relin_key,
                      const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -2117,8 +2126,8 @@ namespace heongpu
          * @param output Output ciphertext.
          * @param options Execution options.
          */
-        __host__ void NAND(Ciphertext<Scheme::BFV>& input1,
-                           Plaintext<Scheme::BFV>& input2,
+        __host__ void NAND(const Ciphertext<Scheme::BFV>& input1,
+                           const Plaintext<Scheme::BFV>& input2,
                            Ciphertext<Scheme::BFV>& output,
                            const ExecutionOptions& options = ExecutionOptions())
         {
@@ -2165,7 +2174,7 @@ namespace heongpu
          */
         __host__ void
         NAND_inplace(Ciphertext<Scheme::BFV>& input1,
-                     Plaintext<Scheme::BFV>& input2,
+                     const Plaintext<Scheme::BFV>& input2,
                      const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -2183,10 +2192,10 @@ namespace heongpu
          * @param relin_key Relinearization key.
          * @param options Execution options.
          */
-        __host__ void NOR(Ciphertext<Scheme::BFV>& input1,
-                          Ciphertext<Scheme::BFV>& input2,
+        __host__ void NOR(const Ciphertext<Scheme::BFV>& input1,
+                          const Ciphertext<Scheme::BFV>& input2,
                           Ciphertext<Scheme::BFV>& output,
-                          Relinkey<Scheme::BFV>& relin_key,
+                          const Relinkey<Scheme::BFV>& relin_key,
                           const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -2248,8 +2257,8 @@ namespace heongpu
          */
         __host__ void
         NOR_inplace(Ciphertext<Scheme::BFV>& input1,
-                    Ciphertext<Scheme::BFV>& input2,
-                    Relinkey<Scheme::BFV>& relin_key,
+                    const Ciphertext<Scheme::BFV>& input2,
+                    const Relinkey<Scheme::BFV>& relin_key,
                     const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -2267,8 +2276,8 @@ namespace heongpu
          * @param output Output ciphertext.
          * @param options Execution options.
          */
-        __host__ void NOR(Ciphertext<Scheme::BFV>& input1,
-                          Plaintext<Scheme::BFV>& input2,
+        __host__ void NOR(const Ciphertext<Scheme::BFV>& input1,
+                          const Plaintext<Scheme::BFV>& input2,
                           Ciphertext<Scheme::BFV>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
@@ -2326,7 +2335,7 @@ namespace heongpu
          */
         __host__ void
         NOR_inplace(Ciphertext<Scheme::BFV>& input1,
-                    Plaintext<Scheme::BFV>& input2,
+                    const Plaintext<Scheme::BFV>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -2344,10 +2353,10 @@ namespace heongpu
          * @param relin_key Relinearization key.
          * @param options Execution options.
          */
-        __host__ void XNOR(Ciphertext<Scheme::BFV>& input1,
-                           Ciphertext<Scheme::BFV>& input2,
+        __host__ void XNOR(const Ciphertext<Scheme::BFV>& input1,
+                           const Ciphertext<Scheme::BFV>& input2,
                            Ciphertext<Scheme::BFV>& output,
-                           Relinkey<Scheme::BFV>& relin_key,
+                           const Relinkey<Scheme::BFV>& relin_key,
                            const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -2411,8 +2420,8 @@ namespace heongpu
          */
         __host__ void
         XNOR_inplace(Ciphertext<Scheme::BFV>& input1,
-                     Ciphertext<Scheme::BFV>& input2,
-                     Relinkey<Scheme::BFV>& relin_key,
+                     const Ciphertext<Scheme::BFV>& input2,
+                     const Relinkey<Scheme::BFV>& relin_key,
                      const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -2430,8 +2439,8 @@ namespace heongpu
          * @param output Output ciphertext.
          * @param options Execution options.
          */
-        __host__ void XNOR(Ciphertext<Scheme::BFV>& input1,
-                           Plaintext<Scheme::BFV>& input2,
+        __host__ void XNOR(const Ciphertext<Scheme::BFV>& input1,
+                           const Plaintext<Scheme::BFV>& input2,
                            Ciphertext<Scheme::BFV>& output,
                            const ExecutionOptions& options = ExecutionOptions())
         {
@@ -2493,7 +2502,7 @@ namespace heongpu
          */
         __host__ void
         XNOR_inplace(Ciphertext<Scheme::BFV>& input1,
-                     Plaintext<Scheme::BFV>& input2,
+                     const Plaintext<Scheme::BFV>& input2,
                      const ExecutionOptions& options = ExecutionOptions())
         {
             input1.validate_context(context_);
@@ -2503,7 +2512,7 @@ namespace heongpu
         }
 
         __host__ void
-        one_minus_cipher(Ciphertext<Scheme::BFV>& input1,
+        one_minus_cipher(const Ciphertext<Scheme::BFV>& input1,
                          Ciphertext<Scheme::BFV>& output,
                          const ExecutionOptions& options = ExecutionOptions());
 

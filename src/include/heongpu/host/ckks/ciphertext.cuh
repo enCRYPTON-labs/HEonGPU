@@ -375,7 +375,7 @@ namespace heongpu
 
         size_t checked_memory_size() const;
         void validate_context(const HEContext<Scheme::CKKS>& context) const;
-        int memory_size();
+        int memory_size() const;
         void memory_clear(cudaStream_t stream);
         void memory_set(DeviceVector<Data64>&& new_device_vector);
 

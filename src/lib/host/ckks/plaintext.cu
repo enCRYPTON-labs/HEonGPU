@@ -223,7 +223,7 @@ namespace heongpu
         validate_context_identity(context_id_, context, "Plaintext");
     }
 
-    int Plaintext<Scheme::CKKS>::memory_size()
+    int Plaintext<Scheme::CKKS>::memory_size() const
     {
         if (storage_type_ == storage_type::device)
         {

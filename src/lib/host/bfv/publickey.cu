@@ -218,7 +218,7 @@ namespace heongpu
         }
     }
 
-    int Publickey<Scheme::BFV>::memory_size()
+    int Publickey<Scheme::BFV>::memory_size() const
     {
         if (storage_type_ == storage_type::device)
         {

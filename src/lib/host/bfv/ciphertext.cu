@@ -306,7 +306,7 @@ namespace heongpu
         validate_context_identity(context_id_, context, "Ciphertext");
     }
 
-    int Ciphertext<Scheme::BFV>::memory_size()
+    int Ciphertext<Scheme::BFV>::memory_size() const
     {
         if (storage_type_ == storage_type::device)
         {

@@ -78,6 +78,7 @@ namespace heongpu
          * @return Data64* Pointer to the relinearization key data.
          */
         Data64* data();
+        const Data64* data() const;
 
         /**
          * @brief Returns a pointer to the specific part of the relinearization
@@ -88,6 +89,7 @@ namespace heongpu
          * key data.
          */
         Data64* data(size_t i);
+        const Data64* data(size_t i) const;
 
         /**
          * @brief Copy constructor for creating a new Relinkey object by copying
@@ -442,7 +444,7 @@ namespace heongpu
         HostVector<Data64> host_location_;
         std::vector<HostVector<Data64>> host_location_leveled_;
 
-        int memory_size();
+        int memory_size() const;
         void memory_clear(cudaStream_t stream);
         void memory_set(DeviceVector<Data64>&& new_device_vector);
         void memory_set(DeviceVector<Data64>&& new_device_vector, int i);
@@ -590,6 +592,7 @@ namespace heongpu
          * @return Data64* Pointer to the specified part of the Galois key data.
          */
         Data64* data(size_t i);
+        const Data64* data(size_t i) const;
 
         /**
          * @brief Returns a pointer to the Galois key data for conjugation.(for
@@ -598,6 +601,7 @@ namespace heongpu
          * @return Data64* Pointer to the Galois key data for column rotation.
          */
         Data64* c_data();
+        const Data64* c_data() const;
 
         /**
          * @brief Copy constructor for creating a new Galoiskey object by
@@ -1013,6 +1017,7 @@ namespace heongpu
          * @return Data64* Pointer to the switch key data.
          */
         Data64* data();
+        const Data64* data() const;
 
         Switchkey() = default;
         Switchkey(const Switchkey& copy) = default;
@@ -1068,7 +1073,7 @@ namespace heongpu
         DeviceVector<Data64> device_location_;
         HostVector<Data64> host_location_;
 
-        int memory_size();
+        int memory_size() const;
         void memory_clear(cudaStream_t stream);
         void memory_set(DeviceVector<Data64>&& new_device_vector);
         void memory_set(DeviceVector<Data64>&& new_device_vector, int i);

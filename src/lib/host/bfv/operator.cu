@@ -25,10 +25,11 @@ namespace heongpu
         encoding_location_ = encoder.encoding_location_;
     }
 
-    __host__ void HEOperator<Scheme::BFV>::add(Ciphertext<Scheme::BFV>& input1,
-                                               Ciphertext<Scheme::BFV>& input2,
-                                               Ciphertext<Scheme::BFV>& output,
-                                               const ExecutionOptions& options)
+    __host__ void
+    HEOperator<Scheme::BFV>::add(const Ciphertext<Scheme::BFV>& input1,
+                                 const Ciphertext<Scheme::BFV>& input2,
+                                 Ciphertext<Scheme::BFV>& output,
+                                 const ExecutionOptions& options)
     {
         input1.validate_context(context_);
         input2.validate_context(context_);
@@ -105,10 +106,11 @@ namespace heongpu
             options, (&input1 == &output));
     }
 
-    __host__ void HEOperator<Scheme::BFV>::sub(Ciphertext<Scheme::BFV>& input1,
-                                               Ciphertext<Scheme::BFV>& input2,
-                                               Ciphertext<Scheme::BFV>& output,
-                                               const ExecutionOptions& options)
+    __host__ void
+    HEOperator<Scheme::BFV>::sub(const Ciphertext<Scheme::BFV>& input1,
+                                 const Ciphertext<Scheme::BFV>& input2,
+                                 Ciphertext<Scheme::BFV>& output,
+                                 const ExecutionOptions& options)
     {
         input1.validate_context(context_);
         input2.validate_context(context_);
@@ -187,7 +189,7 @@ namespace heongpu
     }
 
     __host__ void
-    HEOperator<Scheme::BFV>::negate(Ciphertext<Scheme::BFV>& input1,
+    HEOperator<Scheme::BFV>::negate(const Ciphertext<Scheme::BFV>& input1,
                                     Ciphertext<Scheme::BFV>& output,
                                     const ExecutionOptions& options)
     {
@@ -554,7 +556,7 @@ namespace heongpu
     }
 
     __host__ void HEOperator<Scheme::BFV>::relinearize_external_product_inplace(
-        Ciphertext<Scheme::BFV>& input1, Relinkey<Scheme::BFV>& relin_key,
+        Ciphertext<Scheme::BFV>& input1, const Relinkey<Scheme::BFV>& relin_key,
         const cudaStream_t stream)
     {
         const int d = context_->d;
@@ -673,11 +675,10 @@ namespace heongpu
         HEONGPU_CUDA_CHECK(cudaGetLastError());
     }
 
-    __host__ void
-    HEOperator<Scheme::BFV>::rotate_bfv(Ciphertext<Scheme::BFV>& input1,
-                                        Ciphertext<Scheme::BFV>& output,
-                                        Galoiskey<Scheme::BFV>& galois_key,
-                                        int shift, const cudaStream_t stream)
+    __host__ void HEOperator<Scheme::BFV>::rotate_bfv(
+        Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& output,
+        const Galoiskey<Scheme::BFV>& galois_key, int shift,
+        const cudaStream_t stream)
     {
         int galoiselt =
             steps_to_galois_elt(shift, context_->n, galois_key.group_order_);
@@ -711,7 +712,7 @@ namespace heongpu
                         " (needed for shift ", shift,
                         ")! Generate the Galoiskey with this shift."));
                 }
-                galoiselt = galois_key.galois_elt[index_in];
+                galoiselt = galois_key.galois_elt.at(index_in);
                 required_galoiselt.push_back(galoiselt);
             }
 
@@ -727,7 +728,8 @@ namespace heongpu
 
     __host__ std::vector<Ciphertext<Scheme::BFV>>
     HEOperator<Scheme::BFV>::rotate_rows_hoisted(
-        Ciphertext<Scheme::BFV>& input1, Galoiskey<Scheme::BFV>& galois_key,
+        const Ciphertext<Scheme::BFV>& input1,
+        const Galoiskey<Scheme::BFV>& galois_key,
         const std::vector<int>& shifts, const ExecutionOptions& options)
     {
         input1.validate_context(context_);
@@ -839,8 +841,9 @@ namespace heongpu
 
     __host__ void HEOperator<Scheme::BFV>::apply_galois_decomposed(
         Ciphertext<Scheme::BFV>& input1, GaloisDecomposition& decomposition,
-        Ciphertext<Scheme::BFV>& output, Galoiskey<Scheme::BFV>& galois_key,
-        int galois_elt, const cudaStream_t stream)
+        Ciphertext<Scheme::BFV>& output,
+        const Galoiskey<Scheme::BFV>& galois_key, int galois_elt,
+        const cudaStream_t stream)
     {
         const int d = context_->d;
 
@@ -858,7 +861,7 @@ namespace heongpu
             keyswitch_multiply_accumulate_kernel<<<
                 dim3((context_->n >> 8), context_->Q_prime_size, 1), 256, 0,
                 stream>>>(decomposition.digits.data(),
-                          galois_key.device_location_[galois_elt].data(),
+                          galois_key.device_location_.at(galois_elt).data(),
                           key_switched.data(), context_->modulus_->data(),
                           context_->n_power, context_->Q_prime_size,
                           iteration_count_1, iteration_count_2);
@@ -867,7 +870,7 @@ namespace heongpu
         else
         {
             DeviceVector<Data64> key_location(
-                galois_key.host_location_[galois_elt], stream);
+                galois_key.host_location_.at(galois_elt), stream);
             keyswitch_multiply_accumulate_kernel<<<
                 dim3((context_->n >> 8), context_->Q_prime_size, 1), 256, 0,
                 stream>>>(decomposition.digits.data(), key_location.data(),
@@ -907,7 +910,7 @@ namespace heongpu
 
     __host__ void HEOperator<Scheme::BFV>::apply_galois_bfv(
         Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& output,
-        Galoiskey<Scheme::BFV>& galois_key, int galois_elt,
+        const Galoiskey<Scheme::BFV>& galois_key, int galois_elt,
         const cudaStream_t stream)
     {
         GaloisDecomposition decomposition =
@@ -918,7 +921,7 @@ namespace heongpu
 
     __host__ void HEOperator<Scheme::BFV>::rotate_columns_bfv(
         Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& output,
-        Galoiskey<Scheme::BFV>& galois_key, const cudaStream_t stream)
+        const Galoiskey<Scheme::BFV>& galois_key, const cudaStream_t stream)
     {
         const int d = context_->d;
 
@@ -1018,7 +1021,7 @@ namespace heongpu
 
     __host__ void HEOperator<Scheme::BFV>::switchkey_bfv(
         Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& output,
-        Switchkey<Scheme::BFV>& switch_key, const cudaStream_t stream)
+        const Switchkey<Scheme::BFV>& switch_key, const cudaStream_t stream)
     {
         const int d = context_->d;
 
@@ -1242,7 +1245,7 @@ namespace heongpu
 
     __host__ Ciphertext<Scheme::BFV>
     HEOperator<Scheme::BFV>::operator_from_ciphertext(
-        Ciphertext<Scheme::BFV>& input, cudaStream_t stream)
+        const Ciphertext<Scheme::BFV>& input, cudaStream_t stream)
     {
         Ciphertext<Scheme::BFV> cipher;
 
@@ -1299,7 +1302,7 @@ namespace heongpu
     }
 
     __host__ void HELogicOperator<Scheme::BFV>::one_minus_cipher(
-        Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& output,
+        const Ciphertext<Scheme::BFV>& input1, Ciphertext<Scheme::BFV>& output,
         const ExecutionOptions& options)
     {
         // TODO: make it efficient
