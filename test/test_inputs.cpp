@@ -465,3 +465,73 @@ TEST(Inputs, CKKS_Automatic_Plain_Inplace_After_Rescaling)
         }
     }
 }
+
+// TFHE gates read inputs in host memory without moving them, also with options
+// that move the objects of an operation to the device, and leave their bits.
+TEST(Inputs, TFHE_Gates_Leave_Their_Inputs)
+{
+    constexpr auto S = heongpu::Scheme::TFHE;
+    using Ciphertext = heongpu::Ciphertext<S>;
+    auto context = heongpu::GenHEContext<S>();
+    heongpu::HEKeyGenerator<S> keygen(context);
+    heongpu::Secretkey<S> secret_key(context);
+    keygen.generate_secret_key(secret_key);
+    heongpu::Bootstrappingkey<S> boot_key(context);
+    keygen.generate_bootstrapping_key(boot_key, secret_key);
+    heongpu::HEEncryptor<S> encryptor(context, secret_key);
+    heongpu::HEDecryptor<S> decryptor(context, secret_key);
+    heongpu::HELogicOperator<S> logic(context);
+
+    constexpr int size = 32;
+    std::vector<bool> a(size), b(size), c(size);
+    for (int i = 0; i < size; i++)
+    {
+        a[i] = i % 2;
+        b[i] = (i / 2) % 2;
+        c[i] = (i / 4) % 2;
+    }
+    Ciphertext x0(context), y0(context), z0(context);
+    encryptor.encrypt(x0, a);
+    encryptor.encrypt(y0, b);
+    encryptor.encrypt(z0, c);
+
+    auto bits = [&](Ciphertext& ciphertext)
+    {
+        std::vector<bool> values;
+        decryptor.decrypt(ciphertext, values);
+        return values;
+    };
+
+    for (placement where : placements)
+    {
+        SCOPED_TRACE(static_cast<int>(where));
+        const auto options = options_for(where);
+        const Ciphertext x = placed(x0, where);
+        const Ciphertext y = placed(y0, where);
+        const Ciphertext z = placed(z0, where);
+        const bool on_device = where == placement::device;
+
+        std::vector<bool> nand(size), mux(size), negated(size);
+        for (int i = 0; i < size; i++)
+        {
+            nand[i] = !(a[i] && b[i]);
+            mux[i] = c[i] ? a[i] : b[i];
+            negated[i] = !a[i];
+        }
+        Ciphertext out(context);
+        logic.NAND(x, y, out, boot_key, options);
+        EXPECT_EQ(bits(out), nand);
+        logic.MUX(x, y, z, out, boot_key, options);
+        EXPECT_EQ(bits(out), mux);
+        logic.NOT(x, out, options);
+        EXPECT_EQ(bits(out), negated);
+
+        EXPECT_EQ(x.is_on_device(), on_device);
+        EXPECT_EQ(y.is_on_device(), on_device);
+        EXPECT_EQ(z.is_on_device(), on_device);
+        Ciphertext x_copy = x, y_copy = y, z_copy = z;
+        EXPECT_EQ(bits(x_copy), a);
+        EXPECT_EQ(bits(y_copy), b);
+        EXPECT_EQ(bits(z_copy), c);
+    }
+}
