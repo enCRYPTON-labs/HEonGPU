@@ -40,6 +40,8 @@ namespace heongpu
         else
         {
             device_location_ = DeviceVector<Data64>(host_location_, stream);
+            // The copies above read host memory until they finish.
+            HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
             host_location_.resize(0);
             host_location_.shrink_to_fit();
 
@@ -585,6 +587,8 @@ namespace heongpu
             zero_device_location_ =
                 DeviceVector<Data64>(zero_host_location_, stream);
 
+            // The copies above read host memory until they finish.
+            HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
             host_location_.clear();
             zero_host_location_.resize(0);
             zero_host_location_.shrink_to_fit();
@@ -922,6 +926,8 @@ namespace heongpu
         else
         {
             device_location_ = DeviceVector<Data64>(host_location_, stream);
+            // The copies above read host memory until they finish.
+            HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
             host_location_.resize(0);
             host_location_.shrink_to_fit();
 

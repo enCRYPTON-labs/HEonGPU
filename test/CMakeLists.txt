@@ -73,6 +73,7 @@ set(EXECUTABLES
     deprecated_testcases test_deprecated.cpp
     random_testcases test_random.cpp
     inputs_testcases test_inputs.cpp
+    storage_testcases test_storage.cpp
 )
 
 function(add_test exe source)

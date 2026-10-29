@@ -55,6 +55,8 @@ namespace heongpu
             {
                 device_locations_ =
                     DeviceVector<Data64>(host_locations_, stream);
+                // The copies above read host memory until they finish.
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
                 host_locations_.resize(0);
                 host_locations_.shrink_to_fit();
             }
@@ -73,7 +75,7 @@ namespace heongpu
             }
             else
             {
-                int publickey_memory_size = coeff_modulus_count_ * ring_size_;
+                int publickey_memory_size = device_locations_.size();
                 host_locations_ = HostVector<Data64>(publickey_memory_size);
                 cudaMemcpyAsync(host_locations_.data(),
                                 device_locations_.data(),

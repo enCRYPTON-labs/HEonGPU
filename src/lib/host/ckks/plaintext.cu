@@ -44,6 +44,8 @@ namespace heongpu
             {
                 device_locations_ =
                     DeviceVector<Data64>(host_locations_, stream);
+                // The copies above read host memory until they finish.
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
                 host_locations_.resize(0);
                 host_locations_.shrink_to_fit();
             }
