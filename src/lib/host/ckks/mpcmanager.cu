@@ -213,7 +213,7 @@ namespace heongpu
                         DeviceVector<Data64> output_memory(rk_.relinkey_size_,
                                                            options.stream_);
 
-                        multi_party_relinkey_piece_method_II_stage_I_kernel<<<
+                        multi_party_relinkey_piece_stage_I_kernel<<<
                             dim3((context_->n >> 8), context_->Q_prime_size, 1),
                             256, 0, options.stream_>>>(
                             output_memory.data(), sk.data(), common_a, u, e0,
@@ -331,7 +331,7 @@ namespace heongpu
                                 DeviceVector<Data64> output_memory(
                                     rk_stage_2.relinkey_size_, options.stream_);
 
-                                multi_party_relinkey_piece_method_I_II_stage_II_kernel<<<
+                                multi_party_relinkey_piece_stage_II_kernel<<<
                                     dim3((context_->n >> 8),
                                          context_->Q_prime_size, 1),
                                     256, 0, options.stream_>>>(
@@ -388,7 +388,7 @@ namespace heongpu
                         DeviceVector<Data64> output_memory(rk_.relinkey_size_,
                                                            options.stream_);
 
-                        multi_party_relinkey_method_I_stage_I_kernel<<<
+                        multi_party_relinkey_stage_I_kernel<<<
                             dim3((context_->n >> 8), context_->Q_prime_size, 1),
                             256, 0, options.stream_>>>(
                             all_rk[0].data(), output_memory.data(),
@@ -398,7 +398,7 @@ namespace heongpu
 
                         for (int i = 1; i < participant_count; i++)
                         {
-                            multi_party_relinkey_method_I_stage_I_kernel<<<
+                            multi_party_relinkey_stage_I_kernel<<<
                                 dim3((context_->n >> 8), context_->Q_prime_size,
                                      1),
                                 256, 0, options.stream_>>>(
@@ -462,7 +462,7 @@ namespace heongpu
                                 DeviceVector<Data64> output_memory(
                                     rk_.relinkey_size_, options.stream_);
 
-                                multi_party_relinkey_method_I_stage_II_kernel<<<
+                                multi_party_relinkey_stage_II_kernel<<<
                                     dim3((context_->n >> 8),
                                          context_->Q_prime_size, 1),
                                     256, 0, options.stream_>>>(
@@ -475,7 +475,7 @@ namespace heongpu
 
                                 for (int i = 1; i < participant_count; i++)
                                 {
-                                    multi_party_relinkey_method_I_stage_II_kernel<<<
+                                    multi_party_relinkey_stage_II_kernel<<<
                                         dim3((context_->n >> 8),
                                              context_->Q_prime_size, 1),
                                         256, 0, options.stream_>>>(
@@ -862,9 +862,9 @@ namespace heongpu
             DeviceVector<Data64> output_memory(gk.galoiskey_size_,
                                                options.stream_);
 
-            multi_party_galoiskey_gen_method_I_II_kernel<<<
-                dim3((context_->n >> 8), context_->Q_prime_size, 1), 256, 0,
-                options.stream_>>>(
+            multi_party_galoiskey_gen_kernel<<<dim3((context_->n >> 8),
+                                                    context_->Q_prime_size, 1),
+                                               256, 0, options.stream_>>>(
                 output_memory.data(),
                 all_gk[0].device_location_[galois.second].data(),
                 context_->modulus_->data(), context_->n_power,
@@ -873,7 +873,7 @@ namespace heongpu
 
             for (int i = 1; i < participant_count; i++)
             {
-                multi_party_galoiskey_gen_method_I_II_kernel<<<
+                multi_party_galoiskey_gen_kernel<<<
                     dim3((context_->n >> 8), context_->Q_prime_size, 1), 256, 0,
                     options.stream_>>>(
                     output_memory.data(),
@@ -901,19 +901,19 @@ namespace heongpu
 
         DeviceVector<Data64> output_memory(gk.galoiskey_size_, options.stream_);
 
-        multi_party_galoiskey_gen_method_I_II_kernel<<<
-            dim3((context_->n >> 8), context_->Q_prime_size, 1), 256, 0,
-            options.stream_>>>(output_memory.data(),
-                               all_gk[0].zero_device_location_.data(),
-                               context_->modulus_->data(), context_->n_power,
-                               context_->Q_prime_size, dimension, true);
+        multi_party_galoiskey_gen_kernel<<<dim3((context_->n >> 8),
+                                                context_->Q_prime_size, 1),
+                                           256, 0, options.stream_>>>(
+            output_memory.data(), all_gk[0].zero_device_location_.data(),
+            context_->modulus_->data(), context_->n_power,
+            context_->Q_prime_size, dimension, true);
         HEONGPU_CUDA_CHECK(cudaGetLastError());
 
         for (int i = 1; i < participant_count; i++)
         {
-            multi_party_galoiskey_gen_method_I_II_kernel<<<
-                dim3((context_->n >> 8), context_->Q_prime_size, 1), 256, 0,
-                options.stream_>>>(
+            multi_party_galoiskey_gen_kernel<<<dim3((context_->n >> 8),
+                                                    context_->Q_prime_size, 1),
+                                               256, 0, options.stream_>>>(
                 output_memory.data(), all_gk[i].zero_device_location_.data(),
                 context_->modulus_->data(), context_->n_power,
                 context_->Q_prime_size, dimension, false);

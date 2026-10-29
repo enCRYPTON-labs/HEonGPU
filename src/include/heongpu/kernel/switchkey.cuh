@@ -16,7 +16,7 @@ namespace heongpu
         Modulus64* modulus, int n_power, int Q_tilda_size, int iteration_count1,
         int iteration_count2);
 
-    __global__ void keyswitch_multiply_accumulate_leveled_method_II_kernel(
+    __global__ void keyswitch_multiply_accumulate_leveled_kernel(
         Data64* input, const Data64* __restrict__ relinkey, Data64* output,
         Modulus64* modulus, int first_rns_mod_count,
         int current_decomp_mod_count, int current_rns_mod_count,

@@ -96,10 +96,10 @@ namespace heongpu
             EvalModConfig eval_mod_config(top_level - coeff_to_slot_levels);
             eval_mod_config.message_ratio_ = message_ratio;
             return BootstrappingConfig(
-                EncodingMatrixConfig(LinearTransformType::SLOTS_TO_COEFFS,
+                EncodingMatrixConfig(LinearTransformType::slots_to_coeffs,
                                      stc_start),
                 eval_mod_config,
-                EncodingMatrixConfig(LinearTransformType::COEFFS_TO_SLOTS,
+                EncodingMatrixConfig(LinearTransformType::coeffs_to_slots,
                                      top_level));
         }
 

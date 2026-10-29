@@ -2599,16 +2599,16 @@ namespace heongpu
 
           public:
             __host__ Polynomial()
-                : max_deg_(0), lead_(false), type_(PolyType::CHEBYSHEV),
+                : max_deg_(0), lead_(false), type_(PolyType::chebyshev),
                   a_(0.0), b_(0.0)
             {
             }
 
-            // type: POLY_TYPE::MONOMIAL or POLY_TYPE::CHEBYSHEV
+            // type: PolyType::monomial or PolyType::chebyshev
             __host__ Polynomial(int max_deg,
                                 const std::vector<Complex64>& coeffs,
                                 bool lead = false,
-                                PolyType type = PolyType::CHEBYSHEV,
+                                PolyType type = PolyType::chebyshev,
                                 double a = 0.0, double b = 0.0);
 
             // Get degree of polynomial (number of coefficients - 1)
@@ -4031,7 +4031,7 @@ namespace heongpu
                           CKKSBootstrappingKeys& keys,
                           const ExecutionOptions& options = ExecutionOptions())
         {
-            return gate_bootstrapping(logic_gate::AND, input1, input2, keys,
+            return gate_bootstrapping(logic_gate::and_, input1, input2, keys,
                                       options);
         }
 
@@ -4052,7 +4052,7 @@ namespace heongpu
                          CKKSBootstrappingKeys& keys,
                          const ExecutionOptions& options = ExecutionOptions())
         {
-            return gate_bootstrapping(logic_gate::OR, input1, input2, keys,
+            return gate_bootstrapping(logic_gate::or_, input1, input2, keys,
                                       options);
         }
 
@@ -4073,7 +4073,7 @@ namespace heongpu
                           CKKSBootstrappingKeys& keys,
                           const ExecutionOptions& options = ExecutionOptions())
         {
-            return gate_bootstrapping(logic_gate::XOR, input1, input2, keys,
+            return gate_bootstrapping(logic_gate::xor_, input1, input2, keys,
                                       options);
         }
 
@@ -4094,7 +4094,7 @@ namespace heongpu
                            CKKSBootstrappingKeys& keys,
                            const ExecutionOptions& options = ExecutionOptions())
         {
-            return gate_bootstrapping(logic_gate::NAND, input1, input2, keys,
+            return gate_bootstrapping(logic_gate::nand, input1, input2, keys,
                                       options);
         }
 
@@ -4115,7 +4115,7 @@ namespace heongpu
                           CKKSBootstrappingKeys& keys,
                           const ExecutionOptions& options = ExecutionOptions())
         {
-            return gate_bootstrapping(logic_gate::NOR, input1, input2, keys,
+            return gate_bootstrapping(logic_gate::nor, input1, input2, keys,
                                       options);
         }
 
@@ -4136,7 +4136,7 @@ namespace heongpu
                            CKKSBootstrappingKeys& keys,
                            const ExecutionOptions& options = ExecutionOptions())
         {
-            return gate_bootstrapping(logic_gate::XNOR, input1, input2, keys,
+            return gate_bootstrapping(logic_gate::xnor, input1, input2, keys,
                                       options);
         }
 
@@ -4151,12 +4151,12 @@ namespace heongpu
       private:
         enum class logic_gate
         {
-            AND,
-            OR,
-            XOR,
-            NAND,
-            NOR,
-            XNOR
+            and_,
+            or_,
+            xor_,
+            nand,
+            nor,
+            xnor
         };
 
         __host__ Ciphertext<Scheme::CKKS>

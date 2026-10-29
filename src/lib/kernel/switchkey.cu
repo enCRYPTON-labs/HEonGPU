@@ -111,7 +111,7 @@ namespace heongpu
         output[index + key_offset1] = ct_1_sum;
     }
 
-    __global__ void keyswitch_multiply_accumulate_leveled_method_II_kernel(
+    __global__ void keyswitch_multiply_accumulate_leveled_kernel(
         Data64* input, const Data64* __restrict__ relinkey, Data64* output,
         Modulus64* modulus, int first_rns_mod_count,
         int current_decomp_mod_count, int current_rns_mod_count,

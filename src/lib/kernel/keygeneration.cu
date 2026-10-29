@@ -108,7 +108,7 @@ namespace heongpu
     ////////////////////////
     //////////////////////// -
 
-    __global__ void multi_party_relinkey_piece_method_II_stage_I_kernel(
+    __global__ void multi_party_relinkey_piece_stage_I_kernel(
         Data64* rk, Data64* sk, Data64* a, Data64* u, Data64* e0, Data64* e1,
         Modulus64* modulus, Data64* factor, int* Sk_pair, int n_power,
         int l_tilda, int d, int Q_size, int P_size)
@@ -157,7 +157,7 @@ namespace heongpu
         }
     }
 
-    __global__ void multi_party_relinkey_piece_method_I_II_stage_II_kernel(
+    __global__ void multi_party_relinkey_piece_stage_II_kernel(
         Data64* rk_1, Data64* rk_2, Data64* sk, Data64* u, Data64* e0,
         Data64* e1, Modulus64* modulus, int n_power, int rns_mod_count,
         int decomp_mod_count)
@@ -198,9 +198,10 @@ namespace heongpu
         }
     }
 
-    __global__ void multi_party_relinkey_method_I_stage_I_kernel(
-        Data64* rk1, Data64* rk2, Data64* rk_out, Modulus64* modulus,
-        int n_power, int Q_prime_size, int l)
+    __global__ void
+    multi_party_relinkey_stage_I_kernel(Data64* rk1, Data64* rk2,
+                                        Data64* rk_out, Modulus64* modulus,
+                                        int n_power, int Q_prime_size, int l)
     {
         int idx = blockIdx.x * blockDim.x + threadIdx.x; // Ring Sizes
         int block_y = blockIdx.y; // rns_mod_count
@@ -231,9 +232,10 @@ namespace heongpu
         }
     }
 
-    __global__ void multi_party_relinkey_method_I_stage_I_kernel(
-        Data64* rk_in, Data64* rk_out, Modulus64* modulus, int n_power,
-        int Q_prime_size, int l, bool first)
+    __global__ void
+    multi_party_relinkey_stage_I_kernel(Data64* rk_in, Data64* rk_out,
+                                        Modulus64* modulus, int n_power,
+                                        int Q_prime_size, int l, bool first)
     {
         int idx = blockIdx.x * blockDim.x + threadIdx.x; // Ring Sizes
         int block_y = blockIdx.y; // rns_mod_count
@@ -282,9 +284,10 @@ namespace heongpu
         }
     }
 
-    __global__ void multi_party_relinkey_method_I_stage_II_kernel(
-        Data64* rk1, Data64* rk2, Data64* rk_out, Modulus64* modulus,
-        int n_power, int Q_prime_size, int l)
+    __global__ void
+    multi_party_relinkey_stage_II_kernel(Data64* rk1, Data64* rk2,
+                                         Data64* rk_out, Modulus64* modulus,
+                                         int n_power, int Q_prime_size, int l)
     {
         int idx = blockIdx.x * blockDim.x + threadIdx.x; // Ring Sizes
         int block_y = blockIdx.y; // rns_mod_count
@@ -311,9 +314,10 @@ namespace heongpu
         }
     }
 
-    __global__ void multi_party_relinkey_method_I_stage_II_kernel(
-        Data64* rk_in, Data64* rk_out, Modulus64* modulus, int n_power,
-        int Q_prime_size, int l)
+    __global__ void
+    multi_party_relinkey_stage_II_kernel(Data64* rk_in, Data64* rk_out,
+                                         Modulus64* modulus, int n_power,
+                                         int Q_prime_size, int l)
     {
         int idx = blockIdx.x * blockDim.x + threadIdx.x; // Ring Sizes
         int block_y = blockIdx.y; // rns_mod_count
@@ -688,7 +692,7 @@ namespace heongpu
 
     /////////////////////
 
-    __global__ void multi_party_galoiskey_gen_method_I_II_kernel(
+    __global__ void multi_party_galoiskey_gen_kernel(
         Data64* gk_1, Data64* gk_2, Modulus64* modulus, int n_power,
         int rns_mod_count, int decomp_mod_count, bool first)
     {

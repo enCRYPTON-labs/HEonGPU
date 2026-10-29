@@ -1284,7 +1284,7 @@ namespace heongpu
             context_->d_leveled->operator[](input1.depth_) % 4;
         if (relin_key.storage_type_ == storage_type::device)
         {
-            keyswitch_multiply_accumulate_leveled_method_II_kernel<<<
+            keyswitch_multiply_accumulate_leveled_kernel<<<
                 dim3((context_->n >> 8), current_rns_mod_count, 1), 256, 0,
                 stream>>>(temp1_relin, relin_key.data(), temp2_relin,
                           context_->modulus_->data(), first_rns_mod_count,
@@ -1296,7 +1296,7 @@ namespace heongpu
         else
         {
             DeviceVector<Data64> key_location(relin_key.host_location_, stream);
-            keyswitch_multiply_accumulate_leveled_method_II_kernel<<<
+            keyswitch_multiply_accumulate_leveled_kernel<<<
                 dim3((context_->n >> 8), current_rns_mod_count, 1), 256, 0,
                 stream>>>(temp1_relin, key_location.data(), temp2_relin,
                           context_->modulus_->data(), first_rns_mod_count,
@@ -1835,7 +1835,7 @@ namespace heongpu
             context_->d_leveled->operator[](input1.depth_) % 4;
         if (galois_key.storage_type_ == storage_type::device)
         {
-            keyswitch_multiply_accumulate_leveled_method_II_kernel<<<
+            keyswitch_multiply_accumulate_leveled_kernel<<<
                 dim3((context_->n >> 8), current_rns_mod_count, 1), 256, 0,
                 stream>>>(decomposition.digits.data(),
                           galois_key.device_location_[galois_elt].data(),
@@ -1849,7 +1849,7 @@ namespace heongpu
         {
             DeviceVector<Data64> key_location(
                 galois_key.host_location_[galois_elt], stream);
-            keyswitch_multiply_accumulate_leveled_method_II_kernel<<<
+            keyswitch_multiply_accumulate_leveled_kernel<<<
                 dim3((context_->n >> 8), current_rns_mod_count, 1), 256, 0,
                 stream>>>(decomposition.digits.data(), key_location.data(),
                           key_switched.data(), context_->modulus_->data(),
@@ -2019,7 +2019,7 @@ namespace heongpu
             context_->d_leveled->operator[](input1.depth_) % 4;
         if (switch_key.storage_type_ == storage_type::device)
         {
-            keyswitch_multiply_accumulate_leveled_method_II_kernel<<<
+            keyswitch_multiply_accumulate_leveled_kernel<<<
                 dim3((context_->n >> 8), current_rns_mod_count, 1), 256, 0,
                 stream>>>(temp3_rotation, switch_key.data(), temp4_rotation,
                           context_->modulus_->data(), first_rns_mod_count,
@@ -2032,7 +2032,7 @@ namespace heongpu
         {
             DeviceVector<Data64> key_location(switch_key.host_location_,
                                               stream);
-            keyswitch_multiply_accumulate_leveled_method_II_kernel<<<
+            keyswitch_multiply_accumulate_leveled_kernel<<<
                 dim3((context_->n >> 8), current_rns_mod_count, 1), 256, 0,
                 stream>>>(temp3_rotation, key_location.data(), temp4_rotation,
                           context_->modulus_->data(), first_rns_mod_count,
@@ -2212,7 +2212,7 @@ namespace heongpu
             context_->d_leveled->operator[](input1.depth_) % 4;
         if (conjugate_key.storage_type_ == storage_type::device)
         {
-            keyswitch_multiply_accumulate_leveled_method_II_kernel<<<
+            keyswitch_multiply_accumulate_leveled_kernel<<<
                 dim3((context_->n >> 8), current_rns_mod_count, 1), 256, 0,
                 stream>>>(temp3_rotation, conjugate_key.c_data(),
                           temp4_rotation, context_->modulus_->data(),
@@ -2225,7 +2225,7 @@ namespace heongpu
         {
             DeviceVector<Data64> key_location(conjugate_key.zero_host_location_,
                                               stream);
-            keyswitch_multiply_accumulate_leveled_method_II_kernel<<<
+            keyswitch_multiply_accumulate_leveled_kernel<<<
                 dim3((context_->n >> 8), current_rns_mod_count, 1), 256, 0,
                 stream>>>(temp3_rotation, key_location.data(), temp4_rotation,
                           context_->modulus_->data(), first_rns_mod_count,
@@ -2884,7 +2884,7 @@ namespace heongpu
                 {
                     if (galois_key.storage_type_ == storage_type::device)
                     {
-                        keyswitch_multiply_accumulate_leveled_method_II_kernel<<<
+                        keyswitch_multiply_accumulate_leveled_kernel<<<
                             dim3((n >> 8), current_rns_mod_count, 1), 256, 0,
                             stream>>>(
                             temp3.data(),
@@ -2900,7 +2900,7 @@ namespace heongpu
                     {
                         DeviceVector<Data64> key_location(
                             galois_key.host_location_[galois_elt], stream);
-                        keyswitch_multiply_accumulate_leveled_method_II_kernel<<<
+                        keyswitch_multiply_accumulate_leveled_kernel<<<
                             dim3((n >> 8), current_rns_mod_count, 1), 256, 0,
                             stream>>>(temp3.data(), key_location.data(),
                                       temp4.data(), context_->modulus_->data(),
@@ -3046,7 +3046,7 @@ namespace heongpu
                 {
                     if (galois_key.storage_type_ == storage_type::device)
                     {
-                        keyswitch_multiply_accumulate_leveled_method_II_kernel<<<
+                        keyswitch_multiply_accumulate_leveled_kernel<<<
                             dim3((n >> 8), current_rns_mod_count, 1), 256, 0,
                             stream>>>(
                             temp3_gs.data(),
@@ -3062,7 +3062,7 @@ namespace heongpu
                     {
                         DeviceVector<Data64> key_location(
                             galois_key.host_location_[galois_elt_gs], stream);
-                        keyswitch_multiply_accumulate_leveled_method_II_kernel<<<
+                        keyswitch_multiply_accumulate_leveled_kernel<<<
                             dim3((n >> 8), current_rns_mod_count, 1), 256, 0,
                             stream>>>(temp3_gs.data(), key_location.data(),
                                       temp4_gs.data(),
@@ -3568,7 +3568,7 @@ namespace heongpu
             a = (1 << k) - 1;
             b = power + 1 - (1 << k);
 
-            if (type == PolyType::CHEBYSHEV)
+            if (type == PolyType::chebyshev)
             {
                 c = std::abs(a - b);
             }
@@ -3608,7 +3608,7 @@ namespace heongpu
         relinearize_inplace(cipher[power], relin_key, options);
         rescale_inplace(cipher[power], options);
 
-        if (type == PolyType::CHEBYSHEV)
+        if (type == PolyType::chebyshev)
         {
             add_inplace(cipher[power], cipher[power], options);
             if (c == 0)
@@ -3990,7 +3990,7 @@ namespace heongpu
 
         double target_scale = automatic_target(input, depth);
         ManualScope manual;
-        return evaluate_in_basis(input, coefficients, PolyType::MONOMIAL,
+        return evaluate_in_basis(input, coefficients, PolyType::monomial,
                                  relin_key, options, target_scale);
     }
 
@@ -4023,7 +4023,7 @@ namespace heongpu
         ManualScope manual;
         if (a == -1.0 && b == 1.0)
         {
-            return evaluate_in_basis(input, coefficients, PolyType::CHEBYSHEV,
+            return evaluate_in_basis(input, coefficients, PolyType::chebyshev,
                                      relin_key, options, target_scale);
         }
 
@@ -4037,7 +4037,7 @@ namespace heongpu
         mapped.scale_ = input.scale_;
         add_plain_inplace(mapped, -(a + b) / (b - a), options);
 
-        return evaluate_in_basis(mapped, coefficients, PolyType::CHEBYSHEV,
+        return evaluate_in_basis(mapped, coefficients, PolyType::chebyshev,
                                  relin_key, options, target_scale);
     }
 
@@ -4773,7 +4773,7 @@ namespace heongpu
         double a, b;
         std::vector<Complex64> coeffs;
 
-        if (config.sine_type_ == SineType::COS1)
+        if (config.sine_type_ == SineType::cos1)
         {
             a = -static_cast<double>(config.K_) /
                 std::pow(2.0, config.double_angle_);
@@ -4828,7 +4828,7 @@ namespace heongpu
         int q_size = degree() - split + 1;
         std::vector<Complex64> coeffs_q(q_size, coeffs_[split]);
 
-        if (type_ == PolyType::MONOMIAL)
+        if (type_ == PolyType::monomial)
         {
             // For monomial type: simply copy coeffs[split+1:] as-is
             for (int i = split + 1; i <= degree(); i++)
@@ -4836,7 +4836,7 @@ namespace heongpu
                 coeffs_q[i - split] = coeffs_[i];
             }
         }
-        else if (type_ == PolyType::CHEBYSHEV)
+        else if (type_ == PolyType::chebyshev)
         {
             // For Chebyshev type: apply the transformation
             int i = split + 1;
@@ -4915,9 +4915,9 @@ namespace heongpu
         transform_context.CtoS_level_ = ctos_level;
         transform_context.StoC_level_ = stoc_level;
 
-        EncodingMatrixConfig cts_config(LinearTransformType::COEFFS_TO_SLOTS,
+        EncodingMatrixConfig cts_config(LinearTransformType::coeffs_to_slots,
                                         context_->Q_size - 1 - ctos_level);
-        EncodingMatrixConfig stc_config(LinearTransformType::SLOTS_TO_COEFFS,
+        EncodingMatrixConfig stc_config(LinearTransformType::slots_to_coeffs,
                                         context_->Q_size - 1 - stoc_level);
 
         // CtoS output is (c + conj(c)), so its 1/2 is folded into the matrix.
@@ -5045,7 +5045,7 @@ namespace heongpu
             sine_poly_ = generate_eval_mod_poly(eval_mod_config_,
                                                 eval_mod_config_.sine_deg_);
 
-            if (eval_mod_config_.sine_type_ == SineType::COS1)
+            if (eval_mod_config_.sine_type_ == SineType::cos1)
             {
                 for (int i = 0; i < sine_poly_.coeffs_.size(); i++)
                 {

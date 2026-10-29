@@ -142,19 +142,19 @@ namespace heongpu
 
     enum class SineType
     {
-        COS1,
+        cos1,
     };
 
     enum class PolyType
     {
-        MONOMIAL,
-        CHEBYSHEV
+        monomial,
+        chebyshev
     };
 
     enum class LinearTransformType
     {
-        COEFFS_TO_SLOTS,
-        SLOTS_TO_COEFFS
+        coeffs_to_slots,
+        slots_to_coeffs
     };
 
     struct EvalModConfig
@@ -171,8 +171,8 @@ namespace heongpu
         double sqrt2pi_;
         double q_diff_;
 
-        SineType sine_type_ = SineType::COS1;
-        PolyType poly_type_ = PolyType::CHEBYSHEV;
+        SineType sine_type_ = SineType::cos1;
+        PolyType poly_type_ = PolyType::chebyshev;
 
         EvalModConfig()
             : sine_deg_(0), double_angle_(0), arcsine_deg_(0), level_start_(0),
@@ -230,7 +230,7 @@ namespace heongpu
         int piece_;
 
         EncodingMatrixConfig()
-            : lt_type_(LinearTransformType::COEFFS_TO_SLOTS), level_start_(0),
+            : lt_type_(LinearTransformType::coeffs_to_slots), level_start_(0),
               bsgs_ratio_(0.0), piece_(0)
         {
         }
@@ -245,7 +245,7 @@ namespace heongpu
             : lt_type_(lt_type), level_start_(level_start),
               bsgs_ratio_(bsgs_ratio)
         {
-            piece_ = (lt_type == LinearTransformType::COEFFS_TO_SLOTS) ? 4 : 3;
+            piece_ = (lt_type == LinearTransformType::coeffs_to_slots) ? 4 : 3;
         }
 
         EncodingMatrixConfig(LinearTransformType lt_type, int level_start,

@@ -292,7 +292,7 @@ namespace heongpu
         std::shared_ptr<DeviceVector<Data64>> upper_half_threshold_;
         std::shared_ptr<DeviceVector<Data64>> decryption_modulus_;
 
-        // BFV switchkey parameters (Method II)
+        // BFV key switching parameters
         int m;
         int l;
         int l_tilda;

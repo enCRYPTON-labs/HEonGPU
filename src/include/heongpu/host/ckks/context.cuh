@@ -200,7 +200,7 @@ namespace heongpu
         std::shared_ptr<DeviceVector<Data64>> upper_half_threshold_;
         std::shared_ptr<DeviceVector<Data64>> decryption_modulus_;
 
-        // CKKS switchkey parameters (Method II)
+        // CKKS key switching parameters
         int m_leveled;
         std::shared_ptr<std::vector<int>> l_leveled;
         std::shared_ptr<std::vector<int>> l_tilda_leveled;
