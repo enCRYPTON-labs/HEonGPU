@@ -304,7 +304,7 @@ namespace heongpu
     }
 
     CKKSCiphertext
-    HESession<Scheme::CKKS>::encrypt(Plaintext<Scheme::CKKS>& plain) const
+    HESession<Scheme::CKKS>::encrypt(const Plaintext<Scheme::CKKS>& plain) const
     {
         return result(state_->encryptor.encrypt(plain));
     }

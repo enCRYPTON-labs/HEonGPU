@@ -283,7 +283,7 @@ namespace heongpu
          * @brief Returns plain encrypted.
          */
         SessionCiphertext<Scheme::CKKS>
-        encrypt(Plaintext<Scheme::CKKS>& plain) const;
+        encrypt(const Plaintext<Scheme::CKKS>& plain) const;
 
         /**
          * @brief Returns ciphertext as a ciphertext of the session. Throws

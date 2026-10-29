@@ -287,7 +287,7 @@ namespace heongpu
          * @brief Returns plain encrypted.
          */
         SessionCiphertext<Scheme::BFV>
-        encrypt(Plaintext<Scheme::BFV>& plain) const;
+        encrypt(const Plaintext<Scheme::BFV>& plain) const;
 
         /**
          * @brief Returns ciphertext as a ciphertext of the session. Throws

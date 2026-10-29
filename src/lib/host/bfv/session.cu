@@ -279,7 +279,7 @@ namespace heongpu
     }
 
     BFVCiphertext
-    HESession<Scheme::BFV>::encrypt(Plaintext<Scheme::BFV>& plain) const
+    HESession<Scheme::BFV>::encrypt(const Plaintext<Scheme::BFV>& plain) const
     {
         return result(state_->encryptor.encrypt(plain));
     }
