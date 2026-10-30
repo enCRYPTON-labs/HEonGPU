@@ -233,3 +233,42 @@ TYPED_TEST(SerializationContext, Loaded_Context_Has_The_Same_Identity)
     load(*loaded, save(*this->a.context));
     EXPECT_EQ(loaded->context_id(), this->a.context->context_id());
 }
+
+TYPED_TEST(SerializationContext, Galois_Key_Loaded_For_A_Context_Has_Its_Shifts)
+{
+    // A key made for a context lists the default shifts until it is loaded.
+    constexpr auto S = TestFixture::S;
+    auto& a = this->a;
+    heongpu::HEKeyGenerator<S> generator(a.context);
+    std::vector<int> shifts = {3};
+    heongpu::Galoiskey<S> original(a.context, shifts);
+    generator.generate_galois_key(original, a.secret_key);
+
+    heongpu::Galoiskey<S> loaded(a.context);
+    load(loaded, save(original));
+    auto input = a.encrypt(1);
+    heongpu::Ciphertext<S> output(a.context);
+    EXPECT_NO_THROW(rotate(a.operators, input, output, loaded, 3));
+    EXPECT_THROW(rotate(a.operators, input, output, loaded, 2),
+                 heongpu::KeyNotFoundError);
+}
+
+TYPED_TEST(SerializationContext, Galois_Key_Of_Galois_Elements_Loads)
+{
+    constexpr auto S = TestFixture::S;
+    auto& a = this->a;
+    heongpu::HEKeyGenerator<S> generator(a.context);
+    std::vector<uint32_t> elements = {5};
+    heongpu::Galoiskey<S> original(a.context, elements);
+    generator.generate_galois_key(original, a.secret_key);
+
+    heongpu::Galoiskey<S> loaded;
+    load(loaded, save(original));
+    // The same key gives the same ciphertext.
+    auto input = a.encrypt(1);
+    heongpu::Ciphertext<S> expected(a.context);
+    heongpu::Ciphertext<S> output(a.context);
+    a.operators.apply_galois(input, expected, original, 5);
+    a.operators.apply_galois(input, output, loaded, 5);
+    EXPECT_EQ(save(output), save(expected));
+}

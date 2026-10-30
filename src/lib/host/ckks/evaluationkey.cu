@@ -851,11 +851,15 @@ namespace heongpu
             storage_type_ = storage_type::device;
             galois_key_generated_ = true;
 
+            // A key made for a context lists the default shifts; the loaded
+            // key has its own.
+            galois_elt.clear();
+            custom_galois_elt.clear();
             if (customized)
             {
                 uint32_t custom_galois_elt_size;
                 is.read((char*) &custom_galois_elt_size,
-                        custom_galois_elt_size);
+                        sizeof(custom_galois_elt_size));
                 custom_galois_elt.resize(custom_galois_elt_size);
                 is.read((char*) custom_galois_elt.data(),
                         sizeof(u_int32_t) * custom_galois_elt_size);
