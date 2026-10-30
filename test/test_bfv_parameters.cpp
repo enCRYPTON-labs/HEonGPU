@@ -449,3 +449,56 @@ TEST_P(BFVParametersKeys, Switch_Keys)
 
 INSTANTIATE_TEST_SUITE_P(Depths, BFVParametersKeys,
                          ::testing::Values(4, 6, 15, 30));
+
+TEST(BFVParameters, Explicit_Moduli)
+{
+    Params params;
+    params.coeff_modulus_bit_sizes = {50, 50};
+    params.special_modulus_bit_sizes = {50};
+    auto set = params.generate();
+    EXPECT_EQ(set.poly_modulus_degree, 8192u);
+    EXPECT_EQ(set.total_bit_count(), 150);
+    auto context = set.make_context();
+    context->generate();
+    auto by_hand = heongpu::GenHEContext<S>(Level::sec128);
+    by_hand->set_poly_modulus_degree(8192);
+    by_hand->set_coeff_modulus_bit_sizes({50, 50}, {50});
+    by_hand->set_plain_modulus(static_cast<int>(set.plain_modulus));
+    by_hand->generate();
+    EXPECT_EQ(context->context_id(), by_hand->context_id());
+
+    Params primes;
+    primes.poly_modulus_degree = 8192;
+    primes.coeff_modulus = set.coeff_modulus;
+    primes.special_modulus = set.special_modulus;
+    primes.plain_modulus = set.plain_modulus;
+    auto from_primes = primes.make_context();
+    from_primes->generate();
+    EXPECT_EQ(from_primes->context_id(), by_hand->context_id());
+
+    heongpu::HESession<S> session(params);
+    std::vector<std::uint64_t> xs(session.slot_count(), 3);
+    auto x = session.encrypt(xs);
+    EXPECT_EQ(session.decrypt(x * x)[5], 9u);
+
+    auto expect_error = [](Params p)
+    { EXPECT_THROW(p.generate(), heongpu::ParameterError); };
+    Params both = params;
+    both.special_modulus = set.special_modulus;
+    expect_error(both);
+    Params depth = params;
+    depth.multiplicative_depth = 3;
+    expect_error(depth);
+    Params count = params;
+    count.special_modulus_count = 1;
+    expect_error(count);
+    Params no_q;
+    no_q.special_modulus_bit_sizes = {50};
+    expect_error(no_q);
+    Params no_degree = primes;
+    no_degree.poly_modulus_degree = 0;
+    expect_error(no_degree);
+    Params too_large = params;
+    too_large.poly_modulus_degree = 4096;
+    expect_error(too_large);
+}

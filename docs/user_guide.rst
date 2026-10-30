@@ -98,7 +98,18 @@ For CKKS, ``Q`` holds a first prime of ``first_modulus_bit_size`` bits (60 by de
 
 For BFV, ``plain_modulus_bit_size`` (20 by default) chooses the largest prime of that many bits that is 1 mod :math:`2N`, which batching needs; ``plain_modulus`` gives :math:`t` directly. ``Q`` gets the bits the noise of ``multiplicative_depth`` multiplications needs plus a margin of 10 bits, from a model calibrated against ``remainder_noise_budget``: a fresh ciphertext uses about :math:`\log_2 t + \log_2 N / 2 + 2` bits and each multiplication about :math:`\log_2 t + \log_2 N` more. A multiplication by a plaintext can use as much as one by a ciphertext. The ``P`` primes have a bit more than the ``Q`` primes, and as for CKKS there are as many as the limit leaves room for, up to the number of ``Q`` primes, and of these the fewest that give the same number of digits; ``special_modulus_count`` fixes their number instead. For example, depth 4 with a 20-bit :math:`t` gets three ``Q`` and three ``P`` primes at :math:`N = 2^{14}`, one digit instead of three, and depth 30 ten ``P`` primes for 19 ``Q`` primes at :math:`N = 2^{16}`, two digits instead of 19, which makes a relinearization or Galois key about 6.5 times smaller.
 
-``poly_modulus_degree`` fixes :math:`N`, and ``security_level`` selects 128-, 192- or 256-bit security. ``sec_level_type::none`` drops the security limit, for experiments: it needs ``poly_modulus_degree``, and ``P`` then gets one prime per ``Q`` prime, a single digit, unless ``special_modulus_count`` gives another number. When the request does not fit, ``generate()`` throws ``ParameterError`` with the largest depth that fits. ``HEParameterSet::apply(context)`` sets the parameters of a context created by hand. The parameters can still be set directly with ``set_poly_modulus_degree`` and ``set_coeff_modulus_bit_sizes`` or ``set_coeff_modulus_values``.
+``poly_modulus_degree`` fixes :math:`N`, and ``security_level`` selects 128-, 192- or 256-bit security. ``sec_level_type::none`` drops the security limit, for experiments: it needs ``poly_modulus_degree``, and ``P`` then gets one prime per ``Q`` prime, a single digit, unless ``special_modulus_count`` gives another number. When the request does not fit, ``generate()`` throws ``ParameterError`` with the largest depth that fits. ``HEParameterSet::apply(context)`` sets the parameters of a context created by hand.
+
+``HEParams`` also takes the moduli themselves, as bit sizes or as primes, which gives the same context as setting them by hand:
+
+.. code-block:: cpp
+
+    heongpu::HEParams<heongpu::Scheme::CKKS> params;
+    params.coeff_modulus_bit_sizes = {60, 40, 40};
+    params.special_modulus_bit_sizes = {60};
+    auto context = params.make_context();  // the smallest N whose limit fits them
+
+``coeff_modulus`` and ``special_modulus`` give the primes, which need ``poly_modulus_degree``. With explicit moduli, ``multiplicative_depth``, ``first_modulus_bit_size`` and ``special_modulus_count`` must keep their defaults. The parameters can still be set directly on the context with ``set_poly_modulus_degree`` and ``set_coeff_modulus_bit_sizes`` or ``set_coeff_modulus_values``.
 
 The following table, derived from the lattice-estimator, shows the recommended total bit-length of the key modulus (:math:`\tilde{Q} = QP`) for different polynomial degrees to achieve a 128-bit security level.
 

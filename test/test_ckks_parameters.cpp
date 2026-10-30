@@ -415,3 +415,62 @@ INSTANTIATE_TEST_SUITE_P(Depths, CKKSParametersCircuit,
                                            std::make_pair(10, 40),
                                            std::make_pair(10, 50),
                                            std::make_pair(20, 40)));
+
+TEST(CKKSParameters, Explicit_Moduli)
+{
+    // Bit sizes give the context of the same bit sizes set by hand.
+    Params params;
+    params.coeff_modulus_bit_sizes = {60, 40, 40};
+    params.special_modulus_bit_sizes = {60};
+    auto set = params.generate();
+    EXPECT_EQ(set.poly_modulus_degree, 8192u);
+    EXPECT_EQ(set.total_bit_count(), 200);
+    EXPECT_EQ(set.multiplicative_depth(), 2);
+    auto context = set.make_context();
+    context->generate();
+    auto by_hand = heongpu::GenHEContext<S>(Level::sec128);
+    by_hand->set_poly_modulus_degree(8192);
+    by_hand->set_coeff_modulus_bit_sizes({60, 40, 40}, {60});
+    by_hand->generate();
+    EXPECT_EQ(context->context_id(), by_hand->context_id());
+
+    // The primes themselves.
+    Params primes;
+    primes.poly_modulus_degree = 8192;
+    primes.coeff_modulus = set.coeff_modulus;
+    primes.special_modulus = set.special_modulus;
+    auto from_primes = primes.make_context();
+    from_primes->generate();
+    EXPECT_EQ(from_primes->context_id(), by_hand->context_id());
+
+    // A session of them.
+    params.rescale_mode = heongpu::rescale_mode::automatic;
+    heongpu::HESession<S> session(params);
+    std::vector<double> xs(session.slot_count(), 0.5);
+    auto x = session.encrypt(xs);
+    EXPECT_NEAR(session.decrypt(x * x * x)[3], 0.125, 1e-5);
+
+    auto expect_error = [](Params p)
+    { EXPECT_THROW(p.generate(), heongpu::ParameterError); };
+    Params both = params;
+    both.coeff_modulus = set.coeff_modulus;
+    expect_error(both);
+    Params depth = params;
+    depth.multiplicative_depth = 2;
+    expect_error(depth);
+    Params first = params;
+    first.first_modulus_bit_size = 50;
+    expect_error(first);
+    Params count = params;
+    count.special_modulus_count = 1;
+    expect_error(count);
+    Params no_p;
+    no_p.coeff_modulus_bit_sizes = {60, 40};
+    expect_error(no_p);
+    Params no_degree = primes;
+    no_degree.poly_modulus_degree = 0;
+    expect_error(no_degree);
+    Params too_large = params;
+    too_large.poly_modulus_degree = 4096;
+    expect_error(too_large);
+}

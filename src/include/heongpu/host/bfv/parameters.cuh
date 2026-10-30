@@ -112,6 +112,18 @@ namespace heongpu
         // Number of P primes, at most the number of Q primes unless
         // security_level is none; 0 to take as many as fit, see above.
         int special_modulus_count = 0;
+        // Moduli given instead of the ones generate() chooses: the bit sizes
+        // of the Q and P primes, whose primes are generated as
+        // HEContextImpl::set_coeff_modulus_bit_sizes does, or the primes
+        // themselves, which need poly_modulus_degree. Either bit sizes or
+        // primes, with at least one Q and one P modulus; multiplicative_depth
+        // and special_modulus_count keep their defaults then. generate() takes
+        // the smallest ring size whose security limit fits them, or
+        // poly_modulus_degree.
+        std::vector<int> coeff_modulus_bit_sizes;
+        std::vector<int> special_modulus_bit_sizes;
+        std::vector<Data64> coeff_modulus;
+        std::vector<Data64> special_modulus;
 
         /**
          * @brief Returns the parameters. Throws ParameterError if no

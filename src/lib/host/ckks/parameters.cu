@@ -166,6 +166,114 @@ namespace heongpu
                     params.special_modulus_count, "! Expected 0 or more."));
             }
         }
+
+        bool has_explicit_moduli(const HEParams<Scheme::CKKS>& params)
+        {
+            return !params.coeff_modulus_bit_sizes.empty() ||
+                   !params.special_modulus_bit_sizes.empty() ||
+                   !params.coeff_modulus.empty() ||
+                   !params.special_modulus.empty();
+        }
+
+        // The ring size and the moduli of params with explicit moduli.
+        void explicit_moduli(const HEParams<Scheme::CKKS>& params,
+                             HEParameterSet<Scheme::CKKS>& parameters)
+        {
+            const HEParams<Scheme::CKKS> defaults;
+            bool bit_sizes = !params.coeff_modulus_bit_sizes.empty() ||
+                             !params.special_modulus_bit_sizes.empty();
+            bool primes = !params.coeff_modulus.empty() ||
+                          !params.special_modulus.empty();
+            if (bit_sizes && primes)
+            {
+                throw ParameterError("HEParams takes the moduli as bit sizes "
+                                     "or as primes, not both!");
+            }
+            if ((params.multiplicative_depth !=
+                 defaults.multiplicative_depth) ||
+                (params.first_modulus_bit_size !=
+                 defaults.first_modulus_bit_size) ||
+                (params.special_modulus_count !=
+                 defaults.special_modulus_count))
+            {
+                throw ParameterError(
+                    "HEParams with explicit moduli does not use "
+                    "multiplicative_depth, "
+                    "first_modulus_bit_size and special_modulus_count! "
+                    "Leave them at their defaults.");
+            }
+            std::size_t q_count = bit_sizes
+                                      ? params.coeff_modulus_bit_sizes.size()
+                                      : params.coeff_modulus.size();
+            std::size_t p_count = bit_sizes
+                                      ? params.special_modulus_bit_sizes.size()
+                                      : params.special_modulus.size();
+            if ((q_count == 0) || (p_count == 0))
+            {
+                throw ParameterError("HEParams with explicit moduli needs at "
+                                     "least one Q and one P modulus!");
+            }
+            if (primes && (params.poly_modulus_degree == 0))
+            {
+                throw ParameterError("HEParams with explicit primes needs a "
+                                     "poly_modulus_degree, "
+                                     "since the primes depend on it!");
+            }
+
+            int total = 0;
+            if (bit_sizes)
+            {
+                for (int size : params.coeff_modulus_bit_sizes)
+                {
+                    total += size;
+                }
+                for (int size : params.special_modulus_bit_sizes)
+                {
+                    total += size;
+                }
+            }
+            else
+            {
+                total = bit_count(params.coeff_modulus) +
+                        bit_count(params.special_modulus);
+            }
+            std::size_t degree = (params.poly_modulus_degree != 0)
+                                     ? params.poly_modulus_degree
+                                     : MIN_POLY_DEGREE;
+            while ((params.poly_modulus_degree == 0) &&
+                   (degree < MAX_POLY_DEGREE) &&
+                   (total > bit_limit(params.security_level, degree)))
+            {
+                degree *= 2;
+            }
+            if (total > bit_limit(params.security_level, degree))
+            {
+                throw ParameterError(error_message(
+                    "The moduli of ", total, " bits do not fit ",
+                    detail::name(params.security_level), " with N = ", degree,
+                    ": the limit is ", bit_limit(params.security_level, degree),
+                    " bits."));
+            }
+
+            parameters.security_level = params.security_level;
+            parameters.poly_modulus_degree = degree;
+            if (primes)
+            {
+                parameters.coeff_modulus = params.coeff_modulus;
+                parameters.special_modulus = params.special_modulus;
+                return;
+            }
+            std::vector<int> sizes = params.coeff_modulus_bit_sizes;
+            sizes.insert(sizes.end(), params.special_modulus_bit_sizes.begin(),
+                         params.special_modulus_bit_sizes.end());
+            std::vector<Modulus64> generated = generate_primes(degree, sizes);
+            for (std::size_t i = 0; i < generated.size(); i++)
+            {
+                (i < q_count ? parameters.coeff_modulus
+                             : parameters.special_modulus)
+                    .push_back(generated[i].value);
+            }
+        }
     } // namespace
 
     int HEParameterSet<Scheme::CKKS>::multiplicative_depth() const
@@ -256,6 +364,15 @@ namespace heongpu
     HEParameterSet<Scheme::CKKS> HEParams<Scheme::CKKS>::generate() const
     {
         check(*this);
+        if (has_explicit_moduli(*this))
+        {
+            HEParameterSet<Scheme::CKKS> parameters;
+            explicit_moduli(*this, parameters);
+            parameters.scale = scale();
+            parameters.rescale_mode =
+                rescale_mode.value_or(heongpu::rescale_mode::manual);
+            return parameters;
+        }
 
         int depth = multiplicative_depth;
         int min_special_count = std::max(special_modulus_count, 1);
