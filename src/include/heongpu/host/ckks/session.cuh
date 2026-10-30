@@ -64,6 +64,24 @@ namespace heongpu
         double scale() const noexcept { return ciphertext_.scale(); }
 
         /**
+         * @brief Returns the levels left for the computation before the
+         * ciphertext needs a bootstrapping: its level, one less if it waits
+         * for a rescaling, minus the input level of the bootstrapping of the
+         * session (see HESession::bootstrapping_levels). Below 0, the slim,
+         * bit and gate bootstrappings no longer take it.
+         */
+        int levels_left() const;
+
+        /**
+         * @brief Returns the ciphertext bootstrapped with the regular, slim
+         * or bit bootstrapping of the session, at the top level. Throws
+         * StateError for a session without bootstrapping or with a gate
+         * bootstrapping, which takes two ciphertexts; see
+         * HESession::AND_bootstrapping.
+         */
+        SessionCiphertext bootstrap() const;
+
+        /**
          * @brief Returns the ciphertext with its slots rotated left by shift
          * (right for a negative shift). The session generates the Galois key
          * for the shift the first time it is used, unless it was given to
@@ -246,6 +264,19 @@ namespace heongpu
      * std::vector<double> result = session.decrypt(z);
      * @endcode
      *
+     * A session made from a CKKSBootstrappingPreset also bootstraps:
+     * @code
+     * heongpu::HESession<heongpu::Scheme::CKKS> session(
+     *     heongpu::CKKSBootstrappingPreset::regular(10));
+     * auto x = session.encrypt(xs);
+     * while (...)
+     * {
+     *     if (x.levels_left() < 2)
+     *         x = x.bootstrap();
+     *     x = 0.5 * x * x + 0.25;
+     * }
+     * @endcode
+     *
      * The session holds the secret key: it is for the party that encrypts
      * and decrypts, not for a server that computes on ciphertexts it
      * receives. Copies of the session share its state, and threads can
@@ -270,6 +301,17 @@ namespace heongpu
          * and the keys as HESession(params, rotations) does.
          */
         explicit HESession(const HEParameterSet<Scheme::CKKS>& parameters,
+                           const std::vector<int>& rotations = {});
+
+        /**
+         * @brief Generates the context of preset in rescale_mode::automatic,
+         * with the level of the bootstrapping results as the top level, the
+         * secret key with the Hamming weight of preset, the public key, the
+         * bootstrapping keys and the Galois keys for the shifts in rotations.
+         * The relinearization and Galois keys of the session are those of
+         * the bootstrapping. See SessionCiphertext::bootstrap.
+         */
+        explicit HESession(const CKKSBootstrappingPreset& preset,
                            const std::vector<int>& rotations = {});
 
         /**
@@ -324,6 +366,39 @@ namespace heongpu
                            double a, double b, int degree) const;
 
         /**
+         * @brief Return the gate of input1 and input2, which hold bits, with
+         * the gate bootstrapping of the session, at the top level. Throw
+         * StateError unless the session has a gate bootstrapping preset.
+         */
+        SessionCiphertext<Scheme::CKKS>
+        AND_bootstrapping(const SessionCiphertext<Scheme::CKKS>& input1,
+                          const SessionCiphertext<Scheme::CKKS>& input2) const;
+        SessionCiphertext<Scheme::CKKS>
+        OR_bootstrapping(const SessionCiphertext<Scheme::CKKS>& input1,
+                         const SessionCiphertext<Scheme::CKKS>& input2) const;
+        SessionCiphertext<Scheme::CKKS>
+        XOR_bootstrapping(const SessionCiphertext<Scheme::CKKS>& input1,
+                          const SessionCiphertext<Scheme::CKKS>& input2) const;
+        SessionCiphertext<Scheme::CKKS>
+        NAND_bootstrapping(const SessionCiphertext<Scheme::CKKS>& input1,
+                           const SessionCiphertext<Scheme::CKKS>& input2) const;
+        SessionCiphertext<Scheme::CKKS>
+        NOR_bootstrapping(const SessionCiphertext<Scheme::CKKS>& input1,
+                          const SessionCiphertext<Scheme::CKKS>& input2) const;
+        SessionCiphertext<Scheme::CKKS>
+        XNOR_bootstrapping(const SessionCiphertext<Scheme::CKKS>& input1,
+                           const SessionCiphertext<Scheme::CKKS>& input2) const;
+
+        // True for a session made from a CKKSBootstrappingPreset.
+        bool has_bootstrapping() const;
+
+        /**
+         * @brief Returns the levels of the bootstrapping of the session.
+         * Throws StateError for a session without bootstrapping.
+         */
+        BootstrappingLevels bootstrapping_levels() const;
+
+        /**
          * @brief Generates the Galois keys for the shifts the session does
          * not have a key for yet.
          */
@@ -356,6 +431,13 @@ namespace heongpu
 
         // Throws ContextMismatchError unless input is of this session.
         void check_session(const SessionCiphertext<Scheme::CKKS>& input) const;
+
+        // The gate bootstrapping of the gate with the index of
+        // HELogicOperator<Scheme::CKKS>::logic_gate.
+        SessionCiphertext<Scheme::CKKS>
+        gate_bootstrapping(int gate,
+                           const SessionCiphertext<Scheme::CKKS>& input1,
+                           const SessionCiphertext<Scheme::CKKS>& input2) const;
 
         // Returns a shared lock of the Galois key of state, once it has the
         // keys of shifts and the conjugation key. The lock keeps other threads

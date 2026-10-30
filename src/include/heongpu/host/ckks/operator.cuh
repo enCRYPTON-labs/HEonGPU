@@ -2929,6 +2929,10 @@ namespace heongpu
         using HEOperator<Scheme::CKKS>::slot_to_coeff;
 
       private:
+        // The session keeps the bootstrapping keys with its own keys.
+        friend class HESession<Scheme::CKKS>;
+        friend class SessionCiphertext<Scheme::CKKS>;
+
         __host__ Ciphertext<Scheme::CKKS>
         regular_bootstrapping_ckks(const Ciphertext<Scheme::CKKS>& input1,
                                    const Galoiskey<Scheme::CKKS>& galois_key,
@@ -4224,6 +4228,10 @@ namespace heongpu
         using HEOperator<Scheme::CKKS>::rotate_inplace;
 
       private:
+        // The session keeps the bootstrapping keys with its own keys.
+        friend class HESession<Scheme::CKKS>;
+        friend class SessionCiphertext<Scheme::CKKS>;
+
         enum class logic_gate
         {
             and_,

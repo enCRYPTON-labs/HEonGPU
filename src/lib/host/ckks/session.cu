@@ -28,12 +28,82 @@ namespace heongpu
             {
             }
 
+            // The bootstrapping keys are generated up front; the
+            // relinearization and Galois keys of the session are those of
+            // the bootstrapping.
+            explicit SessionState(const CKKSBootstrappingPreset& preset)
+                : context(preset_context(preset)), scale(preset.scale),
+                  keygen(context),
+                  secret_key(preset_secret_key(keygen, context, preset)),
+                  public_key(keygen.public_key(secret_key)), encoder(context),
+                  encryptor(context, public_key),
+                  decryptor(context, secret_key), operators(context, encoder),
+                  preset(preset)
+            {
+                std::vector<int> indices;
+                if (preset.arithmetic_type !=
+                    arithmetic_bootstrapping_type::none)
+                {
+                    operators.generate_bootstrapping_params(preset);
+                    indices = operators.bootstrapping_key_indices();
+                }
+                else
+                {
+                    logic.emplace(context, encoder, preset.scale);
+                    logic->generate_bootstrapping_params(preset);
+                    indices = logic->bootstrapping_key_indices();
+                }
+                CKKSBootstrappingKeys keys = keygen.bootstrapping_keys(
+                    secret_key, indices,
+                    preset.sparse_secret_key_hamming_weight);
+                relin_key = std::move(keys.relin_key);
+                galois_key.emplace(std::move(keys.galois_key));
+                dense_to_sparse = std::move(keys.dense_to_sparse);
+                sparse_to_dense = std::move(keys.sparse_to_dense);
+            }
+
             static HEContext<Scheme::CKKS>
             generated_context(const HEParameterSet<Scheme::CKKS>& parameters)
             {
                 HEContext<Scheme::CKKS> context = parameters.make_context();
                 context->generate();
                 return context;
+            }
+
+            // The context of preset, whose top level in
+            // rescale_mode::automatic is the level of the bootstrapping
+            // results.
+            static HEContext<Scheme::CKKS>
+            preset_context(const CKKSBootstrappingPreset& preset)
+            {
+                HEContext<Scheme::CKKS> context =
+                    GenHEContext<Scheme::CKKS>(sec_level_type::sec128);
+                preset.apply(context);
+                context->generate();
+                context->set_rescale_mode(rescale_mode::automatic, preset.scale,
+                                          preset.levels().output_level);
+                return context;
+            }
+
+            static Secretkey<Scheme::CKKS>
+            preset_secret_key(HEKeyGenerator<Scheme::CKKS>& keygen,
+                              const HEContext<Scheme::CKKS>& context,
+                              const CKKSBootstrappingPreset& preset)
+            {
+                Secretkey<Scheme::CKKS> secret_key(
+                    context, preset.secret_key_hamming_weight);
+                keygen.generate_secret_key(secret_key);
+                return secret_key;
+            }
+
+            // The switch keys of the bootstrapping, or null.
+            Switchkey<Scheme::CKKS>* dense_to_sparse_key()
+            {
+                return dense_to_sparse ? &*dense_to_sparse : nullptr;
+            }
+            Switchkey<Scheme::CKKS>* sparse_to_dense_key()
+            {
+                return sparse_to_dense ? &*sparse_to_dense : nullptr;
             }
 
             HEContext<Scheme::CKKS> context;
@@ -52,7 +122,26 @@ namespace heongpu
             HEEncryptor<Scheme::CKKS> encryptor;
             HEDecryptor<Scheme::CKKS> decryptor;
             HEArithmeticOperator<Scheme::CKKS> operators;
+            // The bootstrapping of a session made from a preset; logic for
+            // the bit and gate bootstrappings.
+            std::optional<CKKSBootstrappingPreset> preset;
+            std::optional<HELogicOperator<Scheme::CKKS>> logic;
+            std::optional<Switchkey<Scheme::CKKS>> dense_to_sparse;
+            std::optional<Switchkey<Scheme::CKKS>> sparse_to_dense;
         };
+
+        // values encoded at the top level with its scale.
+        template <typename T>
+        static Plaintext<Scheme::CKKS>
+        top_level_plaintext(SessionState<Scheme::CKKS>& state,
+                            const std::vector<T>& values)
+        {
+            if (state.context->get_rescale_mode() == rescale_mode::automatic)
+            {
+                return state.encoder.encode(values);
+            }
+            return state.encoder.encode(values, state.scale);
+        }
 
         // shift as a left rotation in [0, slot count).
         static int normalized_shift(int shift, int slot_count)
@@ -203,6 +292,54 @@ namespace heongpu
             session.operators.conjugate(ciphertext_, *session.galois_key));
     }
 
+    int SessionCiphertext<Scheme::CKKS>::levels_left() const
+    {
+        State& session = state();
+        int levels =
+            ciphertext_.level() - (ciphertext_.rescale_required() ? 1 : 0);
+        if (session.preset)
+        {
+            levels -= session.preset->levels().input_level;
+        }
+        return levels;
+    }
+
+    CKKSCiphertext SessionCiphertext<Scheme::CKKS>::bootstrap() const
+    {
+        State& session = state();
+        if (!session.preset)
+        {
+            throw StateError("The HESession has no bootstrapping! Create it "
+                             "from a CKKSBootstrappingPreset.");
+        }
+        if (session.preset->logic_type == logic_bootstrapping_type::gate)
+        {
+            throw StateError("A gate bootstrapping takes two ciphertexts! Use "
+                             "HESession::AND_bootstrapping or another gate.");
+        }
+        std::shared_lock<std::shared_mutex> lock =
+            HESession<Scheme::CKKS>::rotation_keys(session, {});
+        const ExecutionOptions options;
+        switch (session.preset->arithmetic_type)
+        {
+            case arithmetic_bootstrapping_type::regular:
+                return result(session.operators.regular_bootstrapping_ckks(
+                    ciphertext_, *session.galois_key, session.relin_key,
+                    session.dense_to_sparse_key(),
+                    session.sparse_to_dense_key(), options));
+            case arithmetic_bootstrapping_type::slim:
+                return result(session.operators.slim_bootstrapping_ckks(
+                    ciphertext_, *session.galois_key, session.relin_key,
+                    session.dense_to_sparse_key(),
+                    session.sparse_to_dense_key(), options));
+            default:
+                return result(session.logic->bit_bootstrapping_ckks(
+                    ciphertext_, *session.galois_key, session.relin_key,
+                    session.dense_to_sparse_key(),
+                    session.sparse_to_dense_key(), options));
+        }
+    }
+
     static HEParameterSet<Scheme::CKKS>
     session_parameters(const HEParams<Scheme::CKKS>& params)
     {
@@ -222,6 +359,16 @@ namespace heongpu
         const HEParameterSet<Scheme::CKKS>& parameters,
         const std::vector<int>& rotations)
         : state_(std::make_shared<State>(parameters))
+    {
+        if (!rotations.empty())
+        {
+            generate_rotations(*state_, rotations);
+        }
+    }
+
+    HESession<Scheme::CKKS>::HESession(const CKKSBootstrappingPreset& preset,
+                                       const std::vector<int>& rotations)
+        : state_(std::make_shared<State>(preset))
     {
         if (!rotations.empty())
         {
@@ -324,17 +471,13 @@ namespace heongpu
     CKKSCiphertext
     HESession<Scheme::CKKS>::encrypt(const std::vector<double>& values) const
     {
-        Plaintext<Scheme::CKKS> plain =
-            state_->encoder.encode(values, state_->scale);
-        return encrypt(plain);
+        return encrypt(detail::top_level_plaintext(*state_, values));
     }
 
     CKKSCiphertext
     HESession<Scheme::CKKS>::encrypt(const std::vector<Complex64>& values) const
     {
-        Plaintext<Scheme::CKKS> plain =
-            state_->encoder.encode(values, state_->scale);
-        return encrypt(plain);
+        return encrypt(detail::top_level_plaintext(*state_, values));
     }
 
     CKKSCiphertext
@@ -396,6 +539,78 @@ namespace heongpu
         check_session(input);
         return result(state_->operators.evaluate_chebyshev(
             input.ciphertext_, function, a, b, degree, state_->relin_key));
+    }
+
+    CKKSCiphertext HESession<Scheme::CKKS>::gate_bootstrapping(
+        int gate, const CKKSCiphertext& input1,
+        const CKKSCiphertext& input2) const
+    {
+        check_session(input1);
+        check_session(input2);
+        if (!state_->preset ||
+            (state_->preset->logic_type != logic_bootstrapping_type::gate))
+        {
+            throw StateError("The gate bootstrappings need an HESession made "
+                             "from a gate bootstrapping preset!");
+        }
+        std::shared_lock<std::shared_mutex> lock = rotation_keys(*state_, {});
+        return result(state_->logic->gate_bootstrapping(
+            static_cast<HELogicOperator<Scheme::CKKS>::logic_gate>(gate),
+            input1.ciphertext_, input2.ciphertext_, *state_->galois_key,
+            state_->relin_key, state_->dense_to_sparse_key(),
+            state_->sparse_to_dense_key(), ExecutionOptions()));
+    }
+
+    // The gates in the order of HELogicOperator<Scheme::CKKS>::logic_gate.
+    CKKSCiphertext HESession<Scheme::CKKS>::AND_bootstrapping(
+        const CKKSCiphertext& input1, const CKKSCiphertext& input2) const
+    {
+        return gate_bootstrapping(0, input1, input2);
+    }
+
+    CKKSCiphertext HESession<Scheme::CKKS>::OR_bootstrapping(
+        const CKKSCiphertext& input1, const CKKSCiphertext& input2) const
+    {
+        return gate_bootstrapping(1, input1, input2);
+    }
+
+    CKKSCiphertext HESession<Scheme::CKKS>::XOR_bootstrapping(
+        const CKKSCiphertext& input1, const CKKSCiphertext& input2) const
+    {
+        return gate_bootstrapping(2, input1, input2);
+    }
+
+    CKKSCiphertext HESession<Scheme::CKKS>::NAND_bootstrapping(
+        const CKKSCiphertext& input1, const CKKSCiphertext& input2) const
+    {
+        return gate_bootstrapping(3, input1, input2);
+    }
+
+    CKKSCiphertext HESession<Scheme::CKKS>::NOR_bootstrapping(
+        const CKKSCiphertext& input1, const CKKSCiphertext& input2) const
+    {
+        return gate_bootstrapping(4, input1, input2);
+    }
+
+    CKKSCiphertext HESession<Scheme::CKKS>::XNOR_bootstrapping(
+        const CKKSCiphertext& input1, const CKKSCiphertext& input2) const
+    {
+        return gate_bootstrapping(5, input1, input2);
+    }
+
+    bool HESession<Scheme::CKKS>::has_bootstrapping() const
+    {
+        return state_->preset.has_value();
+    }
+
+    BootstrappingLevels HESession<Scheme::CKKS>::bootstrapping_levels() const
+    {
+        if (!state_->preset)
+        {
+            throw StateError("The HESession has no bootstrapping! Create it "
+                             "from a CKKSBootstrappingPreset.");
+        }
+        return state_->preset->levels();
     }
 
     void

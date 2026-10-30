@@ -188,6 +188,25 @@ Sessions (HESession)
 * CKKS: ``session.evaluate_polynomial`` and ``session.evaluate_chebyshev``, see above; ``session.decrypt_complex`` returns complex slots. BFV: ``session.decrypt_signed`` returns the slots from :math:`-(t-1)/2` to :math:`(t-1)/2`, and ``session.noise_budget(x)`` the bits of noise budget left.
 * ``session.context()``, ``session.secret_key()``, ``session.relin_key()``, ``session.galois_key()``, ``session.operators()`` and the others return the objects of the lower level API, and ``x.ciphertext()`` the ``Ciphertext``. ``session.wrap(ciphertext)`` turns a ``Ciphertext`` encrypted with the keys of the session into a ``SessionCiphertext``.
 
+**Bootstrapping.** A CKKS session made from a bootstrapping preset generates the bootstrapping keys up front and bootstraps its ciphertexts:
+
+.. code-block:: cpp
+
+    heongpu::HESession<heongpu::Scheme::CKKS> session(
+        heongpu::CKKSBootstrappingPreset::regular(10));  // 10 levels between bootstrappings
+    auto x = session.encrypt(xs);
+    for (int i = 0; i < 30; i++)
+    {
+        if (x.levels_left() < 2)
+            x = x.bootstrap();
+        x = 0.5 * x * x + 0.25;
+    }
+
+* The session uses the automatic rescale mode with the level of the bootstrapping results as its top level; ``encrypt`` encrypts at that level.
+* ``x.levels_left()`` returns the levels the computation can still use before ``x`` needs a bootstrapping. Bootstrapping is never started by itself.
+* ``x.bootstrap()`` uses the regular, slim or bit bootstrapping of the preset; a gate preset has ``session.AND_bootstrapping(x, y)``, ``OR_bootstrapping``, ``XOR_bootstrapping``, ``NAND_bootstrapping``, ``NOR_bootstrapping`` and ``XNOR_bootstrapping`` instead.
+* The relinearization and Galois keys of the session are those of the bootstrapping, so rotations by their steps need no new keys. The keys and the bootstrapping matrices of ``regular()`` take about 11 GB of GPU memory.
+
 Copies of a session share its state, and a ``SessionCiphertext`` keeps the state of its session, so it stays usable after the session object is destroyed. Operations on ciphertexts of two different sessions raise ``ContextMismatchError``. The session holds the secret key: it is for the party that encrypts and decrypts. A server that computes on ciphertexts it receives uses the lower level API with the public evaluation keys.
 
 Storage Management with `ExecutionOptions`

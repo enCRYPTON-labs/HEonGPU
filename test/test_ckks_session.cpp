@@ -21,6 +21,7 @@ namespace
     constexpr auto S = heongpu::Scheme::CKKS;
     using Mode = heongpu::rescale_mode;
     using Session = heongpu::HESession<S>;
+    using SessionCiphertext = heongpu::SessionCiphertext<S>;
 
     heongpu::HEParams<S> params(int depth)
     {
@@ -421,4 +422,144 @@ TEST(CKKSSession, Errors)
     EXPECT_THROW(first.decrypt(empty), heongpu::StateError);
     empty = x;
     EXPECT_NO_THROW(first.decrypt(empty));
+}
+
+TEST(CKKSSession, Bootstrapping)
+{
+    // Regular bootstrapping with 4 levels between bootstrappings.
+    Session session(heongpu::CKKSBootstrappingPreset::regular(4), {3});
+    ASSERT_TRUE(session.has_bootstrapping());
+    heongpu::BootstrappingLevels levels = session.bootstrapping_levels();
+    EXPECT_EQ(levels.usable_levels(), 4);
+    EXPECT_EQ(session.get_rescale_mode(), Mode::automatic);
+    EXPECT_EQ(session.context()->get_top_level(), levels.output_level);
+
+    int n = session.slot_count();
+    std::vector<double> expected = values(n, 0.0);
+    auto x = session.encrypt(expected);
+    EXPECT_EQ(x.level(), levels.output_level);
+    EXPECT_EQ(x.levels_left(), 4);
+
+    int bootstraps = 0;
+    for (int round = 0; round < 6; round++)
+    {
+        if (x.levels_left() < 2)
+        {
+            x = x.bootstrap();
+            bootstraps++;
+            EXPECT_EQ(x.level(), levels.output_level);
+            EXPECT_EQ(x.levels_left(), 4);
+        }
+        x = 0.5 * x * x + 0.25;
+        for (double& value : expected)
+        {
+            value = 0.5 * value * value + 0.25;
+        }
+    }
+    EXPECT_EQ(bootstraps, 2);
+    EXPECT_LT(max_error(session.decrypt(x), expected), std::pow(2.0, -10));
+
+    // A step of the bootstrapping keys, a step given to the session and a
+    // new one, added to the same key.
+    for (int shift : {1, 3, 5})
+    {
+        std::vector<double> rotated = session.decrypt(x.rotate(shift));
+        EXPECT_NEAR(rotated[0], expected[shift], std::pow(2.0, -10));
+    }
+}
+
+TEST(CKKSSession, Slim_And_Bit_Bootstrapping)
+{
+    {
+        Session session(heongpu::CKKSBootstrappingPreset::slim(2));
+        int n = session.slot_count();
+        std::vector<double> xs = values(n, 0.0);
+        auto x = session.encrypt(xs);
+        // The product waits for its rescaling.
+        auto y = x * x;
+        EXPECT_EQ(y.levels_left(), 1);
+        auto b = y.bootstrap();
+        EXPECT_EQ(b.levels_left(), 2);
+        EXPECT_LT(max_error(session.decrypt(b),
+                            slotwise(xs, [](double a) { return a * a; })),
+                  std::pow(2.0, -15));
+
+        // Below the input level of the bootstrapping.
+        auto low = b * b * b * b;
+        EXPECT_EQ(low.levels_left(), -1);
+        EXPECT_THROW(low.bootstrap(), heongpu::LevelMismatchError);
+    }
+    {
+        Session session(heongpu::CKKSBootstrappingPreset::bit(2));
+        int n = session.slot_count();
+        std::vector<double> bits(n);
+        for (int i = 0; i < n; i++)
+        {
+            bits[i] = (i / 3) % 2;
+        }
+        auto x = session.encrypt(bits);
+        // x * x is x for bits.
+        auto b = (x * x).bootstrap();
+        EXPECT_EQ(b.levels_left(), 2);
+        EXPECT_LT(max_error(session.decrypt(b), bits), std::pow(2.0, -16));
+        EXPECT_THROW(session.AND_bootstrapping(x, x), heongpu::StateError);
+    }
+}
+
+TEST(CKKSSession, Gate_Bootstrapping)
+{
+    Session session(heongpu::CKKSBootstrappingPreset::gate(2));
+    int n = session.slot_count();
+    std::vector<double> a(n), b(n);
+    for (int i = 0; i < n; i++)
+    {
+        a[i] = i % 2;
+        b[i] = (i / 2) % 2;
+    }
+    auto x = session.encrypt(a);
+    auto y = session.encrypt(b);
+
+    struct Case
+    {
+        const char* name;
+        std::function<SessionCiphertext(const Session&)> gate;
+        std::function<int(int, int)> expected;
+    };
+    std::vector<Case> cases = {
+        {"AND", [&](const Session& s) { return s.AND_bootstrapping(x, y); },
+         [](int p, int q) { return p & q; }},
+        {"OR", [&](const Session& s) { return s.OR_bootstrapping(x, y); },
+         [](int p, int q) { return p | q; }},
+        {"XOR", [&](const Session& s) { return s.XOR_bootstrapping(x, y); },
+         [](int p, int q) { return p ^ q; }},
+        {"NAND", [&](const Session& s) { return s.NAND_bootstrapping(x, y); },
+         [](int p, int q) { return 1 - (p & q); }},
+        {"NOR", [&](const Session& s) { return s.NOR_bootstrapping(x, y); },
+         [](int p, int q) { return 1 - (p | q); }},
+        {"XNOR", [&](const Session& s) { return s.XNOR_bootstrapping(x, y); },
+         [](int p, int q) { return 1 - (p ^ q); }}};
+    for (const Case& c : cases)
+    {
+        auto result = c.gate(session);
+        EXPECT_EQ(result.levels_left(), 2) << c.name;
+        std::vector<double> expected(n);
+        for (int i = 0; i < n; i++)
+        {
+            expected[i] = c.expected(int(a[i]), int(b[i]));
+        }
+        EXPECT_LT(max_error(session.decrypt(result), expected),
+                  std::pow(2.0, -16))
+            << c.name;
+    }
+    EXPECT_THROW(x.bootstrap(), heongpu::StateError);
+
+    // A session without bootstrapping.
+    Session other(params(2));
+    EXPECT_FALSE(other.has_bootstrapping());
+    EXPECT_THROW(other.bootstrapping_levels(), heongpu::StateError);
+    auto z = other.encrypt(values(other.slot_count(), 0.0));
+    EXPECT_EQ(z.levels_left(), z.level());
+    EXPECT_THROW(z.bootstrap(), heongpu::StateError);
+    EXPECT_THROW(session.AND_bootstrapping(x, z),
+                 heongpu::ContextMismatchError);
 }
