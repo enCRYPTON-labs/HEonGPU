@@ -2350,6 +2350,10 @@ namespace heongpu
         // is manual_only_ or a ManualScope exists on this thread.
         bool automatic() const;
 
+        // True in rescale_mode::automatic unless a ManualScope exists on this
+        // thread, also for manual_only_ operators.
+        bool automatic_context() const;
+
         // While it exists, the operations on this thread work as in
         // rescale_mode::manual. The operations built from other operations
         // plan their levels and scales themselves.
@@ -2365,6 +2369,11 @@ namespace heongpu
         // Throws StateError in rescale_mode::automatic, for the operations
         // it does not support.
         void require_manual(const char* operation) const;
+
+        // In rescale_mode::automatic, throws ParameterError unless the top
+        // level is output_level, the level of the bootstrapping results, with
+        // their scale.
+        void check_bootstrapping_output(int output_level, double scale) const;
 
         // Returns input rescaled if it needs a rescaling: input itself, or
         // storage holding the rescaled copy.
@@ -2965,6 +2974,8 @@ namespace heongpu
                           Ciphertext<Scheme::CKKS>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             input1.validate_context(context_);
 
             ExecutionOptions options_inner =
@@ -2996,6 +3007,8 @@ namespace heongpu
         NOT_inplace(Ciphertext<Scheme::CKKS>& input1,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             input1.validate_context(context_);
 
             ExecutionOptions options_inner =
@@ -3026,6 +3039,8 @@ namespace heongpu
                           const Relinkey<Scheme::CKKS>& relin_key,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             relin_key.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3077,6 +3092,8 @@ namespace heongpu
                     const Relinkey<Scheme::CKKS>& relin_key,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             relin_key.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3098,6 +3115,8 @@ namespace heongpu
                           Ciphertext<Scheme::CKKS>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             input2.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3143,6 +3162,8 @@ namespace heongpu
                     const Plaintext<Scheme::CKKS>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             input2.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3165,6 +3186,8 @@ namespace heongpu
                          const Relinkey<Scheme::CKKS>& relin_key,
                          const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             relin_key.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3228,6 +3251,8 @@ namespace heongpu
                    const Relinkey<Scheme::CKKS>& relin_key,
                    const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             relin_key.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3249,6 +3274,8 @@ namespace heongpu
                          Ciphertext<Scheme::CKKS>& output,
                          const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             input2.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3306,6 +3333,8 @@ namespace heongpu
                    const Plaintext<Scheme::CKKS>& input2,
                    const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             input2.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3328,6 +3357,8 @@ namespace heongpu
                           const Relinkey<Scheme::CKKS>& relin_key,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             relin_key.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3393,6 +3424,8 @@ namespace heongpu
                     const Relinkey<Scheme::CKKS>& relin_key,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             relin_key.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3414,6 +3447,8 @@ namespace heongpu
                           Ciphertext<Scheme::CKKS>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             input2.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3473,6 +3508,8 @@ namespace heongpu
                     const Plaintext<Scheme::CKKS>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             input2.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3495,6 +3532,8 @@ namespace heongpu
                            const Relinkey<Scheme::CKKS>& relin_key,
                            const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             relin_key.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3548,6 +3587,8 @@ namespace heongpu
                      const Relinkey<Scheme::CKKS>& relin_key,
                      const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             relin_key.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3569,6 +3610,8 @@ namespace heongpu
                            Ciphertext<Scheme::CKKS>& output,
                            const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             input2.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3617,6 +3660,8 @@ namespace heongpu
                      const Plaintext<Scheme::CKKS>& input2,
                      const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             input2.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3639,6 +3684,8 @@ namespace heongpu
                           const Relinkey<Scheme::CKKS>& relin_key,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             relin_key.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3705,6 +3752,8 @@ namespace heongpu
                     const Relinkey<Scheme::CKKS>& relin_key,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             relin_key.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3726,6 +3775,8 @@ namespace heongpu
                           Ciphertext<Scheme::CKKS>& output,
                           const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             input2.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3786,6 +3837,8 @@ namespace heongpu
                     const Plaintext<Scheme::CKKS>& input2,
                     const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             input2.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3808,6 +3861,8 @@ namespace heongpu
                            const Relinkey<Scheme::CKKS>& relin_key,
                            const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             relin_key.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3876,6 +3931,8 @@ namespace heongpu
                      const Relinkey<Scheme::CKKS>& relin_key,
                      const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             relin_key.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3897,6 +3954,8 @@ namespace heongpu
                            Ciphertext<Scheme::CKKS>& output,
                            const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             input2.validate_context(context_);
 
             input1.validate_context(context_);
@@ -3963,6 +4022,8 @@ namespace heongpu
                      const Plaintext<Scheme::CKKS>& input2,
                      const ExecutionOptions& options = ExecutionOptions())
         {
+            require_manual("Logic operations without bootstrapping");
+
             input2.validate_context(context_);
 
             input1.validate_context(context_);

@@ -482,12 +482,17 @@ TEST(RescaleMode, Errors)
     auto unrelinearized = ops.multiply(x, x);
     EXPECT_THROW(ops.multiply(unrelinearized, x), heongpu::StateError);
 
-    // Bootstrapping and logic operations need the manual mode.
+    // Bootstrapping needs the level of its results as the top level (see
+    // test_bootstrapping_presets.cpp), and the logic operations without
+    // bootstrapping need the manual mode.
     EXPECT_THROW(ops.generate_bootstrapping_params(
                      heongpu::CKKSBootstrappingPreset::regular()),
-                 heongpu::StateError);
-    EXPECT_THROW(heongpu::HELogicOperator<S>(setup.context, *setup.encoder,
-                                             std::pow(2.0, 40)),
+                 heongpu::ParameterError);
+    heongpu::HELogicOperator<S> logic(setup.context, *setup.encoder,
+                                      std::pow(2.0, 40));
+    heongpu::Ciphertext<S> output(setup.context);
+    EXPECT_THROW(logic.NOT(x, output), heongpu::StateError);
+    EXPECT_THROW(logic.AND(x, x, output, *setup.relin_key),
                  heongpu::StateError);
 }
 

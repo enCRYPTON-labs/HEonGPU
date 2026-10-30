@@ -95,9 +95,37 @@ namespace heongpu
                !manual_only_ && (manual_scopes == 0);
     }
 
+    bool HEOperator<Scheme::CKKS>::automatic_context() const
+    {
+        return (context_->rescale_mode_ == rescale_mode::automatic) &&
+               (manual_scopes == 0);
+    }
+
+    void
+    HEOperator<Scheme::CKKS>::check_bootstrapping_output(int output_level,
+                                                         double scale) const
+    {
+        if (!automatic_context())
+        {
+            return;
+        }
+        int top = context_->top_level_;
+        if ((top != output_level) || (context_->level_scales_[top] != scale))
+        {
+            throw ParameterError(error_message(
+                "The bootstrapping results have the level ", output_level,
+                " and the scale ", scale,
+                ", which the automatic rescale mode needs as its top level "
+                "and its scale; the context has the top level ",
+                top, " with the scale ", context_->level_scales_[top],
+                "! Call set_rescale_mode(rescale_mode::automatic, ", scale,
+                ", ", output_level, ")."));
+        }
+    }
+
     void HEOperator<Scheme::CKKS>::require_manual(const char* operation) const
     {
-        if (automatic())
+        if (automatic_context())
         {
             throw StateError(error_message(
                 operation,
@@ -4999,7 +5027,9 @@ namespace heongpu
         const double scale, const BootstrappingConfig& config,
         const arithmetic_bootstrapping_type& boot_type)
     {
-        require_manual("Bootstrapping");
+        check_bootstrapping_output(
+            bootstrapping_levels(config, boot_type).output_level, scale);
+        ManualScope manual;
 
         if (!boot_context_generated_)
         {
@@ -5132,8 +5162,6 @@ namespace heongpu
     HEArithmeticOperator<Scheme::CKKS>::generate_bootstrapping_params(
         const CKKSBootstrappingPreset& preset)
     {
-        require_manual("Bootstrapping");
-
         if (preset.arithmetic_type == arithmetic_bootstrapping_type::none)
         {
             throw ParameterError(
@@ -5152,7 +5180,18 @@ namespace heongpu
         Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
         const ExecutionOptions& options)
     {
-        require_manual("Bootstrapping");
+        // The bootstrapping plans its own levels and scales, from its input
+        // rescaled if it needs it.
+        if (automatic())
+        {
+            Ciphertext<Scheme::CKKS> storage;
+            const Ciphertext<Scheme::CKKS>& first =
+                rescaled(input1, storage, options);
+            ManualScope manual;
+            return regular_bootstrapping_ckks(first, galois_key, relin_key,
+                                              swk_dense_to_sparse,
+                                              swk_sparse_to_dense, options);
+        }
 
         input1.validate_context(context_);
 
@@ -5251,7 +5290,18 @@ namespace heongpu
         Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
         const ExecutionOptions& options)
     {
-        require_manual("Bootstrapping");
+        // The bootstrapping plans its own levels and scales, from its input
+        // rescaled if it needs it.
+        if (automatic())
+        {
+            Ciphertext<Scheme::CKKS> storage;
+            const Ciphertext<Scheme::CKKS>& first =
+                rescaled(input1, storage, options);
+            ManualScope manual;
+            return slim_bootstrapping_ckks(first, galois_key, relin_key,
+                                           swk_dense_to_sparse,
+                                           swk_sparse_to_dense, options);
+        }
 
         input1.validate_context(context_);
 
@@ -5344,14 +5394,9 @@ namespace heongpu
         : HEOperator<Scheme::CKKS>(context, encoder)
     {
         // Logic operations and their bootstrapping plan their levels and
-        // scales themselves.
+        // scales themselves. In rescale_mode::automatic only the
+        // bootstrapping ones are supported.
         manual_only_ = true;
-        if (context_->rescale_mode_ == rescale_mode::automatic)
-        {
-            throw StateError("HELogicOperator does not support the automatic "
-                             "rescale mode! Use a context in "
-                             "rescale_mode::manual.");
-        }
 
         if (scale == 0.0)
         {
@@ -5383,6 +5428,9 @@ namespace heongpu
         const double scale, const BootstrappingConfig& config,
         const logic_bootstrapping_type& boot_type)
     {
+        check_bootstrapping_output(
+            bootstrapping_levels(config, boot_type).output_level, scale);
+        ManualScope manual;
         if (!boot_context_generated_)
         {
             scale_boot_ = scale;
@@ -5515,6 +5563,18 @@ namespace heongpu
         Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
         const ExecutionOptions& options)
     {
+        // From the input rescaled if it needs it.
+        if (automatic_context())
+        {
+            Ciphertext<Scheme::CKKS> storage;
+            const Ciphertext<Scheme::CKKS>& first =
+                rescaled(input1, storage, options);
+            ManualScope manual;
+            return bit_bootstrapping_ckks(first, galois_key, relin_key,
+                                          swk_dense_to_sparse,
+                                          swk_sparse_to_dense, options);
+        }
+
         input1.validate_context(context_);
 
         if (logic_polys_.size() != 1)
@@ -5538,6 +5598,20 @@ namespace heongpu
         Switchkey<Scheme::CKKS>* swk_sparse_to_dense,
         const ExecutionOptions& options)
     {
+        // From the inputs rescaled if they need it.
+        if (automatic_context())
+        {
+            Ciphertext<Scheme::CKKS> storage1, storage2;
+            const Ciphertext<Scheme::CKKS>& first =
+                rescaled(input1, storage1, options);
+            const Ciphertext<Scheme::CKKS>& second =
+                rescaled(input2, storage2, options);
+            ManualScope manual;
+            return gate_bootstrapping(gate_type, first, second, galois_key,
+                                      relin_key, swk_dense_to_sparse,
+                                      swk_sparse_to_dense, options);
+        }
+
         if (logic_polys_.size() != 6)
         {
             throw std::invalid_argument(

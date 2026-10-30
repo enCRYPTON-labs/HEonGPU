@@ -20,11 +20,19 @@ namespace
 
     struct Environment
     {
-        explicit Environment(const Preset& preset)
+        // In the automatic rescale mode, the top level is the level of the
+        // bootstrapping results, with their scale.
+        explicit Environment(const Preset& preset, bool automatic = false)
         {
             context = heongpu::GenHEContext<S>(heongpu::sec_level_type::sec128);
             preset.apply(context);
             context->generate();
+            if (automatic)
+            {
+                context->set_rescale_mode(heongpu::rescale_mode::automatic,
+                                          preset.scale,
+                                          preset.levels().output_level);
+            }
             generator = std::make_unique<heongpu::HEKeyGenerator<S>>(context);
             secret_key = std::make_unique<heongpu::Secretkey<S>>(
                 context, preset.secret_key_hamming_weight);
@@ -153,6 +161,101 @@ namespace
 
         EXPECT_THROW(operators.generate_bootstrapping_params(Preset::regular()),
                      heongpu::ParameterError);
+    }
+
+    // Bootstraps a product in the automatic rescale mode with preset, which
+    // must be a regular or slim preset, and multiplies the result again.
+    void check_arithmetic_automatic(const Preset& preset)
+    {
+        Environment setup(preset, true);
+        heongpu::HEArithmeticOperator<S> operators(setup.context,
+                                                   *setup.encoder);
+        operators.generate_bootstrapping_params(preset);
+        auto keys = setup.keys(preset, operators.bootstrapping_key_indices());
+
+        const int slots = static_cast<int>(preset.poly_modulus_degree / 2);
+        std::vector<double> message(slots), square(slots), fourth(slots);
+        for (int i = 0; i < slots; i++)
+        {
+            message[i] = 0.5 * std::sin(0.01 * i) + 0.25;
+            square[i] = message[i] * message[i];
+            fourth[i] = square[i] * square[i];
+        }
+        // Encoded and encrypted at the top level, the level of the results.
+        int top = preset.levels().output_level;
+        auto x = setup.encryptor->encrypt(setup.encoder->encode(message));
+        ASSERT_EQ(x.level(), top);
+
+        // The product waits for its rescaling, which bootstrapping does.
+        auto product = operators.multiply(x, x);
+        operators.relinearize_inplace(product, keys.relin_key);
+        bool regular = preset.arithmetic_type ==
+                       heongpu::arithmetic_bootstrapping_type::regular;
+        auto result = regular ? operators.regular_bootstrapping(product, keys)
+                              : operators.slim_bootstrapping(product, keys);
+        EXPECT_EQ(result.level(), top);
+        EXPECT_EQ(result.scale(), setup.context->get_level_scale(top));
+        auto values = setup.encoder->decode(setup.decryptor->decrypt(result));
+        double tolerance = regular ? std::pow(2.0, -12) : std::pow(2.0, -18);
+        EXPECT_LT(max_error(square, values), tolerance);
+
+        // The result is a ciphertext of the automatic mode.
+        auto next = operators.multiply(result, result);
+        operators.relinearize_inplace(next, keys.relin_key);
+        next = operators.add(next, result);
+        values = setup.encoder->decode(setup.decryptor->decrypt(next));
+        std::vector<double> expected(slots);
+        for (int i = 0; i < slots; i++)
+        {
+            expected[i] = fourth[i] + square[i];
+        }
+        EXPECT_LT(max_error(expected, values), 2.0 * tolerance);
+    }
+
+    // Bootstraps in the automatic rescale mode with preset, which must be a
+    // bit or gate preset.
+    void check_logic_automatic(const Preset& preset)
+    {
+        Environment setup(preset, true);
+        heongpu::HELogicOperator<S> operators(setup.context, *setup.encoder,
+                                              preset.scale);
+        heongpu::HEArithmeticOperator<S> arithmetic(setup.context,
+                                                    *setup.encoder);
+        operators.generate_bootstrapping_params(preset);
+        auto keys = setup.keys(preset, operators.bootstrapping_key_indices());
+
+        const int slots = static_cast<int>(preset.poly_modulus_degree / 2);
+        std::vector<double> a(slots), b(slots);
+        for (int i = 0; i < slots; i++)
+        {
+            a[i] = i % 2;
+            b[i] = (i / 2) % 2;
+        }
+        auto x = setup.encryptor->encrypt(setup.encoder->encode(a));
+        auto y = setup.encryptor->encrypt(setup.encoder->encode(b));
+
+        // x * x is x for bits; the product waits for its rescaling.
+        auto square = arithmetic.multiply(x, x);
+        arithmetic.relinearize_inplace(square, keys.relin_key);
+
+        bool bit = preset.logic_type == heongpu::logic_bootstrapping_type::bit;
+        std::vector<double> expected(slots);
+        for (int i = 0; i < slots; i++)
+        {
+            expected[i] =
+                bit ? a[i] : static_cast<double>(int(a[i]) ^ int(b[i]));
+        }
+        auto result = bit ? operators.bit_bootstrapping(square, keys)
+                          : operators.XOR_bootstrapping(square, y, keys);
+        int top = preset.levels().output_level;
+        EXPECT_EQ(result.level(), top);
+        EXPECT_EQ(result.scale(), setup.context->get_level_scale(top));
+        auto values = setup.encoder->decode(setup.decryptor->decrypt(result));
+        EXPECT_LT(max_error(expected, values), std::pow(2.0, -16));
+
+        // The logic operations without bootstrapping need the manual mode.
+        heongpu::Ciphertext<S> output(setup.context);
+        EXPECT_THROW(operators.NOT(x, output), heongpu::StateError);
     }
 } // namespace
 
@@ -300,4 +403,46 @@ TEST(BootstrappingPresets, Keys_Without_A_Sparse_Secret_Key)
     auto sparse_keys = generator.bootstrapping_keys(secret_key, {1, 2, 4}, 16);
     EXPECT_TRUE(sparse_keys.dense_to_sparse.has_value());
     EXPECT_TRUE(sparse_keys.sparse_to_dense.has_value());
+}
+
+TEST(BootstrappingPresets, Regular_And_Slim_In_The_Automatic_Rescale_Mode)
+{
+    for (const Preset& preset : {Preset::regular(), Preset::slim(4)})
+    {
+        check_arithmetic_automatic(preset);
+    }
+}
+
+TEST(BootstrappingPresets, Bit_And_Gate_In_The_Automatic_Rescale_Mode)
+{
+    for (const Preset& preset : {Preset::bit(), Preset::gate()})
+    {
+        check_logic_automatic(preset);
+    }
+}
+
+TEST(BootstrappingPresets, Automatic_Rescale_Mode_Needs_The_Output_Level)
+{
+    // The top level of the context is not the level of the results.
+    Preset preset = Preset::regular();
+    auto context = heongpu::GenHEContext<S>(heongpu::sec_level_type::sec128);
+    preset.apply(context);
+    context->generate();
+    context->set_rescale_mode(heongpu::rescale_mode::automatic, preset.scale);
+    heongpu::HEEncoder<S> encoder(context);
+    heongpu::HEArithmeticOperator<S> operators(context, encoder);
+    EXPECT_THROW(operators.generate_bootstrapping_params(preset),
+                 heongpu::ParameterError);
+
+    // Nor its scale.
+    context->set_rescale_mode(heongpu::rescale_mode::automatic,
+                              2.0 * preset.scale, preset.levels().output_level);
+    EXPECT_THROW(operators.generate_bootstrapping_params(preset),
+                 heongpu::ParameterError);
+
+    Preset gate = Preset::gate();
+    context->set_rescale_mode(heongpu::rescale_mode::automatic, gate.scale);
+    heongpu::HELogicOperator<S> logic(context, encoder, gate.scale);
+    EXPECT_THROW(logic.generate_bootstrapping_params(gate),
+                 heongpu::ParameterError);
 }

@@ -159,7 +159,11 @@ A context created by hand selects the mode after setting its moduli with ``conte
 * ``evaluate_polynomial`` and ``evaluate_chebyshev`` return the result with the scale of its level.
 * The inputs are not changed; the operators rescale and bring down copies.
 
-Relinearization is not automatic: it needs the relinearization key. Two operands at the same level with different scales, for example a ciphertext encoded with another scale, raise ``ParameterError``. Bootstrapping, the CoeffToSlot and SlotToCoeff transforms and ``HELogicOperator`` need the manual mode and raise ``StateError`` in the automatic one. The mode is not part of the context identity and is not saved with the context, since keys and ciphertexts are the same in both modes; set it again after ``load``.
+Relinearization is not automatic: it needs the relinearization key. Two operands at the same level with different scales, for example a ciphertext encoded with another scale, raise ``ParameterError``. The CoeffToSlot and SlotToCoeff transforms and the logic operations of ``HELogicOperator`` without bootstrapping need the manual mode and raise ``StateError`` in the automatic one.
+
+**Bootstrapping.** The levels above the bootstrapping results are those the bootstrapping uses, so in the automatic mode the scale belongs to the level of the results: ``context->set_rescale_mode(heongpu::rescale_mode::automatic, preset.scale, preset.levels().output_level)``. The levels above this top level have no scale, ``encode(message)`` encodes at the top level, and the encryptor encrypts a plaintext at its level. The four bootstrappings then take ciphertexts that need a rescaling, and their results have the level and scale of the top level; ``generate_bootstrapping_params`` raises ``ParameterError`` if the top level or its scale differ.
+
+The mode is not part of the context identity and is not saved with the context, since keys and ciphertexts are the same in both modes; set it again after ``load``.
 
 Sessions (HESession)
 --------------------
