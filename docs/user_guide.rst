@@ -5,6 +5,24 @@ User Guide
 
 This guide provides detailed instructions on using the core features of the HEonGPU library. It covers fundamental concepts, parameter selection, data management, and includes tutorials for common use cases based on the BFV and CKKS homomorphic encryption schemes.
 
+Two Levels of the API
+---------------------
+
+HEonGPU has two levels of API:
+
+* ``HESession`` with ``HEParams``: one object holds the context, the keys and the operators of a computation. Its ciphertexts have the operators ``+``, ``-`` and ``*``, rotations and bootstrapping, and a session is saved with the keys of a role, for example for a server without the secret key. Start here; see `Sessions (HESession)`_.
+* The lower level classes below: the context, the key generator, the encoder, the encryptor, the decryptor and the operators. They give full control over the keys, the CUDA streams and the memory of every operation, and they provide what the session does not cover: multiparty computation, TFHE and the CKKS encoding transforms. A session gives access to its objects with ``session.context()``, ``session.operators()`` and the other accessors.
+
+.. code-block:: cpp
+
+    heongpu::HEParams<heongpu::Scheme::CKKS> params;
+    params.multiplicative_depth = 3;
+    heongpu::HESession<heongpu::Scheme::CKKS> session(params);
+
+    auto x = session.encrypt(xs);
+    auto z = x * x + 0.5 * x;
+    std::vector<double> result = session.decrypt(z);
+
 Core Library Concepts
 ---------------------
 
