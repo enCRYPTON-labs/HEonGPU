@@ -78,6 +78,14 @@ BFV Session (``18_bfv_session.cpp``)
 
     * **Key Concept**: **Integer constants and signed slots**. Constants are added to every slot, and ``decrypt_signed`` returns the slots centered around 0.
 
+CKKS Client and Server (``19_ckks_session_client_server.cpp``)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   This example computes on the data of a client on a server that does not hold the secret key.
+
+    * **Workflow**: The client saves its session with the keys of the evaluator, the server loads it with ``session_role::evaluator``, computes on a ciphertext it receives and sends the result back for the client to decrypt. A third party with the public key alone encrypts data for the server.
+
+    * **Key Concept**: **Roles of a session**. ``HESession::save`` writes the keys of a role, and a session without the secret key computes but does not decrypt.
+
 Advanced Features
 -----------------
 
@@ -128,6 +136,7 @@ These examples, located in the `example/bootstrapping` directory, demonstrate th
 * ``2_ckks_slim_bootstrapping.cpp``: Demonstrates the more efficient slim bootstrapping variant for real numbers.
 * ``3_ckks_bit_bootstrapping.cpp``: Illustrates the specialized bootstrapping for binary data.
 * ``4_ckks_gate_bootstrapping.cpp``: Shows how to embed a logic gate within the bootstrapping process for maximum efficiency.
+* ``5_ckks_session_bootstrapping.cpp``: Runs a computation deeper than the levels of the context with ``HESession`` made from a bootstrapping preset, bootstrapping when ``levels_left()`` runs low.
 
 Multi-Party Computation Examples
 --------------------------------

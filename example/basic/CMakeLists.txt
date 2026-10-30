@@ -25,6 +25,7 @@ set(EXECUTABLES
     16_ckks_automatic_rescale 16_ckks_automatic_rescale.cpp
     17_ckks_session 17_ckks_session.cpp
     18_bfv_session 18_bfv_session.cpp
+    19_ckks_session_client_server 19_ckks_session_client_server.cpp
 )
 
 function(add_example exe source)

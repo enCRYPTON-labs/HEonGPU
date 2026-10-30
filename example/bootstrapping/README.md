@@ -75,6 +75,10 @@ All logic gate can be applied with CKKS `Gate` Bootstrapping:
 - OR_bootstrapping - NOR_bootstrapping
 - XOR_bootstrapping - XNOR_bootstrapping
 
+#### [CKKS Bootstrapping with HESession](5_ckks_session_bootstrapping.cpp)
+
+`HESession` made from a preset generates the bootstrapping keys up front and works in the automatic rescale mode with the level of the bootstrapping results as its top level, so a computation deeper than the levels of the context is written with the operators of the session and `x.bootstrap()` when `x.levels_left()` runs low. A session made from a gate preset has `AND_bootstrapping` and the other gates instead.
+
 ### Presets
 
 The examples take their parameters from `heongpu::CKKSBootstrappingPreset::regular()`, `slim()`, `bit()` and `gate()`: the ring size and moduli of the context, the scale, the Hamming weights of the secret keys (h=192 and h=32 for the sparse key) and the bootstrapping configuration. `HEKeyGenerator::bootstrapping_keys` generates the relinearization key, the Galois keys and the switch keys in one call, and the bootstrapping functions bring their input down to the level they start from. `preset.levels()` returns the levels a bootstrapping uses:
