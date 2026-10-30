@@ -189,13 +189,14 @@ namespace heongpu
         template <typename T>
         static Plaintext<Scheme::CKKS>
         top_level_plaintext(SessionState<Scheme::CKKS>& state,
-                            const std::vector<T>& values)
+                            const std::vector<T>& values,
+                            const ExecutionOptions& options)
         {
             if (state.context->get_rescale_mode() == rescale_mode::automatic)
             {
-                return state.encoder.encode(values);
+                return state.encoder.encode(values, options);
             }
-            return state.encoder.encode(values, state.scale);
+            return state.encoder.encode(values, state.scale, options);
         }
 
         // The error of a session without the secret key for rotations by
@@ -226,8 +227,10 @@ namespace heongpu
     using CKKSCiphertext = SessionCiphertext<Scheme::CKKS>;
 
     SessionCiphertext<Scheme::CKKS>::SessionCiphertext(
-        std::shared_ptr<State> state, Ciphertext<Scheme::CKKS> ciphertext)
-        : state_(std::move(state)), ciphertext_(std::move(ciphertext))
+        std::shared_ptr<State> state, Ciphertext<Scheme::CKKS> ciphertext,
+        cudaStream_t stream)
+        : state_(std::move(state)), ciphertext_(std::move(ciphertext)),
+          stream_(stream)
     {
     }
 
@@ -255,7 +258,7 @@ namespace heongpu
     CKKSCiphertext SessionCiphertext<Scheme::CKKS>::result(
         Ciphertext<Scheme::CKKS> ciphertext) const
     {
-        return CKKSCiphertext(state_, std::move(ciphertext));
+        return CKKSCiphertext(state_, std::move(ciphertext), stream_);
     }
 
     Plaintext<Scheme::CKKS>
@@ -269,24 +272,27 @@ namespace heongpu
             // scale of that level.
             int depth =
                 ciphertext_.depth() + (ciphertext_.rescale_required() ? 1 : 0);
-            return session.encoder.encode(values, depth);
+            return session.encoder.encode(values, depth, options());
         }
         double scale = multiply ? session.scale : ciphertext_.scale();
-        return session.encoder.encode(values, scale, ciphertext_.depth());
+        return session.encoder.encode(values, scale, ciphertext_.depth(),
+                                      options());
     }
 
     CKKSCiphertext
     SessionCiphertext<Scheme::CKKS>::add(const SessionCiphertext& other) const
     {
         check_session(other);
-        return result(state().operators.add(ciphertext_, other.ciphertext_));
+        return result(
+            state().operators.add(ciphertext_, other.ciphertext_, options()));
     }
 
     CKKSCiphertext
     SessionCiphertext<Scheme::CKKS>::sub(const SessionCiphertext& other) const
     {
         check_session(other);
-        return result(state().operators.sub(ciphertext_, other.ciphertext_));
+        return result(
+            state().operators.sub(ciphertext_, other.ciphertext_, options()));
     }
 
     CKKSCiphertext SessionCiphertext<Scheme::CKKS>::multiply(
@@ -294,20 +300,22 @@ namespace heongpu
     {
         check_session(other);
         State& session = state();
-        Ciphertext<Scheme::CKKS> product =
-            session.operators.multiply(ciphertext_, other.ciphertext_);
-        session.operators.relinearize_inplace(product, session.relin());
+        Ciphertext<Scheme::CKKS> product = session.operators.multiply(
+            ciphertext_, other.ciphertext_, options());
+        session.operators.relinearize_inplace(product, session.relin(),
+                                              options());
         return result(std::move(product));
     }
 
     CKKSCiphertext SessionCiphertext<Scheme::CKKS>::negate() const
     {
-        return result(state().operators.negate(ciphertext_));
+        return result(state().operators.negate(ciphertext_, options()));
     }
 
     CKKSCiphertext SessionCiphertext<Scheme::CKKS>::add(double value) const
     {
-        return result(state().operators.add_plain(ciphertext_, value));
+        return result(
+            state().operators.add_plain(ciphertext_, value, options()));
     }
 
     CKKSCiphertext SessionCiphertext<Scheme::CKKS>::multiply(double value) const
@@ -315,29 +323,32 @@ namespace heongpu
         // In rescale_mode::automatic, the operator takes the scale of the
         // level instead.
         State& session = state();
-        return result(session.operators.multiply_plain(ciphertext_, value,
-                                                       session.scale));
+        return result(session.operators.multiply_plain(
+            ciphertext_, value, session.scale, options()));
     }
 
     CKKSCiphertext SessionCiphertext<Scheme::CKKS>::add(
         const std::vector<double>& values) const
     {
         Plaintext<Scheme::CKKS> plain = encode(values, false);
-        return result(state().operators.add_plain(ciphertext_, plain));
+        return result(
+            state().operators.add_plain(ciphertext_, plain, options()));
     }
 
     CKKSCiphertext SessionCiphertext<Scheme::CKKS>::sub(
         const std::vector<double>& values) const
     {
         Plaintext<Scheme::CKKS> plain = encode(values, false);
-        return result(state().operators.sub_plain(ciphertext_, plain));
+        return result(
+            state().operators.sub_plain(ciphertext_, plain, options()));
     }
 
     CKKSCiphertext SessionCiphertext<Scheme::CKKS>::multiply(
         const std::vector<double>& values) const
     {
         Plaintext<Scheme::CKKS> plain = encode(values, true);
-        return result(state().operators.multiply_plain(ciphertext_, plain));
+        return result(
+            state().operators.multiply_plain(ciphertext_, plain, options()));
     }
 
     CKKSCiphertext SessionCiphertext<Scheme::CKKS>::rotate(int shift) const
@@ -351,8 +362,8 @@ namespace heongpu
         }
         std::shared_lock<std::shared_mutex> lock =
             HESession<Scheme::CKKS>::rotation_keys(session, {step});
-        return result(
-            session.operators.rotate(ciphertext_, *session.galois_key, step));
+        return result(session.operators.rotate(ciphertext_, *session.galois_key,
+                                               step, options()));
     }
 
     CKKSCiphertext SessionCiphertext<Scheme::CKKS>::conjugate() const
@@ -360,8 +371,8 @@ namespace heongpu
         State& session = state();
         std::shared_lock<std::shared_mutex> lock =
             HESession<Scheme::CKKS>::rotation_keys(session, {});
-        return result(
-            session.operators.conjugate(ciphertext_, *session.galois_key));
+        return result(session.operators.conjugate(
+            ciphertext_, *session.galois_key, options()));
     }
 
     std::vector<CKKSCiphertext> SessionCiphertext<Scheme::CKKS>::rotate_hoisted(
@@ -378,7 +389,7 @@ namespace heongpu
             HESession<Scheme::CKKS>::rotation_keys(session, steps);
         std::vector<Ciphertext<Scheme::CKKS>> rotated =
             session.operators.rotate_hoisted(ciphertext_, *session.galois_key,
-                                             steps);
+                                             steps, options());
         std::vector<CKKSCiphertext> results;
         results.reserve(rotated.size());
         for (Ciphertext<Scheme::CKKS>& ciphertext : rotated)
@@ -399,8 +410,8 @@ namespace heongpu
         }
         std::shared_lock<std::shared_mutex> lock =
             HESession<Scheme::CKKS>::rotation_keys(session, steps);
-        return result(
-            session.operators.sum_slots(ciphertext_, *session.galois_key));
+        return result(session.operators.sum_slots(
+            ciphertext_, *session.galois_key, options()));
     }
 
     CKKSCiphertext SessionCiphertext<Scheme::CKKS>::inner_product(
@@ -442,24 +453,23 @@ namespace heongpu
         }
         std::shared_lock<std::shared_mutex> lock =
             HESession<Scheme::CKKS>::rotation_keys(session, {});
-        const ExecutionOptions options;
         switch (session.preset->arithmetic_type)
         {
             case arithmetic_bootstrapping_type::regular:
                 return result(session.operators.regular_bootstrapping_ckks(
                     ciphertext_, *session.galois_key, session.relin(),
                     session.dense_to_sparse_key(),
-                    session.sparse_to_dense_key(), options));
+                    session.sparse_to_dense_key(), options()));
             case arithmetic_bootstrapping_type::slim:
                 return result(session.operators.slim_bootstrapping_ckks(
                     ciphertext_, *session.galois_key, session.relin(),
                     session.dense_to_sparse_key(),
-                    session.sparse_to_dense_key(), options));
+                    session.sparse_to_dense_key(), options()));
             default:
                 return result(session.logic->bit_bootstrapping_ckks(
                     ciphertext_, *session.galois_key, session.relin(),
                     session.dense_to_sparse_key(),
-                    session.sparse_to_dense_key(), options));
+                    session.sparse_to_dense_key(), options()));
         }
     }
 
@@ -560,6 +570,8 @@ namespace heongpu
             state.galois_key.emplace(state.context, missing);
             state.keygen.generate_galois_key(*state.galois_key,
                                              *state.secret_key);
+            // Other streams use the key once the lock is released.
+            HEONGPU_CUDA_CHECK(cudaStreamSynchronize(cudaStreamDefault));
             return;
         }
 
@@ -576,12 +588,13 @@ namespace heongpu
                 std::move(keys.device_location_[galois_elt]);
         }
         galois_key.set_rotation_limits();
+        HEONGPU_CUDA_CHECK(cudaStreamSynchronize(cudaStreamDefault));
     }
 
     CKKSCiphertext
     HESession<Scheme::CKKS>::result(Ciphertext<Scheme::CKKS> ciphertext) const
     {
-        return CKKSCiphertext(state_, std::move(ciphertext));
+        return CKKSCiphertext(state_, std::move(ciphertext), stream_);
     }
 
     void
@@ -598,19 +611,19 @@ namespace heongpu
     CKKSCiphertext
     HESession<Scheme::CKKS>::encrypt(const std::vector<double>& values) const
     {
-        return encrypt(detail::top_level_plaintext(*state_, values));
+        return encrypt(detail::top_level_plaintext(*state_, values, options()));
     }
 
     CKKSCiphertext
     HESession<Scheme::CKKS>::encrypt(const std::vector<Complex64>& values) const
     {
-        return encrypt(detail::top_level_plaintext(*state_, values));
+        return encrypt(detail::top_level_plaintext(*state_, values, options()));
     }
 
     CKKSCiphertext
     HESession<Scheme::CKKS>::encrypt(const Plaintext<Scheme::CKKS>& plain) const
     {
-        return result(state_->encryptor.encrypt(plain));
+        return result(state_->encryptor.encrypt(plain, options()));
     }
 
     CKKSCiphertext
@@ -625,8 +638,8 @@ namespace heongpu
     {
         check_session(input);
         Plaintext<Scheme::CKKS> plain =
-            state_->decrypting().decrypt(input.ciphertext_);
-        return state_->encoder.decode(plain);
+            state_->decrypting().decrypt(input.ciphertext_, options());
+        return state_->encoder.decode(plain, options());
     }
 
     std::vector<Complex64>
@@ -634,9 +647,9 @@ namespace heongpu
     {
         check_session(input);
         Plaintext<Scheme::CKKS> plain =
-            state_->decrypting().decrypt(input.ciphertext_);
+            state_->decrypting().decrypt(input.ciphertext_, options());
         std::vector<Complex64> values;
-        state_->encoder.decode(values, plain);
+        state_->encoder.decode(values, plain, options());
         return values;
     }
 
@@ -646,7 +659,7 @@ namespace heongpu
     {
         check_session(input);
         return result(state_->operators.evaluate_polynomial(
-            input.ciphertext_, coefficients, state_->relin()));
+            input.ciphertext_, coefficients, state_->relin(), options()));
     }
 
     CKKSCiphertext HESession<Scheme::CKKS>::evaluate_chebyshev(
@@ -655,7 +668,7 @@ namespace heongpu
     {
         check_session(input);
         return result(state_->operators.evaluate_chebyshev(
-            input.ciphertext_, coefficients, a, b, state_->relin()));
+            input.ciphertext_, coefficients, a, b, state_->relin(), options()));
     }
 
     CKKSCiphertext HESession<Scheme::CKKS>::evaluate_chebyshev(
@@ -665,7 +678,8 @@ namespace heongpu
     {
         check_session(input);
         return result(state_->operators.evaluate_chebyshev(
-            input.ciphertext_, function, a, b, degree, state_->relin()));
+            input.ciphertext_, function, a, b, degree, state_->relin(),
+            options()));
     }
 
     CKKSCiphertext HESession<Scheme::CKKS>::gate_bootstrapping(
@@ -685,7 +699,7 @@ namespace heongpu
             static_cast<HELogicOperator<Scheme::CKKS>::logic_gate>(gate),
             input1.ciphertext_, input2.ciphertext_, *state_->galois_key,
             state_->relin(), state_->dense_to_sparse_key(),
-            state_->sparse_to_dense_key(), ExecutionOptions()));
+            state_->sparse_to_dense_key(), options()));
     }
 
     // The gates in the order of HELogicOperator<Scheme::CKKS>::logic_gate.
@@ -1129,7 +1143,23 @@ namespace heongpu
     {
         Ciphertext<Scheme::CKKS> ciphertext(state_->context);
         ciphertext.load(is);
+        // The data is copied on the default stream.
+        HEONGPU_CUDA_CHECK(cudaStreamSynchronize(cudaStreamDefault));
         return wrap(std::move(ciphertext));
+    }
+
+    HESession<Scheme::CKKS>
+    HESession<Scheme::CKKS>::on_stream(cudaStream_t stream) const
+    {
+        synchronize();
+        HESession view(*this);
+        view.stream_ = stream;
+        return view;
+    }
+
+    void HESession<Scheme::CKKS>::synchronize() const
+    {
+        HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream_));
     }
 
     session_role HESession<Scheme::CKKS>::role() const

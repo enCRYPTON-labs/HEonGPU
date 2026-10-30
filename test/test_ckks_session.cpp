@@ -764,3 +764,74 @@ TEST(CKKSSession, Bootstrapping_Evaluator)
                         slotwise(xs, [](double a) { return a * a; })),
               std::pow(2.0, -10));
 }
+
+TEST(CKKSSession, Streams)
+{
+    // Threads compute on their own non-blocking streams with views of one
+    // session, on a ciphertext of the default stream, and add rotation keys.
+    Session session(params(2), {1});
+    int n = session.slot_count();
+    std::vector<double> xs = values(n, 0.0);
+    auto shared = session.encrypt(xs);
+    std::vector<double> reference =
+        session.decrypt((shared * shared).rotate(1) + shared);
+    session.synchronize();
+
+    constexpr int thread_count = 4;
+    std::vector<cudaStream_t> streams(thread_count);
+    for (cudaStream_t& stream : streams)
+    {
+        ASSERT_EQ(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking),
+                  cudaSuccess);
+    }
+    std::vector<std::string> failures(thread_count);
+    std::vector<std::thread> threads;
+    for (int t = 0; t < thread_count; t++)
+    {
+        threads.emplace_back(
+            [&, t]()
+            {
+                try
+                {
+                    Session view = session.on_stream(streams[t]);
+                    for (int round = 0; round < 3; round++)
+                    {
+                        auto x = view.encrypt(xs);
+                        auto y = (x * shared).rotate(1) + x;
+                        if (y.stream() != streams[t])
+                        {
+                            failures[t] = "result on another stream";
+                            return;
+                        }
+                        if (max_error(view.decrypt(y), reference) > tolerance)
+                        {
+                            failures[t] = "wrong result";
+                            return;
+                        }
+                        int shift = 2 + t + thread_count * round;
+                        std::vector<double> rotated =
+                            view.decrypt(x.rotate(shift));
+                        if (std::abs(rotated[0] - xs[shift]) > tolerance)
+                        {
+                            failures[t] = "wrong rotation";
+                            return;
+                        }
+                    }
+                }
+                catch (const std::exception& error)
+                {
+                    failures[t] = error.what();
+                }
+            });
+    }
+    for (std::thread& thread : threads)
+    {
+        thread.join();
+    }
+    for (int t = 0; t < thread_count; t++)
+    {
+        EXPECT_EQ(failures[t], "") << "thread " << t;
+        EXPECT_EQ(cudaStreamDestroy(streams[t]), cudaSuccess);
+    }
+    EXPECT_EQ(session.stream(), nullptr);
+}

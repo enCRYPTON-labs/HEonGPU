@@ -209,6 +209,16 @@ Sessions (HESession)
 * ``x.bootstrap()`` uses the regular, slim or bit bootstrapping of the preset; a gate preset has ``session.AND_bootstrapping(x, y)``, ``OR_bootstrapping``, ``XOR_bootstrapping``, ``NAND_bootstrapping``, ``NOR_bootstrapping`` and ``XNOR_bootstrapping`` instead.
 * The relinearization and Galois keys of the session are those of the bootstrapping, so rotations by their steps need no new keys. The keys and the bootstrapping matrices of ``regular()`` take about 11 GB of GPU memory.
 
+``session.on_stream(stream)`` returns a view of the session that runs on a CUDA stream: it shares the keys, its ciphertexts belong to the stream, and an operation runs on the stream of its left operand. A thread can thus work on its own stream:
+
+.. code-block:: cpp
+
+    auto worker = session.on_stream(stream);   // waits for the work queued on the session's stream
+    auto y = worker.encrypt(values) * shared;  // on stream
+    std::vector<double> result = worker.decrypt(y);
+
+As with the lower level API, a ciphertext of another stream must be ready before it is used; ``session.synchronize()`` waits for the operations queued on the stream of a session.
+
 Copies of a session share its state, and threads can use them at the same time. A ``SessionCiphertext`` keeps the state of its session, so it stays usable after the session object is destroyed. Operations on ciphertexts of two different sessions raise ``ContextMismatchError``.
 
 **Roles, saving and loading.** A session made from parameters or a preset is the *owner* of its keys. ``save`` writes it with the keys of a role, and ``load`` reads it:

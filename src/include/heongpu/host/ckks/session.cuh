@@ -62,6 +62,9 @@ namespace heongpu
         }
 
         int level() const noexcept { return ciphertext_.level(); }
+        // The CUDA stream of the operations whose left operand this is; see
+        // HESession::on_stream.
+        cudaStream_t stream() const noexcept { return stream_; }
         int depth() const noexcept { return ciphertext_.depth(); }
         double scale() const noexcept { return ciphertext_.scale(); }
 
@@ -248,7 +251,12 @@ namespace heongpu
       private:
         SessionCiphertext(
             std::shared_ptr<detail::SessionState<Scheme::CKKS>> state,
-            Ciphertext<Scheme::CKKS> ciphertext);
+            Ciphertext<Scheme::CKKS> ciphertext, cudaStream_t stream);
+
+        ExecutionOptions options() const
+        {
+            return ExecutionOptions().set_stream(stream_);
+        }
 
         SessionCiphertext add(const SessionCiphertext& other) const;
         SessionCiphertext sub(const SessionCiphertext& other) const;
@@ -277,6 +285,7 @@ namespace heongpu
 
         std::shared_ptr<detail::SessionState<Scheme::CKKS>> state_;
         Ciphertext<Scheme::CKKS> ciphertext_;
+        cudaStream_t stream_ = cudaStreamDefault;
     };
 
     /**
@@ -472,6 +481,22 @@ namespace heongpu
          */
         void add_rotations(const std::vector<int>& shifts) const;
 
+        /**
+         * @brief Returns a view of the session that runs on stream: it shares
+         * the keys and the state, its ciphertexts belong to stream, and so do
+         * the results of the operations whose left operand is one of them.
+         * Waits for the operations queued on the stream of this session
+         * first. As with the lower level API, a ciphertext of another stream
+         * must be ready before it is used: call synchronize() on its
+         * session.
+         */
+        HESession on_stream(cudaStream_t stream) const;
+
+        cudaStream_t stream() const noexcept { return stream_; }
+
+        // Waits for the operations queued on the stream of the session.
+        void synchronize() const;
+
         int slot_count() const;
         // The scale of the parameters, which encrypt() uses.
         double scale() const;
@@ -528,7 +553,13 @@ namespace heongpu
         generate_rotations(detail::SessionState<Scheme::CKKS>& state,
                            const std::vector<int>& shifts);
 
+        ExecutionOptions options() const
+        {
+            return ExecutionOptions().set_stream(stream_);
+        }
+
         std::shared_ptr<detail::SessionState<Scheme::CKKS>> state_;
+        cudaStream_t stream_ = cudaStreamDefault;
     };
 
 } // namespace heongpu

@@ -476,3 +476,29 @@ TEST(BFVSession, Roles_Save_And_Load)
     ckks.save(ckks_keys, Role::encryptor);
     EXPECT_THROW(Session::load(ckks_keys), heongpu::SerializationError);
 }
+
+TEST(BFVSession, Streams)
+{
+    Session session(params(1), {1});
+    int n = session.slot_count();
+    u64 t = session.plain_modulus();
+    std::vector<u64> xs = values(n, 1, t);
+    auto shared = session.encrypt(xs);
+    std::vector<u64> reference =
+        session.decrypt((shared * shared).rotate(1) + shared);
+
+    cudaStream_t stream;
+    ASSERT_EQ(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking),
+              cudaSuccess);
+    {
+        Session view = session.on_stream(stream);
+        EXPECT_EQ(view.stream(), stream);
+        auto x = view.encrypt(xs);
+        auto y = (x * shared).rotate(1) + x;
+        EXPECT_EQ(y.stream(), stream);
+        EXPECT_EQ(view.decrypt(y), reference);
+        EXPECT_EQ(view.decrypt(x.rotate(3))[0], xs[3]);
+        view.synchronize();
+    }
+    EXPECT_EQ(cudaStreamDestroy(stream), cudaSuccess);
+}

@@ -127,8 +127,10 @@ namespace heongpu
     using BFVCiphertext = SessionCiphertext<Scheme::BFV>;
 
     SessionCiphertext<Scheme::BFV>::SessionCiphertext(
-        std::shared_ptr<BFVState> state, Ciphertext<Scheme::BFV> ciphertext)
-        : state_(std::move(state)), ciphertext_(std::move(ciphertext))
+        std::shared_ptr<BFVState> state, Ciphertext<Scheme::BFV> ciphertext,
+        cudaStream_t stream)
+        : state_(std::move(state)), ciphertext_(std::move(ciphertext)),
+          stream_(stream)
     {
     }
 
@@ -156,22 +158,19 @@ namespace heongpu
     BFVCiphertext SessionCiphertext<Scheme::BFV>::result(
         Ciphertext<Scheme::BFV> ciphertext) const
     {
-        return BFVCiphertext(state_, std::move(ciphertext));
+        return BFVCiphertext(state_, std::move(ciphertext), stream_);
     }
 
     Plaintext<Scheme::BFV> SessionCiphertext<Scheme::BFV>::encode(
         const std::vector<std::uint64_t>& values) const
     {
-        return state().encoder.encode(values);
+        return state().encoder.encode(values, options());
     }
 
     Plaintext<Scheme::BFV> SessionCiphertext<Scheme::BFV>::encode(
         const std::vector<std::int64_t>& values) const
     {
-        BFVState& session = state();
-        Plaintext<Scheme::BFV> plain(session.context);
-        session.encoder.encode(plain, values);
-        return plain;
+        return state().encoder.encode(values, options());
     }
 
     Plaintext<Scheme::BFV>
@@ -186,14 +185,16 @@ namespace heongpu
     SessionCiphertext<Scheme::BFV>::add(const SessionCiphertext& other) const
     {
         check_session(other);
-        return result(state().operators.add(ciphertext_, other.ciphertext_));
+        return result(
+            state().operators.add(ciphertext_, other.ciphertext_, options()));
     }
 
     BFVCiphertext
     SessionCiphertext<Scheme::BFV>::sub(const SessionCiphertext& other) const
     {
         check_session(other);
-        return result(state().operators.sub(ciphertext_, other.ciphertext_));
+        return result(
+            state().operators.sub(ciphertext_, other.ciphertext_, options()));
     }
 
     BFVCiphertext SessionCiphertext<Scheme::BFV>::multiply(
@@ -201,33 +202,37 @@ namespace heongpu
     {
         check_session(other);
         BFVState& session = state();
-        Ciphertext<Scheme::BFV> product =
-            session.operators.multiply(ciphertext_, other.ciphertext_);
-        session.operators.relinearize_inplace(product, session.relin());
+        Ciphertext<Scheme::BFV> product = session.operators.multiply(
+            ciphertext_, other.ciphertext_, options());
+        session.operators.relinearize_inplace(product, session.relin(),
+                                              options());
         return result(std::move(product));
     }
 
     BFVCiphertext SessionCiphertext<Scheme::BFV>::negate() const
     {
-        return result(state().operators.negate(ciphertext_));
+        return result(state().operators.negate(ciphertext_, options()));
     }
 
     BFVCiphertext
     SessionCiphertext<Scheme::BFV>::add(Plaintext<Scheme::BFV> plain) const
     {
-        return result(state().operators.add_plain(ciphertext_, plain));
+        return result(
+            state().operators.add_plain(ciphertext_, plain, options()));
     }
 
     BFVCiphertext
     SessionCiphertext<Scheme::BFV>::sub(Plaintext<Scheme::BFV> plain) const
     {
-        return result(state().operators.sub_plain(ciphertext_, plain));
+        return result(
+            state().operators.sub_plain(ciphertext_, plain, options()));
     }
 
     BFVCiphertext
     SessionCiphertext<Scheme::BFV>::multiply(Plaintext<Scheme::BFV> plain) const
     {
-        return result(state().operators.multiply_plain(ciphertext_, plain));
+        return result(
+            state().operators.multiply_plain(ciphertext_, plain, options()));
     }
 
     BFVCiphertext SessionCiphertext<Scheme::BFV>::rotate(int shift) const
@@ -242,8 +247,8 @@ namespace heongpu
         }
         std::shared_lock<std::shared_mutex> lock =
             HESession<Scheme::BFV>::rotation_keys(session, {step});
-        return result(session.operators.rotate_rows(ciphertext_,
-                                                    *session.galois_key, step));
+        return result(session.operators.rotate_rows(
+            ciphertext_, *session.galois_key, step, options()));
     }
 
     BFVCiphertext SessionCiphertext<Scheme::BFV>::rotate_columns() const
@@ -251,8 +256,8 @@ namespace heongpu
         BFVState& session = state();
         std::shared_lock<std::shared_mutex> lock =
             HESession<Scheme::BFV>::rotation_keys(session, {});
-        return result(
-            session.operators.rotate_columns(ciphertext_, *session.galois_key));
+        return result(session.operators.rotate_columns(
+            ciphertext_, *session.galois_key, options()));
     }
 
     std::vector<BFVCiphertext> SessionCiphertext<Scheme::BFV>::rotate_hoisted(
@@ -268,8 +273,8 @@ namespace heongpu
         std::shared_lock<std::shared_mutex> lock =
             HESession<Scheme::BFV>::rotation_keys(session, steps);
         std::vector<Ciphertext<Scheme::BFV>> rotated =
-            session.operators.rotate_rows_hoisted(ciphertext_,
-                                                  *session.galois_key, steps);
+            session.operators.rotate_rows_hoisted(
+                ciphertext_, *session.galois_key, steps, options());
         std::vector<BFVCiphertext> results;
         results.reserve(rotated.size());
         for (Ciphertext<Scheme::BFV>& ciphertext : rotated)
@@ -289,8 +294,8 @@ namespace heongpu
         }
         std::shared_lock<std::shared_mutex> lock =
             HESession<Scheme::BFV>::rotation_keys(session, steps);
-        return result(
-            session.operators.sum_slots(ciphertext_, *session.galois_key));
+        return result(session.operators.sum_slots(
+            ciphertext_, *session.galois_key, options()));
     }
 
     HESession<Scheme::BFV>::HESession(const HEParams<Scheme::BFV>& params,
@@ -371,6 +376,8 @@ namespace heongpu
             state.galois_key.emplace(state.context, missing);
             state.keygen.generate_galois_key(*state.galois_key,
                                              *state.secret_key);
+            // Other streams use the key once the lock is released.
+            HEONGPU_CUDA_CHECK(cudaStreamSynchronize(cudaStreamDefault));
             return;
         }
 
@@ -386,12 +393,13 @@ namespace heongpu
             galois_key.device_location_[galois_elt] =
                 std::move(keys.device_location_[galois_elt]);
         }
+        HEONGPU_CUDA_CHECK(cudaStreamSynchronize(cudaStreamDefault));
     }
 
     BFVCiphertext
     HESession<Scheme::BFV>::result(Ciphertext<Scheme::BFV> ciphertext) const
     {
-        return BFVCiphertext(state_, std::move(ciphertext));
+        return BFVCiphertext(state_, std::move(ciphertext), stream_);
     }
 
     void HESession<Scheme::BFV>::check_session(const BFVCiphertext& input) const
@@ -407,22 +415,19 @@ namespace heongpu
     BFVCiphertext HESession<Scheme::BFV>::encrypt(
         const std::vector<std::uint64_t>& values) const
     {
-        Plaintext<Scheme::BFV> plain = state_->encoder.encode(values);
-        return encrypt(plain);
+        return encrypt(state_->encoder.encode(values, options()));
     }
 
     BFVCiphertext HESession<Scheme::BFV>::encrypt(
         const std::vector<std::int64_t>& values) const
     {
-        Plaintext<Scheme::BFV> plain(state_->context);
-        state_->encoder.encode(plain, values);
-        return encrypt(plain);
+        return encrypt(state_->encoder.encode(values, options()));
     }
 
     BFVCiphertext
     HESession<Scheme::BFV>::encrypt(const Plaintext<Scheme::BFV>& plain) const
     {
-        return result(state_->encryptor.encrypt(plain));
+        return result(state_->encryptor.encrypt(plain, options()));
     }
 
     BFVCiphertext
@@ -437,9 +442,9 @@ namespace heongpu
     {
         check_session(input);
         Plaintext<Scheme::BFV> plain =
-            state_->decrypting().decrypt(input.ciphertext_);
+            state_->decrypting().decrypt(input.ciphertext_, options());
         std::vector<std::uint64_t> values;
-        state_->encoder.decode(values, plain);
+        state_->encoder.decode(values, plain, options());
         return values;
     }
 
@@ -448,16 +453,17 @@ namespace heongpu
     {
         check_session(input);
         Plaintext<Scheme::BFV> plain =
-            state_->decrypting().decrypt(input.ciphertext_);
+            state_->decrypting().decrypt(input.ciphertext_, options());
         std::vector<std::int64_t> values;
-        state_->encoder.decode(values, plain);
+        state_->encoder.decode(values, plain, options());
         return values;
     }
 
     int HESession<Scheme::BFV>::noise_budget(const BFVCiphertext& input) const
     {
         check_session(input);
-        return state_->decrypting().remainder_noise_budget(input.ciphertext_);
+        return state_->decrypting().remainder_noise_budget(input.ciphertext_,
+                                                           options());
     }
 
     void
@@ -685,7 +691,23 @@ namespace heongpu
     {
         Ciphertext<Scheme::BFV> ciphertext(state_->context);
         ciphertext.load(is);
+        // The data is copied on the default stream.
+        HEONGPU_CUDA_CHECK(cudaStreamSynchronize(cudaStreamDefault));
         return wrap(std::move(ciphertext));
+    }
+
+    HESession<Scheme::BFV>
+    HESession<Scheme::BFV>::on_stream(cudaStream_t stream) const
+    {
+        synchronize();
+        HESession view(*this);
+        view.stream_ = stream;
+        return view;
+    }
+
+    void HESession<Scheme::BFV>::synchronize() const
+    {
+        HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream_));
     }
 
     session_role HESession<Scheme::BFV>::role() const

@@ -63,6 +63,10 @@ namespace heongpu
             return ciphertext_;
         }
 
+        // The CUDA stream of the operations whose left operand this is; see
+        // HESession::on_stream.
+        cudaStream_t stream() const noexcept { return stream_; }
+
         /**
          * @brief Returns the ciphertext with both rows of slots rotated left
          * by shift (right for a negative shift). The session generates the
@@ -246,7 +250,12 @@ namespace heongpu
       private:
         SessionCiphertext(
             std::shared_ptr<detail::SessionState<Scheme::BFV>> state,
-            Ciphertext<Scheme::BFV> ciphertext);
+            Ciphertext<Scheme::BFV> ciphertext, cudaStream_t stream);
+
+        ExecutionOptions options() const
+        {
+            return ExecutionOptions().set_stream(stream_);
+        }
 
         SessionCiphertext add(const SessionCiphertext& other) const;
         SessionCiphertext sub(const SessionCiphertext& other) const;
@@ -274,6 +283,7 @@ namespace heongpu
 
         std::shared_ptr<detail::SessionState<Scheme::BFV>> state_;
         Ciphertext<Scheme::BFV> ciphertext_;
+        cudaStream_t stream_ = cudaStreamDefault;
     };
 
     /**
@@ -365,6 +375,17 @@ namespace heongpu
         void add_rotations(const std::vector<int>& shifts) const;
 
         /**
+         * @brief Returns a view of the session that runs on stream; see
+         * HESession<Scheme::CKKS>::on_stream.
+         */
+        HESession on_stream(cudaStream_t stream) const;
+
+        cudaStream_t stream() const noexcept { return stream_; }
+
+        // Waits for the operations queued on the stream of the session.
+        void synchronize() const;
+
+        /**
          * @brief Writes the session with the keys of role: the context, the
          * public key, for the evaluator also the relinearization and Galois
          * keys, and for the owner also the secret key. Throws StateError if
@@ -437,7 +458,13 @@ namespace heongpu
         static void generate_rotations(detail::SessionState<Scheme::BFV>& state,
                                        const std::vector<int>& shifts);
 
+        ExecutionOptions options() const
+        {
+            return ExecutionOptions().set_stream(stream_);
+        }
+
         std::shared_ptr<detail::SessionState<Scheme::BFV>> state_;
+        cudaStream_t stream_ = cudaStreamDefault;
     };
 
 } // namespace heongpu
