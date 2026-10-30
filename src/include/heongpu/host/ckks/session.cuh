@@ -94,6 +94,29 @@ namespace heongpu
          */
         SessionCiphertext conjugate() const;
 
+        /**
+         * @brief Returns the ciphertext rotated by each of shifts, as
+         * rotate(shift) does; the rotations share the decomposition of the
+         * ciphertext, see HEArithmeticOperator<Scheme::CKKS>::rotate_hoisted.
+         */
+        std::vector<SessionCiphertext>
+        rotate_hoisted(const std::vector<int>& shifts) const;
+
+        /**
+         * @brief Returns a ciphertext whose slots all hold the sum of the
+         * slots. Uses the rotations by 1, 2, 4, ..., slot count / 2.
+         */
+        SessionCiphertext sum_slots() const;
+
+        /**
+         * @brief Returns a ciphertext whose slots all hold the inner product
+         * of the slots with those of other, or with values, one per slot:
+         * the product and then sum_slots().
+         */
+        SessionCiphertext inner_product(const SessionCiphertext& other) const;
+        SessionCiphertext
+        inner_product(const std::vector<double>& values) const;
+
         SessionCiphertext& operator+=(const SessionCiphertext& other)
         {
             return *this = add(other);

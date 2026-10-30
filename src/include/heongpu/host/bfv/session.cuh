@@ -74,6 +74,37 @@ namespace heongpu
          */
         SessionCiphertext rotate_columns() const;
 
+        /**
+         * @brief Returns the ciphertext rotated by each of shifts, as
+         * rotate(shift) does; the rotations share the decomposition of the
+         * ciphertext, see HEArithmeticOperator<Scheme::BFV>::
+         * rotate_rows_hoisted.
+         */
+        std::vector<SessionCiphertext>
+        rotate_hoisted(const std::vector<int>& shifts) const;
+
+        /**
+         * @brief Returns a ciphertext whose slots all hold the sum of the
+         * slots of both rows. Uses the rotations by 1, 2, 4, ...,
+         * row size / 2 and the column rotation.
+         */
+        SessionCiphertext sum_slots() const;
+
+        /**
+         * @brief Returns a ciphertext whose slots all hold the inner product
+         * of the slots with those of other, or with values, one per slot:
+         * the product and then sum_slots().
+         */
+        SessionCiphertext inner_product(const SessionCiphertext& other) const
+        {
+            return multiply(other).sum_slots();
+        }
+        template <detail::bfv_slot_value T>
+        SessionCiphertext inner_product(const std::vector<T>& values) const
+        {
+            return multiply(encode(values)).sum_slots();
+        }
+
         SessionCiphertext& operator+=(const SessionCiphertext& other)
         {
             return *this = add(other);

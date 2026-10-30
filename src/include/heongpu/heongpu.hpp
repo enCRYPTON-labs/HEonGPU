@@ -37,6 +37,7 @@
 #include <heongpu/host/ckks/parameters.cuh>
 #include <heongpu/host/ckks/precision.cuh>
 #include <heongpu/host/ckks/session.cuh>
+#include <heongpu/host/session_logic.cuh>
 
 #include <heongpu/host/tfhe/context.cuh>
 #include <heongpu/host/tfhe/secretkey.cuh>

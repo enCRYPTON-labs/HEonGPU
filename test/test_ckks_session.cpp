@@ -309,6 +309,82 @@ TEST(CKKSSession, Threads_Rotate_By_New_Steps)
     }
 }
 
+TEST(CKKSSession, Sums_Hoisted_Rotations_And_Logic)
+{
+    Session session(params(3));
+    int n = session.slot_count();
+    std::vector<double> xs = values(n, 0.0);
+    std::vector<double> ys = values(n, 1.0);
+    auto x = session.encrypt(xs);
+    auto y = session.encrypt(ys);
+    double sum = 0.0, dot = 0.0;
+    for (int i = 0; i < n; i++)
+    {
+        sum += xs[i];
+        dot += xs[i] * ys[i];
+    }
+
+    std::vector<double> sums = session.decrypt(x.sum_slots());
+    EXPECT_NEAR(sums[0], sum, 1e-2);
+    EXPECT_NEAR(sums[n - 1], sum, 1e-2);
+    EXPECT_NEAR(session.decrypt(x.inner_product(y))[5], dot, 1e-2);
+    EXPECT_NEAR(session.decrypt(x.inner_product(ys))[5], dot, 1e-2);
+
+    // The same as single rotations.
+    std::vector<int> shifts = {1, -2, 7, 0};
+    auto hoisted = x.rotate_hoisted(shifts);
+    ASSERT_EQ(hoisted.size(), shifts.size());
+    for (std::size_t i = 0; i < shifts.size(); i++)
+    {
+        EXPECT_LT(max_error(session.decrypt(hoisted[i]),
+                            session.decrypt(x.rotate(shifts[i]))),
+                  tolerance)
+            << "shift " << shifts[i];
+    }
+
+    std::vector<double> a(n), b(n);
+    for (int i = 0; i < n; i++)
+    {
+        a[i] = i % 2;
+        b[i] = (i / 2) % 2;
+    }
+    auto ea = session.encrypt(a);
+    auto eb = session.encrypt(b);
+    auto gate = [&](const std::function<int(int, int)>& f)
+    {
+        std::vector<double> result(n);
+        for (int i = 0; i < n; i++)
+        {
+            result[i] = f(int(a[i]), int(b[i]));
+        }
+        return result;
+    };
+    EXPECT_LT(max_error(session.decrypt(heongpu::NOT(ea)),
+                        gate([](int p, int) { return 1 - p; })),
+              tolerance);
+    EXPECT_LT(max_error(session.decrypt(heongpu::AND(ea, eb)),
+                        gate([](int p, int q) { return p & q; })),
+              tolerance);
+    EXPECT_LT(max_error(session.decrypt(heongpu::OR(ea, eb)),
+                        gate([](int p, int q) { return p | q; })),
+              tolerance);
+    EXPECT_LT(max_error(session.decrypt(heongpu::XOR(ea, eb)),
+                        gate([](int p, int q) { return p ^ q; })),
+              tolerance);
+    EXPECT_LT(max_error(session.decrypt(heongpu::NAND(ea, eb)),
+                        gate([](int p, int q) { return 1 - (p & q); })),
+              tolerance);
+    EXPECT_LT(max_error(session.decrypt(heongpu::NOR(ea, eb)),
+                        gate([](int p, int q) { return 1 - (p | q); })),
+              tolerance);
+    EXPECT_LT(max_error(session.decrypt(heongpu::XNOR(ea, eb)),
+                        gate([](int p, int q) { return 1 - (p ^ q); })),
+              tolerance);
+    // One level for a gate of two inputs.
+    EXPECT_EQ(heongpu::XOR(ea, eb).levels_left(), ea.levels_left() - 1);
+    EXPECT_EQ(heongpu::XNOR(ea, eb).levels_left(), ea.levels_left() - 1);
+}
+
 TEST(CKKSSession, Polynomials)
 {
     Session session(params(4));

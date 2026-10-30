@@ -290,6 +290,72 @@ TEST(BFVSession, Threads_Rotate_By_New_Steps)
     }
 }
 
+TEST(BFVSession, Sums_Hoisted_Rotations_And_Logic)
+{
+    Session session(params(1));
+    int n = session.slot_count();
+    u64 t = session.plain_modulus();
+    std::vector<u64> xs = values(n, 1, t);
+    std::vector<u64> ys = values(n, 2, t);
+    auto x = session.encrypt(xs);
+    auto y = session.encrypt(ys);
+    unsigned __int128 sum = 0, dot = 0;
+    for (int i = 0; i < n; i++)
+    {
+        sum += xs[i];
+        dot += (unsigned __int128) xs[i] * ys[i];
+    }
+
+    std::vector<u64> sums = session.decrypt(x.sum_slots());
+    EXPECT_EQ(sums[0], u64(sum % t));
+    EXPECT_EQ(sums[n - 1], u64(sum % t));
+    EXPECT_EQ(session.decrypt(x.inner_product(y))[5], u64(dot % t));
+    EXPECT_EQ(session.decrypt(x.inner_product(ys))[5], u64(dot % t));
+
+    // The same as single rotations.
+    std::vector<int> shifts = {1, -2, 7, 0};
+    auto hoisted = x.rotate_hoisted(shifts);
+    ASSERT_EQ(hoisted.size(), shifts.size());
+    for (std::size_t i = 0; i < shifts.size(); i++)
+    {
+        EXPECT_EQ(session.decrypt(hoisted[i]),
+                  session.decrypt(x.rotate(shifts[i])))
+            << "shift " << shifts[i];
+    }
+
+    std::vector<u64> a(n), b(n);
+    for (int i = 0; i < n; i++)
+    {
+        a[i] = i % 2;
+        b[i] = (i / 2) % 2;
+    }
+    auto ea = session.encrypt(a);
+    auto eb = session.encrypt(b);
+    auto gate = [&](const std::function<u64(u64, u64)>& f)
+    {
+        std::vector<u64> result(n);
+        for (int i = 0; i < n; i++)
+        {
+            result[i] = f(a[i], b[i]);
+        }
+        return result;
+    };
+    EXPECT_EQ(session.decrypt(heongpu::NOT(ea)),
+              gate([](u64 p, u64) { return 1 - p; }));
+    EXPECT_EQ(session.decrypt(heongpu::AND(ea, eb)),
+              gate([](u64 p, u64 q) { return p & q; }));
+    EXPECT_EQ(session.decrypt(heongpu::OR(ea, eb)),
+              gate([](u64 p, u64 q) { return p | q; }));
+    EXPECT_EQ(session.decrypt(heongpu::XOR(ea, eb)),
+              gate([](u64 p, u64 q) { return p ^ q; }));
+    EXPECT_EQ(session.decrypt(heongpu::NAND(ea, eb)),
+              gate([](u64 p, u64 q) { return 1 - (p & q); }));
+    EXPECT_EQ(session.decrypt(heongpu::NOR(ea, eb)),
+              gate([](u64 p, u64 q) { return 1 - (p | q); }));
+    EXPECT_EQ(session.decrypt(heongpu::XNOR(ea, eb)),
+              gate([](u64 p, u64 q) { return 1 - (p ^ q); }));
+}
+
 TEST(BFVSession, Noise_Budget)
 {
     Session session(params(2));

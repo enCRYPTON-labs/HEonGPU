@@ -190,6 +190,44 @@ namespace heongpu
             session.operators.rotate_columns(ciphertext_, *session.galois_key));
     }
 
+    std::vector<BFVCiphertext> SessionCiphertext<Scheme::BFV>::rotate_hoisted(
+        const std::vector<int>& shifts) const
+    {
+        BFVState& session = state();
+        int row_size = session.row_size();
+        std::vector<int> steps;
+        for (int shift : shifts)
+        {
+            steps.push_back(((shift % row_size) + row_size) % row_size);
+        }
+        std::shared_lock<std::shared_mutex> lock =
+            HESession<Scheme::BFV>::rotation_keys(session, steps);
+        std::vector<Ciphertext<Scheme::BFV>> rotated =
+            session.operators.rotate_rows_hoisted(ciphertext_,
+                                                  *session.galois_key, steps);
+        std::vector<BFVCiphertext> results;
+        results.reserve(rotated.size());
+        for (Ciphertext<Scheme::BFV>& ciphertext : rotated)
+        {
+            results.push_back(result(std::move(ciphertext)));
+        }
+        return results;
+    }
+
+    BFVCiphertext SessionCiphertext<Scheme::BFV>::sum_slots() const
+    {
+        BFVState& session = state();
+        std::vector<int> steps;
+        for (int step = 1; step < session.row_size(); step <<= 1)
+        {
+            steps.push_back(step);
+        }
+        std::shared_lock<std::shared_mutex> lock =
+            HESession<Scheme::BFV>::rotation_keys(session, steps);
+        return result(
+            session.operators.sum_slots(ciphertext_, *session.galois_key));
+    }
+
     HESession<Scheme::BFV>::HESession(const HEParams<Scheme::BFV>& params,
                                       const std::vector<int>& rotations)
         : HESession(params.generate(), rotations)

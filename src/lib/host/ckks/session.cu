@@ -292,6 +292,57 @@ namespace heongpu
             session.operators.conjugate(ciphertext_, *session.galois_key));
     }
 
+    std::vector<CKKSCiphertext> SessionCiphertext<Scheme::CKKS>::rotate_hoisted(
+        const std::vector<int>& shifts) const
+    {
+        State& session = state();
+        int slot_count = session.context->get_poly_modulus_degree() / 2;
+        std::vector<int> steps;
+        for (int shift : shifts)
+        {
+            steps.push_back(detail::normalized_shift(shift, slot_count));
+        }
+        std::shared_lock<std::shared_mutex> lock =
+            HESession<Scheme::CKKS>::rotation_keys(session, steps);
+        std::vector<Ciphertext<Scheme::CKKS>> rotated =
+            session.operators.rotate_hoisted(ciphertext_, *session.galois_key,
+                                             steps);
+        std::vector<CKKSCiphertext> results;
+        results.reserve(rotated.size());
+        for (Ciphertext<Scheme::CKKS>& ciphertext : rotated)
+        {
+            results.push_back(result(std::move(ciphertext)));
+        }
+        return results;
+    }
+
+    CKKSCiphertext SessionCiphertext<Scheme::CKKS>::sum_slots() const
+    {
+        State& session = state();
+        std::vector<int> steps;
+        for (int step = 1;
+             step < session.context->get_poly_modulus_degree() / 2; step <<= 1)
+        {
+            steps.push_back(step);
+        }
+        std::shared_lock<std::shared_mutex> lock =
+            HESession<Scheme::CKKS>::rotation_keys(session, steps);
+        return result(
+            session.operators.sum_slots(ciphertext_, *session.galois_key));
+    }
+
+    CKKSCiphertext SessionCiphertext<Scheme::CKKS>::inner_product(
+        const SessionCiphertext& other) const
+    {
+        return multiply(other).sum_slots();
+    }
+
+    CKKSCiphertext SessionCiphertext<Scheme::CKKS>::inner_product(
+        const std::vector<double>& values) const
+    {
+        return multiply(values).sum_slots();
+    }
+
     int SessionCiphertext<Scheme::CKKS>::levels_left() const
     {
         State& session = state();
