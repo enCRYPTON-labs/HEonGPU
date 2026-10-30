@@ -10,14 +10,16 @@
 
 int main(int argc, char* argv[])
 {
-    heongpu::HEContext<heongpu::Scheme::BFV> context =
-        heongpu::GenHEContext<heongpu::Scheme::BFV>();
-
+    // The bit sizes of the Q and P primes, with room for the noise of the
+    // multiparty decryption.
+    heongpu::HEParams<heongpu::Scheme::BFV> params;
     size_t poly_modulus_degree = 8192;
-    context->set_poly_modulus_degree(poly_modulus_degree);
-    context->set_coeff_modulus_default_values(1);
+    params.poly_modulus_degree = poly_modulus_degree;
+    params.coeff_modulus_bit_sizes = {43, 43, 44, 44};
+    params.special_modulus_bit_sizes = {44};
     int plain_modulus = 1032193;
-    context->set_plain_modulus(plain_modulus);
+    params.plain_modulus = plain_modulus;
+    heongpu::HEContext<heongpu::Scheme::BFV> context = params.make_context();
     context->generate();
     context->print_parameters();
 

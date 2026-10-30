@@ -16,12 +16,13 @@ constexpr auto Scheme = heongpu::Scheme::CKKS;
 int main(int argc, char* argv[])
 {
     // Create CKKS context with user-defined parameters.
-    heongpu::HEContext<Scheme> context =
-        heongpu::GenHEContext<Scheme>(heongpu::sec_level_type::none);
-
+    heongpu::HEParams<Scheme> params;
+    params.security_level = heongpu::sec_level_type::none;
     const std::size_t poly_modulus_degree = 8192;
-    context->set_poly_modulus_degree(poly_modulus_degree);
-    context->set_coeff_modulus_bit_sizes({60, 40, 40, 60}, {60});
+    params.poly_modulus_degree = poly_modulus_degree;
+    params.coeff_modulus_bit_sizes = {60, 40, 40, 60};
+    params.special_modulus_bit_sizes = {60};
+    heongpu::HEContext<Scheme> context = params.make_context();
     context->generate();
 
     const double scale = std::pow(2.0, 40);

@@ -61,10 +61,12 @@ constexpr auto Scheme = heongpu::Scheme::CKKS;
 int main(int argc, char* argv[])
 {
     // 2. Set up HE context (CKKS scheme)
-    heongpu::HEContext<Scheme> context = heongpu::GenHEContext<Scheme>();
+    heongpu::HEParams<Scheme> params;
     const size_t poly_modulus_degree = 8192;
-    context->set_poly_modulus_degree(poly_modulus_degree);
-    context->set_coeff_modulus_bit_sizes({60, 30, 30, 30}, {60});
+    params.poly_modulus_degree = poly_modulus_degree;
+    params.coeff_modulus_bit_sizes = {60, 30, 30, 30};
+    params.special_modulus_bit_sizes = {60};
+    heongpu::HEContext<Scheme> context = params.make_context();
 
     double scale = pow(2.0, 30);
 

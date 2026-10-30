@@ -64,13 +64,15 @@ void multi_stream_function_way2(
 int main(int argc, char* argv[])
 {
     // Initialize encryption parameters for the CKKS scheme.
-    heongpu::HEContext<Scheme> context = heongpu::GenHEContext<Scheme>();
+    heongpu::HEParams<Scheme> params;
 
     size_t poly_modulus_degree = 8192;
     int plain_modulus = 786433;
-    context->set_poly_modulus_degree(poly_modulus_degree);
-    context->set_coeff_modulus_default_values(1);
-    context->set_plain_modulus(plain_modulus);
+    params.poly_modulus_degree = poly_modulus_degree;
+    // A multiplication by a plaintext and one by a ciphertext in a row.
+    params.multiplicative_depth = 2;
+    params.plain_modulus = plain_modulus;
+    heongpu::HEContext<Scheme> context = params.make_context();
     context->generate();
     context->print_parameters();
 

@@ -14,13 +14,13 @@ constexpr auto Scheme = heongpu::Scheme::CKKS;
 int main(int argc, char* argv[])
 {
     // Initialize encryption parameters for the CKKS scheme.
-    heongpu::HEContext<Scheme> context =
-        heongpu::GenHEContext<Scheme>(heongpu::sec_level_type::none);
-
+    heongpu::HEParams<Scheme> params;
+    params.security_level = heongpu::sec_level_type::none;
     size_t poly_modulus_degree = 16384;
-    context->set_poly_modulus_degree(poly_modulus_degree);
-    context->set_coeff_modulus_bit_sizes({60, 36, 36, 36, 36, 36, 36, 36},
-                                         {60, 60});
+    params.poly_modulus_degree = poly_modulus_degree;
+    params.coeff_modulus_bit_sizes = {60, 36, 36, 36, 36, 36, 36, 36};
+    params.special_modulus_bit_sizes = {60, 60};
+    heongpu::HEContext<Scheme> context = params.make_context();
     context->generate();
     context->print_parameters();
 

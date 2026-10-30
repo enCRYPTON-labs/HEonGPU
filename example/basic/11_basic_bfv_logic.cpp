@@ -17,41 +17,41 @@ constexpr auto Scheme = heongpu::Scheme::BFV;
 int main(int argc, char* argv[])
 {
     // Initialize encryption parameters for the BFV scheme.
-    heongpu::HEContext<Scheme> context = heongpu::GenHEContext<Scheme>();
+    heongpu::HEParams<Scheme> params;
 
     // Set the polynomial modulus degree. This controls the complexity
     // of the computations and the size of the ciphertexts. Larger values
     // allow more complex operations but increase computational cost.
     // Here, we choose 8192, a moderate value.
     size_t poly_modulus_degree = 8192;
-    context->set_poly_modulus_degree(poly_modulus_degree);
+    params.poly_modulus_degree = poly_modulus_degree;
 
     // Alternative -> select sec_level_type as sec128(default), sec192,
-    // sec256, none
-    // heongpu::HEContext<Scheme> context = heongpu::GenHEContext<Scheme>(
-    //    heongpu::sec_level_type::sec128);
+    // sec256, none:
+    // params.security_level = heongpu::sec_level_type::sec128;
     // Key switching splits Q into digits of as many primes as P has.
 
-    // Set the coefficient modulus, which determines the size of the noise
-    // budget. This parameter is crucial for controlling the number of
-    // operations that can be performed before the ciphertext becomes too
-    // noisy to decrypt. We use a default setting suitable for our chosen
-    // polynomial modulus degree.
-    context->set_coeff_modulus_default_values(1);
+    // The multiplicative depth, the number of multiplications in a row,
+    // determines the coefficient modulus and so the noise budget: the
+    // number of operations that can be performed before the ciphertext
+    // becomes too noisy to decrypt. HEParams chooses the primes for it.
+    params.multiplicative_depth = 3;
 
-    // Alternative -> first input is Q (ciphertext modulus), second one
-    // is P and it determines to Q_tilda which is key modulus.(Q_tilda = QxP)
-    // context->set_coeff_modulus({40, 40, 40, 40}, {40});
+    // Alternative -> the bit sizes of Q (ciphertext modulus) and P, which
+    // determine Q_tilda = QxP, the key modulus:
+    // params.coeff_modulus_bit_sizes = {40, 40, 40, 40};
+    // params.special_modulus_bit_sizes = {40};
 
     // Set the plaintext modulus, which affects the range of plaintext values
     // and the noise budget usage during multiplications. Choosing a smaller
     // value can help in maintaining a larger noise budget.
     int plain_modulus = 1032193;
-    context->set_plain_modulus(plain_modulus);
+    params.plain_modulus = plain_modulus;
 
     // Generate a HEonGPU context with these parameters. The context checks the
     // validity of the parameters and provides various utilities needed for
     // encryption, decryption, and evaluation.
+    heongpu::HEContext<Scheme> context = params.make_context();
     context->generate();
     context->print_parameters();
 

@@ -16,15 +16,17 @@ constexpr auto Scheme = heongpu::Scheme::CKKS;
 int main(int argc, char* argv[])
 {
     // Initialize encryption parameters for the CKKS scheme.
-    heongpu::HEContext<Scheme> context = heongpu::GenHEContext<Scheme>();
+    heongpu::HEParams<Scheme> params;
 
     // Set the polynomial modulus degree. Larger values allow deeper
     // computations but increase memory use and runtime.
     size_t poly_modulus_degree = 8192;
-    context->set_poly_modulus_degree(poly_modulus_degree);
+    params.poly_modulus_degree = poly_modulus_degree;
 
     // Set coefficient modulus sizes for CKKS.
-    context->set_coeff_modulus_bit_sizes({60, 30, 30, 30}, {60});
+    params.coeff_modulus_bit_sizes = {60, 30, 30, 30};
+    params.special_modulus_bit_sizes = {60};
+    heongpu::HEContext<Scheme> context = params.make_context();
 
     // Configure the memory pool before generating the context-> The pool size
     // can be set either by percentage (0.0-1.0) or by percentage (0-100), or by

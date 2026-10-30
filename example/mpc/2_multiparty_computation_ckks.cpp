@@ -10,13 +10,13 @@
 
 int main(int argc, char* argv[])
 {
-    heongpu::HEContext<heongpu::Scheme::CKKS> context =
-        heongpu::GenHEContext<heongpu::Scheme::CKKS>(
-            heongpu::sec_level_type::none);
-
+    heongpu::HEParams<heongpu::Scheme::CKKS> params;
+    params.security_level = heongpu::sec_level_type::none;
     size_t poly_modulus_degree = 8192;
-    context->set_poly_modulus_degree(poly_modulus_degree);
-    context->set_coeff_modulus_bit_sizes({60, 50, 50, 50}, {60});
+    params.poly_modulus_degree = poly_modulus_degree;
+    params.coeff_modulus_bit_sizes = {60, 50, 50, 50};
+    params.special_modulus_bit_sizes = {60};
+    heongpu::HEContext<heongpu::Scheme::CKKS> context = params.make_context();
     context->generate();
     context->print_parameters();
 

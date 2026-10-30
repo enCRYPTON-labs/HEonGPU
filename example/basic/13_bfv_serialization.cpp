@@ -61,11 +61,11 @@ constexpr auto Scheme = heongpu::Scheme::BFV;
 int main(int argc, char* argv[])
 {
     // 2. Set up HE context (BFV scheme)
-    heongpu::HEContext<Scheme> context = heongpu::GenHEContext<Scheme>();
+    heongpu::HEParams<Scheme> params;
     const size_t poly_modulus_degree = 4096;
-    context->set_poly_modulus_degree(poly_modulus_degree);
-    context->set_coeff_modulus_default_values(1);
-    context->set_plain_modulus(1032193);
+    params.poly_modulus_degree = poly_modulus_degree;
+    params.plain_modulus = 1032193;
+    heongpu::HEContext<Scheme> context = params.make_context();
 
     // 3. Serialize / deserialize the context
     std::stringstream ctx_stream;
