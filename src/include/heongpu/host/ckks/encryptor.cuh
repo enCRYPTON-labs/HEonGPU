@@ -42,7 +42,8 @@ namespace heongpu
 
         /**
          * @brief Encrypts a plaintext into a ciphertext, automatically
-         * determining the scheme type.
+         * determining the scheme type. The ciphertext has the depth of the
+         * plaintext.
          *
          * @param ciphertext Ciphertext object where the result of the
          * encryption will be stored.
@@ -55,15 +56,10 @@ namespace heongpu
         {
             plaintext.validate_context(context_);
 
-            if (plaintext.size() < (context_->n * context_->Q_size))
+            if (plaintext.size() <
+                (context_->n * (context_->Q_size - plaintext.depth())))
             {
                 throw std::invalid_argument("Invalid plaintext size.");
-            }
-
-            if (plaintext.depth() != 0)
-            {
-                throw std::invalid_argument(
-                    "Invalid plaintext depth must be zero.");
             }
 
             input_storage_manager(
@@ -82,7 +78,7 @@ namespace heongpu
                             ciphertext_.ring_size_ = context_->n;
                             ciphertext_.coeff_modulus_count_ = context_->Q_size;
                             ciphertext_.cipher_size_ = 2;
-                            ciphertext_.depth_ = 0;
+                            ciphertext_.depth_ = plaintext_.depth_;
                             ciphertext_.in_ntt_domain_ = true;
                             ciphertext_.encoding_ = plaintext_.encoding_;
                             ciphertext_.scale_ = plaintext_.scale_;

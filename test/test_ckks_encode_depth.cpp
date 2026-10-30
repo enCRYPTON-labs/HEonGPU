@@ -118,6 +118,48 @@ TEST_F(CKKSEncodeDepth, Plaintext_Matches_A_Ciphertext_Of_That_Depth)
     }
 }
 
+TEST_F(CKKSEncodeDepth, Encrypts_At_The_Depth_Of_The_Plaintext)
+{
+    heongpu::HEKeyGenerator<scheme> generator(context);
+    heongpu::Secretkey<scheme> secret_key(context);
+    generator.generate_secret_key(secret_key);
+    heongpu::Publickey<scheme> public_key(context);
+    generator.generate_public_key(public_key, secret_key);
+    heongpu::HEEncryptor<scheme> encryptor(context, public_key);
+    heongpu::HEDecryptor<scheme> decryptor(context, secret_key);
+
+    for (int depth = 0; depth < 3; depth++)
+    {
+        SCOPED_TRACE(depth);
+        heongpu::Plaintext<scheme> plaintext(context);
+        encoder->encode(plaintext, message, scale, depth);
+        heongpu::Ciphertext<scheme> ciphertext(context);
+        encryptor.encrypt(ciphertext, plaintext);
+        EXPECT_EQ(ciphertext.depth(), depth);
+        EXPECT_EQ(ciphertext.scale(), scale);
+
+        // The same as encrypting at the top and dropping the moduli.
+        heongpu::Plaintext<scheme> top(context);
+        encoder->encode(top, message, scale);
+        heongpu::Ciphertext<scheme> dropped(context);
+        encryptor.encrypt(dropped, top);
+        for (int i = 0; i < depth; i++)
+        {
+            operators->mod_drop_inplace(dropped);
+        }
+        operators->add_inplace(ciphertext, dropped);
+
+        heongpu::Plaintext<scheme> result_plaintext(context);
+        decryptor.decrypt(result_plaintext, ciphertext);
+        std::vector<double> result;
+        encoder->decode(result, result_plaintext);
+        for (int i = 0; i < slots; i++)
+        {
+            ASSERT_NEAR(result[i], 2.0 * message[i], 1e-3) << "slot " << i;
+        }
+    }
+}
+
 TEST_F(CKKSEncodeDepth, Invalid_Depth_Is_Rejected)
 {
     heongpu::Plaintext<scheme> plaintext(context);

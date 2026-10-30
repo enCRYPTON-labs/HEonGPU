@@ -43,6 +43,8 @@ namespace heongpu
         const int n_power = ctx->n_power;
         const int Q_prime_size = ctx->Q_prime_size;
         const int Q_size = ctx->Q_size;
+        // The moduli of the ciphertext, which has the depth of the plaintext.
+        const int Q_count = Q_size - plaintext.depth();
 
         DeviceVector<Data64> output_memory((2 * n * Q_size), stream);
 
@@ -91,7 +93,9 @@ namespace heongpu
                                  ctx->modulus_->data(), cfg_intt,
                                  2 * Q_prime_size, Q_prime_size);
 
-        enc_div_lastq_ckks_kernel<<<dim3((n >> 8), Q_size, 2), 256, 0,
+        // Only the moduli of the ciphertext are computed; the polynomials
+        // keep the stride of Q_size.
+        enc_div_lastq_ckks_kernel<<<dim3((n >> 8), Q_count, 2), 256, 0,
                                     stream>>>(
             pk_u_poly, error_poly, output_memory.data(), ctx->modulus_->data(),
             ctx->half_p_->data(), ctx->half_mod_->data(),
@@ -99,11 +103,26 @@ namespace heongpu
             ctx->P_size);
         HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-        gpuntt::GPU_NTT_Inplace(output_memory.data(), ctx->ntt_table_->data(),
-                                ctx->modulus_->data(), cfg_ntt, 2 * Q_size,
-                                Q_size);
+        if (Q_count < Q_size)
+        {
+            // Dropping the moduli above the depth, as mod_drop does.
+            DeviceVector<Data64> dropped((2 * n * Q_count), stream);
+            for (int i = 0; i < 2; i++)
+            {
+                HEONGPU_CUDA_CHECK(
+                    cudaMemcpyAsync(dropped.data() + (i * n * Q_count),
+                                    output_memory.data() + (i * n * Q_size),
+                                    n * Q_count * sizeof(Data64),
+                                    cudaMemcpyDeviceToDevice, stream));
+            }
+            output_memory = std::move(dropped);
+        }
 
-        cipher_message_add_kernel<<<dim3((n >> 8), Q_size, 1), 256, 0,
+        gpuntt::GPU_NTT_Inplace(output_memory.data(), ctx->ntt_table_->data(),
+                                ctx->modulus_->data(), cfg_ntt, 2 * Q_count,
+                                Q_count);
+
+        cipher_message_add_kernel<<<dim3((n >> 8), Q_count, 1), 256, 0,
                                     stream>>>(output_memory.data(),
                                               plaintext.data(),
                                               ctx->modulus_->data(), n_power);
