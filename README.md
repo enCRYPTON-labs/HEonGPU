@@ -391,6 +391,46 @@ $ Example: ./build/bin/examples/1_basic_bfv
 
 ### Toy Example
 
+`HESession` holds one party's whole computation: the context of the parameters, the keys and the operators.
+
+```c++
+#include <heongpu/heongpu.hpp>
+
+int main() {
+    // Parameters for one multiplication in a row with a 20 bit plaintext
+    // modulus at 128-bit security.
+    heongpu::HEParams<heongpu::Scheme::BFV> params;
+    params.multiplicative_depth = 1;
+    heongpu::HESession<heongpu::Scheme::BFV> session(params);
+
+    std::vector<uint64_t> message(session.slot_count(), 8ULL);
+    auto C1 = session.encrypt(message);
+    auto C2 = C1 + C1;
+    std::vector<uint64_t> result = session.decrypt(C2);
+
+    return 0;
+}
+```
+
+A CKKS session made from a bootstrapping preset bootstraps its ciphertexts, and a session saved with the keys of the evaluator computes on a server without the secret key:
+
+```c++
+heongpu::HESession<heongpu::Scheme::CKKS> session(
+    heongpu::CKKSBootstrappingPreset::regular(10));  // 10 levels between bootstrappings
+auto x = session.encrypt(values);
+for (int i = 0; i < 30; i++) {
+    if (x.levels_left() < 2)
+        x = x.bootstrap();
+    x = 0.5 * x * x + 0.25;
+}
+
+session.save(keys, heongpu::session_role::evaluator);  // without the secret key
+auto server = heongpu::HESession<heongpu::Scheme::CKKS>::load(
+    keys, heongpu::session_role::evaluator);
+```
+
+The same BFV computation with the lower level API, whose objects give full control over the keys, the CUDA streams and the memory of every operation:
+
 ```c++
 #include <heongpu/heongpu.hpp>
 
@@ -435,24 +475,6 @@ int main() {
 }
 ```
 
-The same computation with `HESession`, which holds the context, the keys and the operators:
-
-```c++
-#include <heongpu/heongpu.hpp>
-
-int main() {
-    heongpu::HEParams<heongpu::Scheme::BFV> params;
-    params.multiplicative_depth = 1;
-    heongpu::HESession<heongpu::Scheme::BFV> session(params);
-
-    std::vector<uint64_t> message(session.slot_count(), 8ULL);
-    auto C1 = session.encrypt(message);
-    auto C2 = C1 + C1;
-    std::vector<uint64_t> result = session.decrypt(C2);
-
-    return 0;
-}
-```
 
 ## Configuration Header ([define.h](src/include/heongpu/kernel/defines.h))
 
@@ -488,11 +510,9 @@ a context. Sizes can be given as **percentages** (0.0-1.0 or 0-100) or as
 **absolute bytes**. If you do not provide a config, the defaults above are used.
 
 ```cpp
-heongpu::HEContext<heongpu::Scheme::CKKS> context =
-    heongpu::GenHEContext<heongpu::Scheme::CKKS>();
-
-context->set_poly_modulus_degree(8192);
-context->set_coeff_modulus_bit_sizes({60, 30, 30, 30}, {60});
+heongpu::HEParams<heongpu::Scheme::CKKS> params;
+params.multiplicative_depth = 3;
+heongpu::HEContext<heongpu::Scheme::CKKS> context = params.make_context();
 
 heongpu::MemoryPoolConfig pool_config;
 pool_config.initial_device_fraction = 80.0f; // %80 (0.8f is also valid)
@@ -581,6 +601,7 @@ Supported toolchain: CUDA 12.8 or newer, a C++20 compiler (tested with GCC 11.4)
 - A generated context is not changed afterwards and can be shared by threads.
 - Keys and operators can be shared by threads that run operations on their own ciphertexts and plaintexts and their own CUDA streams, as the multi-stream examples do.
 - Operations do not change their inputs, so threads can share them. An object that an operation writes, or that is moved between host and device memory, must not be used by another thread at the same time.
+- An `HESession` and its copies can be used by several threads, each on its own CUDA stream with `session.on_stream(stream)`. A rotation by a step that has no key yet generates the key while the other rotations of the session wait.
 - The memory pool is thread-safe. Call `heongpu::initialize()` and `heongpu::shutdown()` while no other thread uses HEonGPU.
 - Key generation, encryption and multiparty computation can run from several threads. They draw from one process-wide random number generator. It takes one request at a time on the host but does not wait for the GPU, so the GPU work of requests on different CUDA streams runs concurrently. The numbers of a seed, as the common polynomials of multiparty computation, are drawn without other threads drawing in between and are the same on every GPU and every kind of CUDA stream.
 
