@@ -6,9 +6,12 @@
 
 #include <heongpu/host/bfv/session.cuh>
 #include <heongpu/host/bfv/keygenerator.cuh>
+#include <heongpu/util/serialization_header.h>
 #include <algorithm>
 #include <mutex>
 #include <optional>
+#include <sstream>
+#include <string>
 
 namespace heongpu
 {
@@ -19,10 +22,20 @@ namespace heongpu
             explicit SessionState(const HEParameterSet<Scheme::BFV>& parameters)
                 : context(generated_context(parameters)), keygen(context),
                   secret_key(keygen.secret_key()),
-                  public_key(keygen.public_key(secret_key)),
-                  relin_key(keygen.relin_key(secret_key)), encoder(context),
+                  public_key(keygen.public_key(*secret_key)),
+                  relin_key(keygen.relin_key(*secret_key)), encoder(context),
                   encryptor(context, public_key),
-                  decryptor(context, secret_key), operators(context, encoder)
+                  decryptor(std::in_place, context, *secret_key),
+                  operators(context, encoder)
+            {
+            }
+
+            // A loaded session; HESession::load sets the keys it has.
+            SessionState(HEContext<Scheme::BFV> loaded_context,
+                         Publickey<Scheme::BFV> loaded_public_key)
+                : context(std::move(loaded_context)), keygen(context),
+                  public_key(std::move(loaded_public_key)), encoder(context),
+                  encryptor(context, public_key), operators(context, encoder)
             {
             }
 
@@ -40,11 +53,46 @@ namespace heongpu
                 return int(context->get_poly_modulus_degree() / 2);
             }
 
+            // The keys and objects a role may not have; these throw for a
+            // session without them.
+            Secretkey<Scheme::BFV>& secret()
+            {
+                if (!secret_key)
+                {
+                    throw StateError(no_secret_key);
+                }
+                return *secret_key;
+            }
+            HEDecryptor<Scheme::BFV>& decrypting()
+            {
+                if (!decryptor)
+                {
+                    throw StateError(no_secret_key);
+                }
+                return *decryptor;
+            }
+            Relinkey<Scheme::BFV>& relin()
+            {
+                if (!relin_key)
+                {
+                    throw KeyNotFoundError(
+                        "The HESession has no relinearization key! A session "
+                        "loaded with the keys of the encryptor does not "
+                        "multiply ciphertexts.");
+                }
+                return *relin_key;
+            }
+            static constexpr const char* no_secret_key =
+                "The HESession has no secret key! A session loaded with the "
+                "keys of the evaluator or the encryptor does not decrypt.";
+
             HEContext<Scheme::BFV> context;
             HEKeyGenerator<Scheme::BFV> keygen;
-            Secretkey<Scheme::BFV> secret_key;
+            // The owner has the secret key, the owner and the evaluator the
+            // relinearization key.
+            std::optional<Secretkey<Scheme::BFV>> secret_key;
             Publickey<Scheme::BFV> public_key;
-            Relinkey<Scheme::BFV> relin_key;
+            std::optional<Relinkey<Scheme::BFV>> relin_key;
             // Created by the first rotation, unless the session is given
             // rotations.
             std::optional<Galoiskey<Scheme::BFV>> galois_key;
@@ -53,9 +101,26 @@ namespace heongpu
             std::shared_mutex galois_mutex;
             HEEncoder<Scheme::BFV> encoder;
             HEEncryptor<Scheme::BFV> encryptor;
-            HEDecryptor<Scheme::BFV> decryptor;
+            std::optional<HEDecryptor<Scheme::BFV>> decryptor;
             HEArithmeticOperator<Scheme::BFV> operators;
         };
+
+        // The error of a session without the secret key for rotations by
+        // steps it has no key for.
+        static std::string
+        missing_rotations_message(const std::vector<int>& steps)
+        {
+            std::ostringstream message;
+            message << "The HESession has no Galois key";
+            for (std::size_t i = 0; i < steps.size(); i++)
+            {
+                message << (i == 0 ? " for the steps " : ", ") << steps[i];
+            }
+            message << " and no secret key to generate it! Add the steps with "
+                       "add_rotations to the session of the owner and save "
+                       "it again.";
+            return message.str();
+        }
     } // namespace detail
 
     using BFVState = detail::SessionState<Scheme::BFV>;
@@ -138,7 +203,7 @@ namespace heongpu
         BFVState& session = state();
         Ciphertext<Scheme::BFV> product =
             session.operators.multiply(ciphertext_, other.ciphertext_);
-        session.operators.relinearize_inplace(product, session.relin_key);
+        session.operators.relinearize_inplace(product, session.relin());
         return result(std::move(product));
     }
 
@@ -293,22 +358,26 @@ namespace heongpu
             }
         }
 
+        if (state.galois_key && missing.empty())
+        {
+            return;
+        }
+        if (!state.secret_key)
+        {
+            throw KeyNotFoundError(detail::missing_rotations_message(missing));
+        }
         if (!state.galois_key)
         {
             state.galois_key.emplace(state.context, missing);
             state.keygen.generate_galois_key(*state.galois_key,
-                                             state.secret_key);
-            return;
-        }
-        if (missing.empty())
-        {
+                                             *state.secret_key);
             return;
         }
 
         // The new keys come with a column rotation key of their own, which
         // is dropped: the session keeps the first one.
         Galoiskey<Scheme::BFV> keys(state.context, missing);
-        state.keygen.generate_galois_key(keys, state.secret_key);
+        state.keygen.generate_galois_key(keys, *state.secret_key);
         Galoiskey<Scheme::BFV>& galois_key = *state.galois_key;
         for (int step : missing)
         {
@@ -368,7 +437,7 @@ namespace heongpu
     {
         check_session(input);
         Plaintext<Scheme::BFV> plain =
-            state_->decryptor.decrypt(input.ciphertext_);
+            state_->decrypting().decrypt(input.ciphertext_);
         std::vector<std::uint64_t> values;
         state_->encoder.decode(values, plain);
         return values;
@@ -379,7 +448,7 @@ namespace heongpu
     {
         check_session(input);
         Plaintext<Scheme::BFV> plain =
-            state_->decryptor.decrypt(input.ciphertext_);
+            state_->decrypting().decrypt(input.ciphertext_);
         std::vector<std::int64_t> values;
         state_->encoder.decode(values, plain);
         return values;
@@ -388,7 +457,7 @@ namespace heongpu
     int HESession<Scheme::BFV>::noise_budget(const BFVCiphertext& input) const
     {
         check_session(input);
-        return state_->decryptor.remainder_noise_budget(input.ciphertext_);
+        return state_->decrypting().remainder_noise_budget(input.ciphertext_);
     }
 
     void
@@ -414,7 +483,7 @@ namespace heongpu
 
     Secretkey<Scheme::BFV>& HESession<Scheme::BFV>::secret_key() const
     {
-        return state_->secret_key;
+        return state_->secret();
     }
 
     Publickey<Scheme::BFV>& HESession<Scheme::BFV>::public_key() const
@@ -424,7 +493,7 @@ namespace heongpu
 
     Relinkey<Scheme::BFV>& HESession<Scheme::BFV>::relin_key() const
     {
-        return state_->relin_key;
+        return state_->relin();
     }
 
     Galoiskey<Scheme::BFV>& HESession<Scheme::BFV>::galois_key() const
@@ -445,12 +514,188 @@ namespace heongpu
 
     HEDecryptor<Scheme::BFV>& HESession<Scheme::BFV>::decryptor() const
     {
-        return state_->decryptor;
+        return state_->decrypting();
     }
 
     HEArithmeticOperator<Scheme::BFV>& HESession<Scheme::BFV>::operators() const
     {
         return state_->operators;
+    }
+
+    namespace
+    {
+        constexpr const char* session_name = "HESession";
+        // The version of the fields after the header.
+        constexpr std::uint8_t session_version = 1;
+
+        const char* role_name(session_role role)
+        {
+            switch (role)
+            {
+                case session_role::owner:
+                    return "owner";
+                case session_role::evaluator:
+                    return "evaluator";
+                case session_role::encryptor:
+                    return "encryptor";
+            }
+            return "unknown role";
+        }
+
+        // A key of context read from is, checked to be of context.
+        template <typename Key>
+        void load_key(std::optional<Key>& key,
+                      const HEContext<Scheme::BFV>& context, std::istream& is)
+        {
+            key.emplace(context);
+            key->load(is);
+            key->store_in_device();
+        }
+    } // namespace
+
+    HESession<Scheme::BFV>::HESession(std::shared_ptr<BFVState> state)
+        : state_(std::move(state))
+    {
+    }
+
+    void HESession<Scheme::BFV>::save(std::ostream& os, session_role role) const
+    {
+        BFVState& state = *state_;
+        if ((role != session_role::owner) &&
+            (role != session_role::evaluator) &&
+            (role != session_role::encryptor))
+        {
+            throw ParameterError(error_message("Invalid session role ",
+                                               static_cast<int>(role), "!"));
+        }
+        if ((role == session_role::owner) && !state.secret_key)
+        {
+            throw StateError("The HESession has no secret key to save with "
+                             "the keys of the owner!");
+        }
+        if ((role == session_role::evaluator) && !state.relin_key)
+        {
+            throw StateError("The HESession has no evaluation keys to save "
+                             "with the keys of the evaluator!");
+        }
+
+        detail::write_serialization_header(
+            os, serialization_format::v2, detail::serialized_object::session,
+            scheme_type::bfv, state.context->context_id());
+        detail::write_field(os, session_version);
+        detail::write_field(os, role);
+        state.context->save(os);
+        state.public_key.save(os);
+        if (role != session_role::encryptor)
+        {
+            state.relin_key->save(os);
+            std::shared_lock<std::shared_mutex> lock(state.galois_mutex);
+            detail::write_field(
+                os, static_cast<std::uint8_t>(state.galois_key.has_value()));
+            if (state.galois_key)
+            {
+                state.galois_key->save(os);
+            }
+        }
+        if (role == session_role::owner)
+        {
+            state.secret_key->save(os);
+        }
+        if (!os)
+        {
+            throw SerializationError("Writing the HESession failed!");
+        }
+    }
+
+    HESession<Scheme::BFV> HESession<Scheme::BFV>::load(std::istream& is)
+    {
+        return load_session(is, nullptr);
+    }
+
+    HESession<Scheme::BFV> HESession<Scheme::BFV>::load(std::istream& is,
+                                                        session_role expected)
+    {
+        return load_session(is, &expected);
+    }
+
+    HESession<Scheme::BFV>
+    HESession<Scheme::BFV>::load_session(std::istream& is,
+                                         const session_role* expected)
+    {
+        if (is.peek() != 'H')
+        {
+            throw SerializationError("Invalid HESession binary! It does not "
+                                     "start with the HEGP header.");
+        }
+        const std::uint64_t context_id = detail::read_serialization_header(
+            is, detail::serialized_object::session, scheme_type::bfv);
+        auto version = detail::read_field<std::uint8_t>(is, session_name);
+        if (version != session_version)
+        {
+            throw SerializationError(error_message(
+                "Unsupported HESession binary version ", int(version),
+                "! This HEonGPU version reads the version ",
+                int(session_version), "."));
+        }
+        auto role = detail::read_field<session_role>(is, session_name);
+        if (static_cast<std::uint8_t>(role) >
+            static_cast<std::uint8_t>(session_role::encryptor))
+        {
+            throw SerializationError(error_message(
+                "Invalid HESession binary! Unknown role ", int(role), "."));
+        }
+        if (expected && (role != *expected))
+        {
+            throw StateError(
+                error_message("The HESession was saved with the keys of the ",
+                              role_name(role), ", expected those of the ",
+                              role_name(*expected), "!"));
+        }
+
+        HEContext<Scheme::BFV> context = GenHEContext<Scheme::BFV>();
+        context->load(is);
+        if (context->context_id() != context_id)
+        {
+            throw SerializationError("Corrupted HESession binary! The context "
+                                     "does not have the identity of the "
+                                     "header.");
+        }
+        std::optional<Publickey<Scheme::BFV>> public_key;
+        load_key(public_key, context, is);
+        auto state =
+            std::make_shared<BFVState>(context, std::move(*public_key));
+        if (role != session_role::encryptor)
+        {
+            load_key(state->relin_key, context, is);
+            if (detail::read_field<std::uint8_t>(is, session_name) != 0)
+            {
+                load_key(state->galois_key, context, is);
+            }
+        }
+        if (role == session_role::owner)
+        {
+            load_key(state->secret_key, context, is);
+            state->decryptor.emplace(context, *state->secret_key);
+        }
+        return HESession(std::move(state));
+    }
+
+    BFVCiphertext
+    HESession<Scheme::BFV>::load_ciphertext(std::istream& is) const
+    {
+        Ciphertext<Scheme::BFV> ciphertext(state_->context);
+        ciphertext.load(is);
+        return wrap(std::move(ciphertext));
+    }
+
+    session_role HESession<Scheme::BFV>::role() const
+    {
+        if (state_->secret_key)
+        {
+            return session_role::owner;
+        }
+        return state_->relin_key ? session_role::evaluator
+                                 : session_role::encryptor;
     }
 
 } // namespace heongpu

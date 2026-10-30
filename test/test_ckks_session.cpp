@@ -10,6 +10,7 @@
 #include <cmath>
 #include <functional>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
@@ -638,4 +639,128 @@ TEST(CKKSSession, Gate_Bootstrapping)
     EXPECT_THROW(z.bootstrap(), heongpu::StateError);
     EXPECT_THROW(session.AND_bootstrapping(x, z),
                  heongpu::ContextMismatchError);
+}
+
+TEST(CKKSSession, Roles_Save_And_Load)
+{
+    using Role = heongpu::session_role;
+    Session owner(params(2), {1});
+    EXPECT_EQ(owner.role(), Role::owner);
+    int n = owner.slot_count();
+    std::vector<double> xs = values(n, 0.0);
+
+    // A server gets the keys of the evaluator and a ciphertext.
+    std::stringstream keys, input, output;
+    owner.save(keys, Role::evaluator);
+    owner.encrypt(xs).save(input);
+    Session server = Session::load(keys, Role::evaluator);
+    EXPECT_EQ(server.role(), Role::evaluator);
+    EXPECT_EQ(server.get_rescale_mode(), Mode::automatic);
+    auto x = server.load_ciphertext(input);
+    ((x * x).rotate(1) + 0.5).save(output);
+    EXPECT_THROW(server.decrypt(x), heongpu::StateError);
+    EXPECT_THROW(server.secret_key(), heongpu::StateError);
+    EXPECT_THROW(x.rotate(2), heongpu::KeyNotFoundError);
+    EXPECT_THROW(server.add_rotations({2}), heongpu::KeyNotFoundError);
+
+    std::vector<double> expected(n);
+    for (int i = 0; i < n; i++)
+    {
+        expected[i] = xs[(i + 1) % n] * xs[(i + 1) % n] + 0.5;
+    }
+    EXPECT_LT(max_error(owner.decrypt(owner.load_ciphertext(output)), expected),
+              tolerance);
+    // Ciphertexts the server encrypts.
+    std::stringstream encrypted;
+    server.encrypt(xs).save(encrypted);
+    EXPECT_LT(max_error(owner.decrypt(owner.load_ciphertext(encrypted)), xs),
+              tolerance);
+
+    // A client gets the public key.
+    std::stringstream public_keys, sent;
+    owner.save(public_keys, Role::encryptor);
+    Session client = Session::load(public_keys);
+    EXPECT_EQ(client.role(), Role::encryptor);
+    auto c = client.encrypt(xs) + 1.0;
+    EXPECT_THROW(c * c, heongpu::KeyNotFoundError);
+    EXPECT_THROW(c.rotate(1), heongpu::KeyNotFoundError);
+    EXPECT_THROW(client.relin_key(), heongpu::KeyNotFoundError);
+    c.save(sent);
+    EXPECT_LT(max_error(owner.decrypt(owner.load_ciphertext(sent)),
+                        slotwise(xs, [](double a) { return a + 1.0; })),
+              tolerance);
+
+    // The owner with all its keys, which adds rotations again.
+    std::stringstream all, again_input;
+    owner.save(all, Role::owner);
+    Session again = Session::load(all, Role::owner);
+    EXPECT_EQ(again.role(), Role::owner);
+    owner.encrypt(xs).save(again_input);
+    auto z = again.load_ciphertext(again_input);
+    EXPECT_NEAR(again.decrypt(z.rotate(5))[0], xs[5], tolerance);
+
+    // Roles that do not match.
+    std::stringstream evaluator_keys, owner_keys, sink;
+    owner.save(evaluator_keys, Role::evaluator);
+    owner.save(owner_keys, Role::owner);
+    EXPECT_THROW(Session::load(evaluator_keys, Role::owner),
+                 heongpu::StateError);
+    EXPECT_THROW(Session::load(owner_keys, Role::evaluator),
+                 heongpu::StateError);
+    EXPECT_THROW(server.save(sink, Role::owner), heongpu::StateError);
+    EXPECT_THROW(client.save(sink, Role::evaluator), heongpu::StateError);
+    EXPECT_THROW(owner.save(sink, static_cast<Role>(7)),
+                 heongpu::ParameterError);
+
+    // A ciphertext of other parameters, and data that is not a session.
+    Session other(params(3));
+    std::stringstream foreign;
+    other.encrypt(xs).save(foreign);
+    EXPECT_THROW(owner.load_ciphertext(foreign), heongpu::ContextMismatchError);
+    std::stringstream not_a_session;
+    owner.encrypt(xs).save(not_a_session);
+    EXPECT_THROW(Session::load(not_a_session), heongpu::SerializationError);
+    std::stringstream short_data;
+    owner.save(short_data, Role::evaluator);
+    std::stringstream truncated(short_data.str().substr(0, 20));
+    EXPECT_THROW(Session::load(truncated), heongpu::SerializationError);
+    std::stringstream empty;
+    EXPECT_THROW(Session::load(empty), heongpu::SerializationError);
+}
+
+TEST(CKKSSession, Saves_The_Manual_Rescale_Mode)
+{
+    heongpu::HEParams<S> p = params(2);
+    p.rescale_mode = Mode::manual;
+    Session owner(p);
+    std::stringstream keys;
+    owner.save(keys, heongpu::session_role::evaluator);
+    Session server = Session::load(keys);
+    EXPECT_EQ(server.get_rescale_mode(), Mode::manual);
+    EXPECT_EQ(server.scale(), owner.scale());
+}
+
+TEST(CKKSSession, Bootstrapping_Evaluator)
+{
+    using Role = heongpu::session_role;
+    Session owner(heongpu::CKKSBootstrappingPreset::regular(1));
+    std::stringstream keys, input, output;
+    owner.save(keys, Role::evaluator);
+    Session server = Session::load(keys, Role::evaluator);
+    ASSERT_TRUE(server.has_bootstrapping());
+    EXPECT_EQ(server.bootstrapping_levels().output_level,
+              owner.bootstrapping_levels().output_level);
+    EXPECT_EQ(server.context()->get_top_level(),
+              owner.context()->get_top_level());
+
+    int n = owner.slot_count();
+    std::vector<double> xs = values(n, 0.0);
+    owner.encrypt(xs).save(input);
+    auto x = server.load_ciphertext(input);
+    auto y = (x * x).bootstrap();
+    EXPECT_EQ(y.levels_left(), 1);
+    y.save(output);
+    EXPECT_LT(max_error(owner.decrypt(owner.load_ciphertext(output)),
+                        slotwise(xs, [](double a) { return a * a; })),
+              std::pow(2.0, -10));
 }

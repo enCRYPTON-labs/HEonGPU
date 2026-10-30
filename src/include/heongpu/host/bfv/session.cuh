@@ -9,7 +9,9 @@
 
 #include <concepts>
 #include <cstdint>
+#include <istream>
 #include <memory>
+#include <ostream>
 #include <shared_mutex>
 #include <vector>
 #include <heongpu/host/bfv/context.cuh>
@@ -104,6 +106,12 @@ namespace heongpu
         {
             return multiply(encode(values)).sum_slots();
         }
+
+        /**
+         * @brief Writes the ciphertext, which HESession::load_ciphertext of
+         * a session with the same keys reads.
+         */
+        void save(std::ostream& os) const { ciphertext_.save(os); }
 
         SessionCiphertext& operator+=(const SessionCiphertext& other)
         {
@@ -282,10 +290,11 @@ namespace heongpu
      * std::vector<std::uint64_t> result = session.decrypt(z);
      * @endcode
      *
-     * The session holds the secret key: it is for the party that encrypts
-     * and decrypts, not for a server that computes on ciphertexts it
-     * receives. Copies of the session share its state, and threads can
-     * use them at the same time.
+     * A session made from parameters is the owner of its keys. save() writes
+     * the session with the keys of a role, and load() reads it, for example
+     * for a server that computes without the secret key; see
+     * HESession<Scheme::CKKS>. Copies of the session share its state, and
+     * threads can use them at the same time.
      */
     template <> class HESession<Scheme::BFV>
     {
@@ -355,6 +364,33 @@ namespace heongpu
          */
         void add_rotations(const std::vector<int>& shifts) const;
 
+        /**
+         * @brief Writes the session with the keys of role: the context, the
+         * public key, for the evaluator also the relinearization and Galois
+         * keys, and for the owner also the secret key. Throws StateError if
+         * the session does not have them.
+         */
+        void save(std::ostream& os, session_role role) const;
+
+        /**
+         * @brief Reads a session that save() wrote. With expected, throws
+         * StateError, before reading the keys, unless the session was saved
+         * with that role.
+         */
+        static HESession load(std::istream& is);
+        static HESession load(std::istream& is, session_role expected);
+
+        /**
+         * @brief Reads a ciphertext that SessionCiphertext::save or
+         * Ciphertext::save wrote, which must have the parameters of the
+         * session; see wrap().
+         */
+        SessionCiphertext<Scheme::BFV> load_ciphertext(std::istream& is) const;
+
+        // The keys of the session: the owner has the secret key, the
+        // evaluator the relinearization key, the encryptor neither.
+        session_role role() const;
+
         int slot_count() const;
         Data64 plain_modulus() const;
 
@@ -374,6 +410,13 @@ namespace heongpu
 
       private:
         friend class SessionCiphertext<Scheme::BFV>;
+
+        explicit HESession(
+            std::shared_ptr<detail::SessionState<Scheme::BFV>> state);
+
+        // load(is) with expected, if it is not null.
+        static HESession load_session(std::istream& is,
+                                      const session_role* expected);
 
         SessionCiphertext<Scheme::BFV>
         result(Ciphertext<Scheme::BFV> ciphertext) const;

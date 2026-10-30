@@ -40,6 +40,8 @@ namespace heongpu
                         return "Plaintext";
                     case serialized_object::ciphertext:
                         return "Ciphertext";
+                    case serialized_object::session:
+                        return "HESession";
                 }
                 return "unknown";
             }
@@ -141,6 +143,16 @@ namespace heongpu
                 context_id |= std::uint64_t(fields[4 + i]) << (8 * i);
             }
             return context_id;
+        }
+
+        void check_not_truncated(const std::istream& is,
+                                 const char* object_name)
+        {
+            if (!is)
+            {
+                throw SerializationError(
+                    error_message("Truncated ", object_name, " binary!"));
+            }
         }
 
         void write_keyswitching_byte(std::ostream& os)

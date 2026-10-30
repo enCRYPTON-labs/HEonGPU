@@ -209,7 +209,28 @@ Sessions (HESession)
 * ``x.bootstrap()`` uses the regular, slim or bit bootstrapping of the preset; a gate preset has ``session.AND_bootstrapping(x, y)``, ``OR_bootstrapping``, ``XOR_bootstrapping``, ``NAND_bootstrapping``, ``NOR_bootstrapping`` and ``XNOR_bootstrapping`` instead.
 * The relinearization and Galois keys of the session are those of the bootstrapping, so rotations by their steps need no new keys. The keys and the bootstrapping matrices of ``regular()`` take about 11 GB of GPU memory.
 
-Copies of a session share its state, and a ``SessionCiphertext`` keeps the state of its session, so it stays usable after the session object is destroyed. Operations on ciphertexts of two different sessions raise ``ContextMismatchError``. The session holds the secret key: it is for the party that encrypts and decrypts. A server that computes on ciphertexts it receives uses the lower level API with the public evaluation keys.
+Copies of a session share its state, and threads can use them at the same time. A ``SessionCiphertext`` keeps the state of its session, so it stays usable after the session object is destroyed. Operations on ciphertexts of two different sessions raise ``ContextMismatchError``.
+
+**Roles, saving and loading.** A session made from parameters or a preset is the *owner* of its keys. ``save`` writes it with the keys of a role, and ``load`` reads it:
+
+.. code-block:: cpp
+
+    // The owner sends the keys of the evaluator, without the secret key, and a ciphertext.
+    owner.save(keys_file, heongpu::session_role::evaluator);
+    owner.encrypt(xs).save(input_file);
+
+    // The server computes and cannot decrypt.
+    auto server = heongpu::HESession<heongpu::Scheme::CKKS>::load(
+        keys_file, heongpu::session_role::evaluator);
+    auto x = server.load_ciphertext(input_file);
+    (x * x).rotate(1).save(output_file);
+
+    std::vector<double> result = owner.decrypt(owner.load_ciphertext(output_file));
+
+* ``session_role::owner`` saves all keys, ``evaluator`` the public, relinearization, Galois and bootstrapping keys, and ``encryptor`` the public key only. ``session.role()`` returns the role of a session.
+* A session without the secret key raises ``StateError`` for ``decrypt``, and ``KeyNotFoundError`` for a rotation by a step it has no key for, since it cannot generate one: the owner adds the step with ``add_rotations`` and saves the session again. An encryptor raises ``KeyNotFoundError`` for products of ciphertexts.
+* ``load(stream, role)`` raises ``StateError`` before reading the keys unless the session was saved with that role, so a server never holds a secret key it was sent by mistake.
+* The rescale mode, the scale and the bootstrapping parameters are saved with the session. The keys of the evaluator of ``CKKSBootstrappingPreset::regular()`` take several GB.
 
 Storage Management with `ExecutionOptions`
 ------------------------------------------

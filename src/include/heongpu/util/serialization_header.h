@@ -11,6 +11,9 @@
 #include <cstdint>
 #include <istream>
 #include <ostream>
+#include <algorithm>
+#include <type_traits>
+#include <vector>
 
 namespace heongpu
 {
@@ -26,7 +29,8 @@ namespace heongpu
             galois_key = 0x5,
             switch_key = 0x6,
             plaintext = 0x7,
-            ciphertext = 0x8
+            ciphertext = 0x8,
+            session = 0x9
         };
 
         // Writes the serialization_format::v2 header: the magic number
@@ -62,6 +66,56 @@ namespace heongpu
         void validate_loaded_context_identity(std::uint64_t object_id,
                                               std::uint64_t loaded_id,
                                               const char* object_name);
+
+        // Throws SerializationError for a stream that ended before the data
+        // of object_name.
+        void check_not_truncated(const std::istream& is,
+                                 const char* object_name);
+
+        // Fields written in the byte order of the host, as the objects do.
+        template <typename T> void write_field(std::ostream& os, const T& value)
+        {
+            static_assert(std::is_trivially_copyable_v<T>);
+            os.write(reinterpret_cast<const char*>(&value), sizeof(T));
+        }
+
+        template <typename T>
+        T read_field(std::istream& is, const char* object_name)
+        {
+            static_assert(std::is_trivially_copyable_v<T>);
+            T value{};
+            is.read(reinterpret_cast<char*>(&value), sizeof(T));
+            check_not_truncated(is, object_name);
+            return value;
+        }
+
+        template <typename T>
+        void write_field(std::ostream& os, const std::vector<T>& values)
+        {
+            write_field(os, static_cast<std::uint64_t>(values.size()));
+            os.write(reinterpret_cast<const char*>(values.data()),
+                     values.size() * sizeof(T));
+        }
+
+        template <typename T>
+        std::vector<T> read_vector_field(std::istream& is,
+                                         const char* object_name)
+        {
+            std::uint64_t size = read_field<std::uint64_t>(is, object_name);
+            std::vector<T> values;
+            // Read in parts, so that a corrupted size does not allocate the
+            // memory it claims.
+            constexpr std::uint64_t part = 1 << 16;
+            for (std::uint64_t done = 0; done < size; done += part)
+            {
+                std::uint64_t count = std::min(part, size - done);
+                values.resize(done + count);
+                is.read(reinterpret_cast<char*>(values.data() + done),
+                        count * sizeof(T));
+                check_not_truncated(is, object_name);
+            }
+            return values;
+        }
 
     } // namespace detail
 } // namespace heongpu

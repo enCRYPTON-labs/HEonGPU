@@ -138,6 +138,22 @@ namespace heongpu
         automatic = 0x1
     };
 
+    // The keys an HESession has, and those it saves; see HESession::save.
+    enum class session_role : std::uint8_t
+    {
+        // All keys: encrypts, computes, decrypts and generates new rotation
+        // keys.
+        owner = 0x0,
+
+        // The public key and the evaluation keys: encrypts and computes, as
+        // a server that must not decrypt.
+        evaluator = 0x1,
+
+        // The public key: encrypts, and computes without the products of
+        // ciphertexts and the rotations.
+        encryptor = 0x2
+    };
+
     enum class encoding : std::uint8_t
     {
         slot = 0x0,

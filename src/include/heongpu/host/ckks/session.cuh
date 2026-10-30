@@ -8,7 +8,9 @@
 #define HEONGPU_CKKS_SESSION_H
 
 #include <functional>
+#include <istream>
 #include <memory>
+#include <ostream>
 #include <shared_mutex>
 #include <vector>
 #include <heongpu/host/ckks/context.cuh>
@@ -80,6 +82,12 @@ namespace heongpu
          * HESession::AND_bootstrapping.
          */
         SessionCiphertext bootstrap() const;
+
+        /**
+         * @brief Writes the ciphertext, which HESession::load_ciphertext of
+         * a session with the same keys reads.
+         */
+        void save(std::ostream& os) const { ciphertext_.save(os); }
 
         /**
          * @brief Returns the ciphertext with its slots rotated left by shift
@@ -298,10 +306,19 @@ namespace heongpu
      * }
      * @endcode
      *
-     * The session holds the secret key: it is for the party that encrypts
-     * and decrypts, not for a server that computes on ciphertexts it
-     * receives. Copies of the session share its state, and threads can
-     * use them at the same time.
+     * A session made from parameters or a preset is the owner of its keys.
+     * save() writes the session with the keys of a role, and load() reads
+     * it, for example for a server that computes without the secret key:
+     * @code
+     * owner.save(file, heongpu::session_role::evaluator);
+     * auto server = heongpu::HESession<heongpu::Scheme::CKKS>::load(
+     *     file, heongpu::session_role::evaluator);
+     * auto y = server.load_ciphertext(input);
+     * (y * y).save(output);
+     * @endcode
+     *
+     * Copies of the session share its state, and threads can use them at the
+     * same time.
      */
     template <> class HESession<Scheme::CKKS>
     {
@@ -410,8 +427,38 @@ namespace heongpu
         XNOR_bootstrapping(const SessionCiphertext<Scheme::CKKS>& input1,
                            const SessionCiphertext<Scheme::CKKS>& input2) const;
 
-        // True for a session made from a CKKSBootstrappingPreset.
+        // True for a session made from a CKKSBootstrappingPreset, or loaded
+        // from one with the keys of the owner or the evaluator.
         bool has_bootstrapping() const;
+
+        /**
+         * @brief Writes the session with the keys of role: the context, the
+         * rescale mode, the public key, for the evaluator also the
+         * relinearization, Galois and bootstrapping keys and the
+         * bootstrapping parameters, and for the owner also the secret key.
+         * Throws StateError if the session does not have them.
+         */
+        void save(std::ostream& os, session_role role) const;
+
+        /**
+         * @brief Reads a session that save() wrote. With expected, throws
+         * StateError, before reading the keys, unless the session was saved
+         * with that role; a server that loads the keys of the evaluator
+         * thus never holds a secret key it was sent by mistake.
+         */
+        static HESession load(std::istream& is);
+        static HESession load(std::istream& is, session_role expected);
+
+        /**
+         * @brief Reads a ciphertext that SessionCiphertext::save or
+         * Ciphertext::save wrote, which must have the parameters of the
+         * session; see wrap().
+         */
+        SessionCiphertext<Scheme::CKKS> load_ciphertext(std::istream& is) const;
+
+        // The keys of the session: the owner has the secret key, the
+        // evaluator the relinearization key, the encryptor neither.
+        session_role role() const;
 
         /**
          * @brief Returns the levels of the bootstrapping of the session.
@@ -446,6 +493,13 @@ namespace heongpu
 
       private:
         friend class SessionCiphertext<Scheme::CKKS>;
+
+        explicit HESession(
+            std::shared_ptr<detail::SessionState<Scheme::CKKS>> state);
+
+        // load(is) with expected, if it is not null.
+        static HESession load_session(std::istream& is,
+                                      const session_role* expected);
 
         SessionCiphertext<Scheme::CKKS>
         result(Ciphertext<Scheme::CKKS> ciphertext) const;
