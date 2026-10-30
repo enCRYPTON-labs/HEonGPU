@@ -9,6 +9,7 @@
 
 #include <functional>
 #include <memory>
+#include <shared_mutex>
 #include <vector>
 #include <heongpu/host/ckks/context.cuh>
 #include <heongpu/host/ckks/secretkey.cuh>
@@ -247,7 +248,8 @@ namespace heongpu
      *
      * The session holds the secret key: it is for the party that encrypts
      * and decrypts, not for a server that computes on ciphertexts it
-     * receives. Copies of the session share its state.
+     * receives. Copies of the session share its state, and threads can
+     * use them at the same time.
      */
     template <> class HESession<Scheme::CKKS>
     {
@@ -337,7 +339,9 @@ namespace heongpu
         Secretkey<Scheme::CKKS>& secret_key() const;
         Publickey<Scheme::CKKS>& public_key() const;
         Relinkey<Scheme::CKKS>& relin_key() const;
-        // The Galois keys generated so far, with the conjugation key.
+        // The Galois keys generated so far, with the conjugation key. A
+        // rotation by a new step adds its key to it: do not use it while other
+        // threads rotate with the session.
         Galoiskey<Scheme::CKKS>& galois_key() const;
         HEEncoder<Scheme::CKKS>& encoder() const;
         HEEncryptor<Scheme::CKKS>& encryptor() const;
@@ -353,8 +357,16 @@ namespace heongpu
         // Throws ContextMismatchError unless input is of this session.
         void check_session(const SessionCiphertext<Scheme::CKKS>& input) const;
 
+        // Returns a shared lock of the Galois key of state, once it has the
+        // keys of shifts and the conjugation key. The lock keeps other threads
+        // from adding keys while the caller uses the key.
+        static std::shared_lock<std::shared_mutex>
+        rotation_keys(detail::SessionState<Scheme::CKKS>& state,
+                      const std::vector<int>& shifts);
+
         // Generates the Galois keys of state for the shifts it has no key
         // for, and the key with the conjugation key alone if it has no keys.
+        // The caller holds the lock of the key exclusively.
         static void
         generate_rotations(detail::SessionState<Scheme::CKKS>& state,
                            const std::vector<int>& shifts);

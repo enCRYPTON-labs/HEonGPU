@@ -9,6 +9,8 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <string>
+#include <thread>
 #include <vector>
 
 // HESession<Scheme::BFV> and the operators of SessionCiphertext.
@@ -231,6 +233,61 @@ TEST(BFVSession, Column_Rotation_First)
     // Then a rotation, added to the same key.
     EXPECT_EQ(session.decrypt(x.rotate(5))[0], xs[5]);
     EXPECT_EQ(session.decrypt(x.rotate_columns())[0], xs[row]);
+}
+
+TEST(BFVSession, Threads_Rotate_By_New_Steps)
+{
+    // Copies of a session share its Galois key; the threads add the keys of
+    // their steps to it while the others rotate with it.
+    Session session(params(1));
+    int n = session.slot_count();
+    int row = n / 2;
+    u64 t = session.plain_modulus();
+    std::vector<u64> xs = values(n, 1, t);
+    auto x = session.encrypt(xs);
+
+    constexpr int thread_count = 8;
+    constexpr int rounds = 3;
+    std::vector<std::string> failures(thread_count);
+    std::vector<std::thread> threads;
+    for (int k = 0; k < thread_count; k++)
+    {
+        threads.emplace_back(
+            [&, k, copy = session]()
+            {
+                try
+                {
+                    for (int r = 0; r < rounds; r++)
+                    {
+                        int shift = 1 + k + thread_count * r;
+                        std::vector<u64> result = copy.decrypt(x.rotate(shift));
+                        for (int i = 0; i < n; i++)
+                        {
+                            int base = (i / row) * row;
+                            if (result[i] != xs[base + (i % row + shift) % row])
+                            {
+                                failures[k] = "wrong slot " +
+                                              std::to_string(i) + " of shift " +
+                                              std::to_string(shift);
+                                return;
+                            }
+                        }
+                    }
+                }
+                catch (const std::exception& error)
+                {
+                    failures[k] = error.what();
+                }
+            });
+    }
+    for (std::thread& thread : threads)
+    {
+        thread.join();
+    }
+    for (int k = 0; k < thread_count; k++)
+    {
+        EXPECT_EQ(failures[k], "") << "thread " << k;
+    }
 }
 
 TEST(BFVSession, Noise_Budget)

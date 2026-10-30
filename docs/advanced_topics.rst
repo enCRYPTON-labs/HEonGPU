@@ -76,6 +76,7 @@ Supported toolchain: CUDA 12.8 or newer, a C++20 compiler (tested with GCC 11.4)
 * A generated context is not changed afterwards and can be shared by threads.
 * Keys and operators can be shared by threads that run operations on their own ciphertexts and plaintexts and their own CUDA streams, as the multi-stream examples do.
 * Operations do not change their inputs, so threads can share them. An object that an operation writes, or that is moved between host and device memory, must not be used by another thread at the same time.
+* An ``HESession`` and its copies can be used by several threads. A rotation by a step that has no key yet generates the key while the other rotations of the session wait; the key returned by ``galois_key()`` must not be used while other threads rotate with the session.
 * The memory pool is thread-safe. Call ``heongpu::initialize()`` and ``heongpu::shutdown()`` while no other thread uses HEonGPU.
 * Key generation, encryption and multiparty computation can run from several threads. They draw from one process-wide random number generator. It takes one request at a time on the host but does not wait for the GPU, so the GPU work of requests on different CUDA streams runs concurrently. The numbers of a seed, as the common polynomials of multiparty computation, are drawn without other threads drawing in between and are the same on every GPU and every kind of CUDA stream.
 

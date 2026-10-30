@@ -7,6 +7,7 @@
 #include <heongpu/host/bfv/session.cuh>
 #include <heongpu/host/bfv/keygenerator.cuh>
 #include <algorithm>
+#include <mutex>
 #include <optional>
 
 namespace heongpu
@@ -47,6 +48,9 @@ namespace heongpu
             // Created by the first rotation, unless the session is given
             // rotations.
             std::optional<Galoiskey<Scheme::BFV>> galois_key;
+            // Held shared while galois_key is used, and exclusively while
+            // keys are added to it.
+            std::shared_mutex galois_mutex;
             HEEncoder<Scheme::BFV> encoder;
             HEEncryptor<Scheme::BFV> encryptor;
             HEDecryptor<Scheme::BFV> decryptor;
@@ -171,7 +175,8 @@ namespace heongpu
         {
             return *this;
         }
-        HESession<Scheme::BFV>::generate_rotations(session, {step});
+        std::shared_lock<std::shared_mutex> lock =
+            HESession<Scheme::BFV>::rotation_keys(session, {step});
         return result(session.operators.rotate_rows(ciphertext_,
                                                     *session.galois_key, step));
     }
@@ -179,7 +184,8 @@ namespace heongpu
     BFVCiphertext SessionCiphertext<Scheme::BFV>::rotate_columns() const
     {
         BFVState& session = state();
-        HESession<Scheme::BFV>::generate_rotations(session, {});
+        std::shared_lock<std::shared_mutex> lock =
+            HESession<Scheme::BFV>::rotation_keys(session, {});
         return result(
             session.operators.rotate_columns(ciphertext_, *session.galois_key));
     }
@@ -199,6 +205,34 @@ namespace heongpu
         {
             generate_rotations(*state_, rotations);
         }
+    }
+
+    std::shared_lock<std::shared_mutex>
+    HESession<Scheme::BFV>::rotation_keys(BFVState& state,
+                                          const std::vector<int>& shifts)
+    {
+        int row_size = state.row_size();
+        std::shared_lock<std::shared_mutex> lock(state.galois_mutex);
+        bool present = state.galois_key.has_value();
+        for (int shift : shifts)
+        {
+            int step = ((shift % row_size) + row_size) % row_size;
+            present =
+                present && ((step == 0) ||
+                            (state.galois_key->galois_elt.count(step) != 0));
+        }
+        if (present)
+        {
+            return lock;
+        }
+        lock.unlock();
+        {
+            std::unique_lock<std::shared_mutex> exclusive(state.galois_mutex);
+            generate_rotations(state, shifts);
+        }
+        // Keys are only added, so the keys of shifts are still there.
+        lock.lock();
+        return lock;
     }
 
     void
@@ -322,7 +356,7 @@ namespace heongpu
     void
     HESession<Scheme::BFV>::add_rotations(const std::vector<int>& shifts) const
     {
-        generate_rotations(*state_, shifts);
+        rotation_keys(*state_, shifts);
     }
 
     int HESession<Scheme::BFV>::slot_count() const
@@ -357,7 +391,7 @@ namespace heongpu
 
     Galoiskey<Scheme::BFV>& HESession<Scheme::BFV>::galois_key() const
     {
-        generate_rotations(*state_, {});
+        rotation_keys(*state_, {});
         return *state_->galois_key;
     }
 

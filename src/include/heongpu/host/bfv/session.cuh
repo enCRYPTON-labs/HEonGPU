@@ -10,6 +10,7 @@
 #include <concepts>
 #include <cstdint>
 #include <memory>
+#include <shared_mutex>
 #include <vector>
 #include <heongpu/host/bfv/context.cuh>
 #include <heongpu/host/bfv/secretkey.cuh>
@@ -254,7 +255,8 @@ namespace heongpu
      *
      * The session holds the secret key: it is for the party that encrypts
      * and decrypts, not for a server that computes on ciphertexts it
-     * receives. Copies of the session share its state.
+     * receives. Copies of the session share its state, and threads can
+     * use them at the same time.
      */
     template <> class HESession<Scheme::BFV>
     {
@@ -332,7 +334,9 @@ namespace heongpu
         Secretkey<Scheme::BFV>& secret_key() const;
         Publickey<Scheme::BFV>& public_key() const;
         Relinkey<Scheme::BFV>& relin_key() const;
-        // The Galois keys generated so far, with the column rotation key.
+        // The Galois keys generated so far, with the column rotation key. A
+        // rotation by a new step adds its key to it: do not use it while other
+        // threads rotate with the session.
         Galoiskey<Scheme::BFV>& galois_key() const;
         HEEncoder<Scheme::BFV>& encoder() const;
         HEEncryptor<Scheme::BFV>& encryptor() const;
@@ -348,9 +352,16 @@ namespace heongpu
         // Throws ContextMismatchError unless input is of this session.
         void check_session(const SessionCiphertext<Scheme::BFV>& input) const;
 
+        // Returns a shared lock of the Galois key of state, once it has the
+        // keys of shifts and the column rotation key. The lock keeps other
+        // threads from adding keys while the caller uses the key.
+        static std::shared_lock<std::shared_mutex>
+        rotation_keys(detail::SessionState<Scheme::BFV>& state,
+                      const std::vector<int>& shifts);
+
         // Generates the Galois keys of state for the shifts it has no key
         // for, and the key with the column rotation key alone if it has no
-        // keys.
+        // keys. The caller holds the lock of the key exclusively.
         static void generate_rotations(detail::SessionState<Scheme::BFV>& state,
                                        const std::vector<int>& shifts);
 

@@ -7,6 +7,7 @@
 #include <heongpu/host/ckks/session.cuh>
 #include <heongpu/host/ckks/keygenerator.cuh>
 #include <algorithm>
+#include <mutex>
 #include <optional>
 
 namespace heongpu
@@ -44,6 +45,9 @@ namespace heongpu
             // Created by the first rotation or conjugation, unless the
             // session is given rotations.
             std::optional<Galoiskey<Scheme::CKKS>> galois_key;
+            // Held shared while galois_key is used, and exclusively while
+            // keys are added to it.
+            std::shared_mutex galois_mutex;
             HEEncoder<Scheme::CKKS> encoder;
             HEEncryptor<Scheme::CKKS> encryptor;
             HEDecryptor<Scheme::CKKS> decryptor;
@@ -184,7 +188,8 @@ namespace heongpu
         {
             return *this;
         }
-        HESession<Scheme::CKKS>::generate_rotations(session, {step});
+        std::shared_lock<std::shared_mutex> lock =
+            HESession<Scheme::CKKS>::rotation_keys(session, {step});
         return result(
             session.operators.rotate(ciphertext_, *session.galois_key, step));
     }
@@ -192,7 +197,8 @@ namespace heongpu
     CKKSCiphertext SessionCiphertext<Scheme::CKKS>::conjugate() const
     {
         State& session = state();
-        HESession<Scheme::CKKS>::generate_rotations(session, {});
+        std::shared_lock<std::shared_mutex> lock =
+            HESession<Scheme::CKKS>::rotation_keys(session, {});
         return result(
             session.operators.conjugate(ciphertext_, *session.galois_key));
     }
@@ -221,6 +227,34 @@ namespace heongpu
         {
             generate_rotations(*state_, rotations);
         }
+    }
+
+    std::shared_lock<std::shared_mutex>
+    HESession<Scheme::CKKS>::rotation_keys(State& state,
+                                           const std::vector<int>& shifts)
+    {
+        int slot_count = state.context->get_poly_modulus_degree() / 2;
+        std::shared_lock<std::shared_mutex> lock(state.galois_mutex);
+        bool present = state.galois_key.has_value();
+        for (int shift : shifts)
+        {
+            int step = detail::normalized_shift(shift, slot_count);
+            present =
+                present && ((step == 0) ||
+                            (state.galois_key->galois_elt.count(step) != 0));
+        }
+        if (present)
+        {
+            return lock;
+        }
+        lock.unlock();
+        {
+            std::unique_lock<std::shared_mutex> exclusive(state.galois_mutex);
+            generate_rotations(state, shifts);
+        }
+        // Keys are only added, so the keys of shifts are still there.
+        lock.lock();
+        return lock;
     }
 
     void
@@ -367,7 +401,7 @@ namespace heongpu
     void
     HESession<Scheme::CKKS>::add_rotations(const std::vector<int>& shifts) const
     {
-        generate_rotations(*state_, shifts);
+        rotation_keys(*state_, shifts);
     }
 
     int HESession<Scheme::CKKS>::slot_count() const
@@ -407,7 +441,7 @@ namespace heongpu
 
     Galoiskey<Scheme::CKKS>& HESession<Scheme::CKKS>::galois_key() const
     {
-        generate_rotations(*state_, {});
+        rotation_keys(*state_, {});
         return *state_->galois_key;
     }
 

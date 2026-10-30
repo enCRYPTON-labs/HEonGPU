@@ -10,6 +10,8 @@
 #include <cmath>
 #include <functional>
 #include <optional>
+#include <string>
+#include <thread>
 #include <vector>
 
 // HESession<Scheme::CKKS> and the operators of SessionCiphertext.
@@ -250,6 +252,60 @@ TEST(CKKSSession, Conjugation_First)
     session.add_rotations({7, 9});
     EXPECT_NEAR(session.decrypt(session.encrypt(xs).rotate(9))[0], xs[9],
                 tolerance);
+}
+
+TEST(CKKSSession, Threads_Rotate_By_New_Steps)
+{
+    // Copies of a session share its Galois key; the threads add the keys of
+    // their steps to it while the others rotate with it.
+    Session session(params(1));
+    int n = session.slot_count();
+    std::vector<double> xs = values(n, 0.0);
+    auto x = session.encrypt(xs);
+
+    constexpr int thread_count = 8;
+    constexpr int rounds = 3;
+    std::vector<std::string> failures(thread_count);
+    std::vector<std::thread> threads;
+    for (int t = 0; t < thread_count; t++)
+    {
+        threads.emplace_back(
+            [&, t, copy = session]()
+            {
+                try
+                {
+                    for (int r = 0; r < rounds; r++)
+                    {
+                        int shift = 1 + t + thread_count * r;
+                        std::vector<double> result =
+                            copy.decrypt(x.rotate(shift));
+                        for (int i = 0; i < n; i++)
+                        {
+                            if (std::abs(result[i] - xs[(i + shift) % n]) >
+                                tolerance)
+                            {
+                                failures[t] = "wrong slot " +
+                                              std::to_string(i) + " of shift " +
+                                              std::to_string(shift);
+                                return;
+                            }
+                        }
+                    }
+                }
+                catch (const std::exception& error)
+                {
+                    failures[t] = error.what();
+                }
+            });
+    }
+    for (std::thread& thread : threads)
+    {
+        thread.join();
+    }
+    for (int t = 0; t < thread_count; t++)
+    {
+        EXPECT_EQ(failures[t], "") << "thread " << t;
+    }
 }
 
 TEST(CKKSSession, Polynomials)
