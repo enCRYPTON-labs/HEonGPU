@@ -585,8 +585,8 @@ namespace heongpu
         inline int slot_count() const noexcept { return slot_count_; }
 
         /**
-         * @brief Encodes a message of double values at the top level with its
-         * scale, in rescale_mode::automatic; see
+         * @brief Encodes a message of double values at the top level of
+         * rescale_mode::automatic with its scale; see
          * HEContextImpl<Scheme::CKKS>::set_rescale_mode. Throws StateError in
          * rescale_mode::manual, which needs a scale.
          */
@@ -596,7 +596,8 @@ namespace heongpu
                const ExecutionOptions& options = ExecutionOptions(),
                encoding type = encoding::slot)
         {
-            encode(plain, message, level_scale(0), options, type);
+            encode(plain, message, level_scale(top_depth()), top_depth(),
+                   options, type);
         }
 
         /**
@@ -614,8 +615,8 @@ namespace heongpu
         }
 
         /**
-         * @brief Encodes a message of double values at the top level with its
-         * scale, in rescale_mode::automatic; see
+         * @brief Encodes a message of double values at the top level of
+         * rescale_mode::automatic with its scale; see
          * HEContextImpl<Scheme::CKKS>::set_rescale_mode. Throws StateError in
          * rescale_mode::manual, which needs a scale.
          */
@@ -625,7 +626,8 @@ namespace heongpu
                const ExecutionOptions& options = ExecutionOptions(),
                encoding type = encoding::slot)
         {
-            encode(plain, message, level_scale(0), options, type);
+            encode(plain, message, level_scale(top_depth()), top_depth(),
+                   options, type);
         }
 
         /**
@@ -643,8 +645,8 @@ namespace heongpu
         }
 
         /**
-         * @brief Encodes a message of complex values at the top level with its
-         * scale, in rescale_mode::automatic; see
+         * @brief Encodes a message of complex values at the top level of
+         * rescale_mode::automatic with its scale; see
          * HEContextImpl<Scheme::CKKS>::set_rescale_mode. Throws StateError in
          * rescale_mode::manual, which needs a scale.
          */
@@ -654,7 +656,8 @@ namespace heongpu
                const ExecutionOptions& options = ExecutionOptions(),
                encoding type = encoding::slot)
         {
-            encode(plain, message, level_scale(0), options, type);
+            encode(plain, message, level_scale(top_depth()), top_depth(),
+                   options, type);
         }
 
         /**
@@ -672,8 +675,8 @@ namespace heongpu
         }
 
         /**
-         * @brief Encodes a message of complex values at the top level with its
-         * scale, in rescale_mode::automatic; see
+         * @brief Encodes a message of complex values at the top level of
+         * rescale_mode::automatic with its scale; see
          * HEContextImpl<Scheme::CKKS>::set_rescale_mode. Throws StateError in
          * rescale_mode::manual, which needs a scale.
          */
@@ -683,7 +686,8 @@ namespace heongpu
                const ExecutionOptions& options = ExecutionOptions(),
                encoding type = encoding::slot)
         {
-            encode(plain, message, level_scale(0), options, type);
+            encode(plain, message, level_scale(top_depth()), top_depth(),
+                   options, type);
         }
 
         /**
@@ -849,7 +853,13 @@ namespace heongpu
                                  "rescale mode! Pass a scale, or set the mode "
                                  "with set_rescale_mode.");
             }
-            return context_->level_scales_[context_->Q_size - 1 - depth];
+            return context_->get_level_scale(context_->Q_size - 1 - depth);
+        }
+
+        // The depth of the top level of rescale_mode::automatic.
+        int top_depth() const
+        {
+            return context_->Q_size - 1 - context_->get_top_level();
         }
 
         void validate_depth(int depth) const

@@ -2384,9 +2384,14 @@ namespace heongpu
                 const ExecutionOptions& options);
 
         // Throws ParameterError unless input has the scale of its level, or
-        // its square if input needs a rescaling.
+        // its square if input needs a rescaling, and LevelMismatchError for
+        // a level above the top level.
         void check_level_scale(const Ciphertext<Scheme::CKKS>& input) const;
         void check_level_scale(const Plaintext<Scheme::CKKS>& input) const;
+
+        // Throws LevelMismatchError for an operand at a level above the top
+        // level of rescale_mode::automatic, which has no scale.
+        void check_top_level(int level, const char* operand) const;
 
         // Brings two operands to the same level and to the scales of that
         // level. Both are rescaled first if they need it, unless both need

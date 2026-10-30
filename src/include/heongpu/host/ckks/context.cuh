@@ -74,11 +74,19 @@ namespace heongpu
          * HEArithmeticOperator<Scheme::CKKS>. HEParams<Scheme::CKKS> chooses
          * primes that keep every s_l next to scale.
          *
+         * top_level, the top level by default, is the level L of scale; the
+         * levels above it have no scale. A context for bootstrapping sets it
+         * to the level of the bootstrapping results, which have scale: the
+         * levels above are those the bootstrapping uses. Operations in
+         * rescale_mode::automatic throw LevelMismatchError for operands above
+         * top_level.
+         *
          * The mode is not part of the identity of the context and is not
          * saved with it: keys and ciphertexts are the same in both modes. Set
          * it again after load().
          */
-        void set_rescale_mode(rescale_mode mode, double scale = 0.0);
+        void set_rescale_mode(rescale_mode mode, double scale = 0.0,
+                              int top_level = -1);
 
         inline rescale_mode get_rescale_mode() const noexcept
         {
@@ -87,9 +95,17 @@ namespace heongpu
 
         /**
          * @brief Returns the scale of level in rescale_mode::automatic, see
-         * set_rescale_mode.
+         * set_rescale_mode. Throws LevelMismatchError for a level above the
+         * top level.
          */
         double get_level_scale(int level) const;
+
+        /**
+         * @brief Returns the top level of rescale_mode::automatic, the level
+         * of the scale given to set_rescale_mode; the top level of the
+         * context in rescale_mode::manual.
+         */
+        int get_top_level() const noexcept;
 
         /**
          * @brief Writes the encryption parameters to os, std::cout by
@@ -152,8 +168,10 @@ namespace heongpu
 
         rescale_mode rescale_mode_ = rescale_mode::manual;
         // The scale of every level in rescale_mode::automatic, indexed by
-        // level.
+        // level; 0 above top_level_.
         std::vector<double> level_scales_;
+        // The top level of rescale_mode::automatic.
+        int top_level_ = 0;
 
         scheme_type scheme_;
         sec_level_type sec_level_;

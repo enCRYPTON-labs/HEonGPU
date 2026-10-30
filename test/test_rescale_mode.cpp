@@ -119,6 +119,92 @@ TEST(RescaleMode, Products_Have_The_Scales_Of_The_Levels)
     }
 }
 
+TEST(RescaleMode, Top_Level_Below_The_Top)
+{
+    // A context for bootstrapping gives the scale to the level of the
+    // bootstrapping results; the levels above have no scale.
+    constexpr int depth = 6;
+    constexpr int top = 4;
+    const double scale = std::pow(2.0, 40);
+    auto set = params(depth).generate();
+    auto context = set.make_context();
+    context->generate();
+    EXPECT_EQ(context->get_top_level(), depth);
+    for (int invalid : {-2, depth + 1})
+    {
+        EXPECT_THROW(context->set_rescale_mode(Mode::automatic, scale, invalid),
+                     heongpu::ParameterError);
+    }
+
+    context->set_rescale_mode(Mode::automatic, scale, top);
+    EXPECT_EQ(context->get_top_level(), top);
+    EXPECT_EQ(context->get_level_scale(top), scale);
+    for (int level = top; level > 0; level--)
+    {
+        double s = context->get_level_scale(level);
+        EXPECT_EQ(context->get_level_scale(level - 1),
+                  s * s / double(set.coeff_modulus[level]));
+    }
+    EXPECT_THROW(context->get_level_scale(top + 1),
+                 heongpu::LevelMismatchError);
+
+    heongpu::HEKeyGenerator<S> generator(context);
+    auto secret_key = generator.secret_key();
+    auto public_key = generator.public_key(secret_key);
+    auto relin_key = generator.relin_key(secret_key);
+    heongpu::HEEncoder<S> encoder(context);
+    heongpu::HEEncryptor<S> encryptor(context, public_key);
+    heongpu::HEDecryptor<S> decryptor(context, secret_key);
+    heongpu::HEArithmeticOperator<S> ops(context, encoder);
+
+    int n = context->get_poly_modulus_degree() / 2;
+    std::vector<double> x(n), y(n), expected(n);
+    for (int i = 0; i < n; i++)
+    {
+        x[i] = 0.5 * std::sin(0.01 * i);
+        y[i] = 0.5 * std::cos(0.01 * i);
+        expected[i] = x[i] * x[i] * y[i] + x[i];
+    }
+    // Messages are encoded at the top level.
+    auto px = encoder.encode(x);
+    EXPECT_EQ(px.depth(), depth - top);
+    EXPECT_EQ(px.scale(), scale);
+    auto cx = encryptor.encrypt(px);
+    auto cy = encryptor.encrypt(encoder.encode(y));
+    EXPECT_EQ(cx.level(), top);
+
+    auto z = ops.multiply(cx, cx);
+    ops.relinearize_inplace(z, relin_key);
+    z = ops.multiply(z, cy);
+    ops.relinearize_inplace(z, relin_key);
+    z = ops.add(z, cx);
+    EXPECT_EQ(z.level(), top - 2);
+    EXPECT_EQ(z.scale(), context->get_level_scale(top - 2));
+    std::vector<double> result = encoder.decode(decryptor.decrypt(z));
+    for (int i = 0; i < n; i++)
+    {
+        ASSERT_NEAR(result[i], expected[i], 1e-5) << "slot " << i;
+    }
+
+    // Above the top level.
+    EXPECT_THROW(encoder.encode(x, 0), heongpu::LevelMismatchError);
+    auto high = encryptor.encrypt(encoder.encode(x, scale, 0));
+    EXPECT_THROW(ops.add(high, high), heongpu::LevelMismatchError);
+    EXPECT_THROW(ops.multiply(high, high), heongpu::LevelMismatchError);
+    // Brought down to the level of the other operand, with its scale.
+    auto sum = ops.add(high, cx);
+    EXPECT_EQ(sum.level(), top);
+    result = encoder.decode(decryptor.decrypt(sum));
+    EXPECT_NEAR(result[7], 2.0 * x[7], 1e-5);
+
+    // Back to the top of the context.
+    context->set_rescale_mode(Mode::automatic, scale);
+    EXPECT_EQ(context->get_top_level(), depth);
+    EXPECT_EQ(encoder.encode(x).depth(), 0);
+    context->set_rescale_mode(Mode::manual);
+    EXPECT_EQ(context->get_top_level(), depth);
+}
+
 TEST(RescaleMode, Encoding_With_The_Scales_Of_The_Levels)
 {
     constexpr int depth = 5;

@@ -149,6 +149,7 @@ namespace heongpu
 
         // Rescaling from the level above divides by its prime.
         int level = context_->Q_size - 1 - depth;
+        check_top_level(level, "ciphertext");
         double target = context_->level_scales_[level];
         double prime =
             static_cast<double>(context_->prime_vector_[level + 1].value);
@@ -161,9 +162,24 @@ namespace heongpu
         return storage;
     }
 
+    void HEOperator<Scheme::CKKS>::check_top_level(int level,
+                                                   const char* operand) const
+    {
+        if (level > context_->top_level_)
+        {
+            throw LevelMismatchError(error_message(
+                "The ", operand, " at level ", level,
+                " is above the top level ", context_->top_level_,
+                " of the automatic rescale mode, which bootstrapping uses! "
+                "Encode messages at the top level, with "
+                "HEEncoder::encode(message)."));
+        }
+    }
+
     void HEOperator<Scheme::CKKS>::check_level_scale(
         const Ciphertext<Scheme::CKKS>& input) const
     {
+        check_top_level(input.level(), "ciphertext");
         double expected = context_->level_scales_[input.level()];
         if (input.rescale_required_)
         {
@@ -183,6 +199,7 @@ namespace heongpu
         const Plaintext<Scheme::CKKS>& input) const
     {
         int level = context_->Q_size - 1 - input.depth_;
+        check_top_level(level, "plaintext");
         double expected = context_->level_scales_[level];
         if (!same_scale(input.scale_, expected))
         {

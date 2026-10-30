@@ -254,7 +254,8 @@ namespace heongpu
     }
 
     void HEContextImpl<Scheme::CKKS>::set_rescale_mode(rescale_mode mode,
-                                                       double scale)
+                                                       double scale,
+                                                       int top_level)
     {
         if (!coeff_modulus_specified_)
         {
@@ -275,11 +276,23 @@ namespace heongpu
                         " for the automatic rescale mode! Expected a "
                         "positive scale, the scale of the top level."));
                 }
+                if (top_level == -1)
+                {
+                    top_level = Q_size - 1;
+                }
+                if ((top_level < 0) || (top_level >= Q_size))
+                {
+                    throw ParameterError(error_message(
+                        "Invalid top level ", top_level,
+                        " for the automatic rescale mode! Expected 0 to ",
+                        Q_size - 1, ", or -1 for the top level."));
+                }
                 // The scale a multiplication of two ciphertexts of level l
                 // and a rescaling give, computed as the operators do.
                 level_scales_.assign(Q_size, 0.0);
-                level_scales_[Q_size - 1] = scale;
-                for (int level = Q_size - 1; level > 0; level--)
+                level_scales_[top_level] = scale;
+                top_level_ = top_level;
+                for (int level = top_level; level > 0; level--)
                 {
                     double square = level_scales_[level] * level_scales_[level];
                     level_scales_[level - 1] =
@@ -308,7 +321,19 @@ namespace heongpu
                                                "! Expected 0 to ",
                                                level_scales_.size() - 1, "."));
         }
+        if (level > top_level_)
+        {
+            throw LevelMismatchError(error_message(
+                "Level ", level, " is above the top level ", top_level_,
+                " of the automatic rescale mode and has no scale!"));
+        }
         return level_scales_[level];
+    }
+
+    int HEContextImpl<Scheme::CKKS>::get_top_level() const noexcept
+    {
+        return (rescale_mode_ == rescale_mode::automatic) ? top_level_
+                                                          : Q_size - 1;
     }
 
     void HEContextImpl<Scheme::CKKS>::generate()
