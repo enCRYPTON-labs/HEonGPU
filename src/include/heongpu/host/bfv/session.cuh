@@ -234,9 +234,7 @@ namespace heongpu
         SessionCiphertext result(Ciphertext<Scheme::BFV> ciphertext) const;
 
         std::shared_ptr<detail::SessionState<Scheme::BFV>> state_;
-        // Mutable because the operators take their inputs by non-const
-        // reference without changing them.
-        mutable Ciphertext<Scheme::BFV> ciphertext_;
+        Ciphertext<Scheme::BFV> ciphertext_;
     };
 
     /**

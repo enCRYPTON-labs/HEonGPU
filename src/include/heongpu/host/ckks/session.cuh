@@ -245,9 +245,7 @@ namespace heongpu
         SessionCiphertext result(Ciphertext<Scheme::CKKS> ciphertext) const;
 
         std::shared_ptr<detail::SessionState<Scheme::CKKS>> state_;
-        // Mutable because the operators take their inputs by non-const
-        // reference without changing them.
-        mutable Ciphertext<Scheme::CKKS> ciphertext_;
+        Ciphertext<Scheme::CKKS> ciphertext_;
     };
 
     /**
