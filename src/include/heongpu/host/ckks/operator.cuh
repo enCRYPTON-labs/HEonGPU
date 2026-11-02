@@ -3231,6 +3231,9 @@ namespace heongpu
                                     add(input1_, input2_, inner_input2,
                                         options_inner);
 
+                                    mod_drop_inplace(inner_input2,
+                                                     options_inner);
+
                                     sub(inner_input2, inner_input1, output_,
                                         options_inner);
                                 },
@@ -3314,6 +3317,9 @@ namespace heongpu
 
                                     add_plain(input1_, input2_, inner_input2,
                                               options_inner);
+
+                                    mod_drop_inplace(inner_input2,
+                                                     options_inner);
 
                                     sub(inner_input2, inner_input1, output_,
                                         options_inner);
@@ -3404,6 +3410,9 @@ namespace heongpu
                                     add(input1_, input2_, inner_input2,
                                         options_inner);
 
+                                    mod_drop_inplace(inner_input2,
+                                                     options_inner);
+
                                     sub(inner_input2, inner_input1, output_,
                                         options_inner);
                                 },
@@ -3489,6 +3498,9 @@ namespace heongpu
 
                                     add_plain(input1_, input2_, inner_input2,
                                               options_inner);
+
+                                    mod_drop_inplace(inner_input2,
+                                                     options_inner);
 
                                     sub(inner_input2, inner_input1, output_,
                                         options_inner);
@@ -3729,6 +3741,9 @@ namespace heongpu
                                     add(input1_, input2_, inner_input2,
                                         options_inner);
 
+                                    mod_drop_inplace(inner_input2,
+                                                     options_inner);
+
                                     sub(inner_input2, inner_input1, output_,
                                         options_inner);
 
@@ -3815,6 +3830,9 @@ namespace heongpu
 
                                     add_plain(input1_, input2_, inner_input2,
                                               options_inner);
+
+                                    mod_drop_inplace(inner_input2,
+                                                     options_inner);
 
                                     sub(inner_input2, inner_input1, output_,
                                         options_inner);
@@ -3908,6 +3926,9 @@ namespace heongpu
                                     add(input1_, input2_, inner_input2,
                                         options_inner);
 
+                                    mod_drop_inplace(inner_input2,
+                                                     options_inner);
+
                                     sub(inner_input2, inner_input1, output_,
                                         options_inner);
 
@@ -3998,7 +4019,8 @@ namespace heongpu
                                     add_plain(input1_, input2_, inner_input2,
                                               options_inner);
 
-                                    mod_drop_inplace(inner_input2);
+                                    mod_drop_inplace(inner_input2,
+                                                     options_inner);
 
                                     sub(inner_input2, inner_input1, output_,
                                         options_inner);
