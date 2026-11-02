@@ -77,6 +77,9 @@ namespace heongpu
             sum += static_cast<int64_t>(1) << shift;
         }
         int64_t result = sum * half_bg;
+        // Round the bits below the last digit instead of truncating them,
+        // which would bias every decomposition.
+        result += static_cast<int64_t>(1) << (32 - l * bg_bit - 1);
         return static_cast<int>(result);
     }
 
