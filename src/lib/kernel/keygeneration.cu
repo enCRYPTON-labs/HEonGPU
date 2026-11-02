@@ -877,10 +877,13 @@ namespace heongpu
                             offset_b + offset_in_b + base_index;
 
                         double noise_reg = noise[output_b_index];
-                        // Make it efficient
+                        // Round in a signed type before reducing modulo 2^32.
+                        // Casting a negative floating point value directly to
+                        // uint32_t is undefined behavior (on the device it
+                        // gives 0, which made the noise one-sided).
                         double frac = noise_reg - trunc(noise_reg);
-                        double x = frac * 4294967296.0; // 1ULL<<32 = 4294967296
-                        uint32_t u = static_cast<uint32_t>(floor(x + 0.5));
+                        uint32_t u =
+                            static_cast<uint32_t>(llround(frac * 4294967296.0));
 
                         output_b[output_b_index] = static_cast<int32_t>(
                             block_sum + message + static_cast<int32_t>(u));
