@@ -76,6 +76,7 @@ set(EXECUTABLES
     mpc_relinkey_testcases test_mpc_relinkey.cpp
     ckks_logic_testcases test_ckks_logic.cpp
     tfhe_gate_composition_testcases test_tfhe_gate_composition.cpp
+    ckks_stream_order_testcases test_ckks_stream_order.cpp
 )
 
 function(add_test exe source)

@@ -2695,17 +2695,17 @@ namespace heongpu
                                                      const double scale,
                                                      int rns_count);
 
-        __host__ void quick_ckks_encoder_constant_complex(Complex64 input,
-                                                          Data64* output,
-                                                          const double scale);
+        __host__ void quick_ckks_encoder_constant_complex(
+            Complex64 input, Data64* output, const double scale,
+            cudaStream_t stream = cudaStreamDefault);
 
-        __host__ void quick_ckks_encoder_constant_double(double input,
-                                                         Data64* output,
-                                                         const double scale);
+        __host__ void quick_ckks_encoder_constant_double(
+            double input, Data64* output, const double scale,
+            cudaStream_t stream = cudaStreamDefault);
 
-        __host__ void quick_ckks_encoder_constant_integer(std::int64_t input,
-                                                          Data64* output,
-                                                          const double scale);
+        __host__ void quick_ckks_encoder_constant_integer(
+            std::int64_t input, Data64* output, const double scale,
+            cudaStream_t stream = cudaStreamDefault);
 
         __host__ std::vector<heongpu::DeviceVector<Data64>>
         encode_V_matrixs(Vandermonde& vandermonde, int start_level);

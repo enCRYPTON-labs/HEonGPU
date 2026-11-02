@@ -77,6 +77,34 @@ namespace heongpu
         {
             return std::abs(scale - expected) <= 1e-9 * expected;
         }
+
+        // A copy of a ciphertext or plaintext runs on the stream of its
+        // source, after the work that wrote it. Makes stream wait for the
+        // work enqueued on source so far.
+        void wait_for(cudaStream_t stream, cudaStream_t source)
+        {
+            if (stream == source)
+            {
+                return;
+            }
+            cudaEvent_t copied;
+            HEONGPU_CUDA_CHECK(
+                cudaEventCreateWithFlags(&copied, cudaEventDisableTiming));
+            HEONGPU_CUDA_CHECK(cudaEventRecord(copied, source));
+            HEONGPU_CUDA_CHECK(cudaStreamWaitEvent(stream, copied, 0));
+            HEONGPU_CUDA_CHECK(cudaEventDestroy(copied));
+        }
+
+        // Copies input to output for the work of stream, which then uses and
+        // frees output.
+        void copy_to_stream(const Ciphertext<Scheme::CKKS>& input,
+                            Ciphertext<Scheme::CKKS>& output,
+                            cudaStream_t stream)
+        {
+            output = input;
+            wait_for(stream, input.stream());
+            output.switch_stream(stream);
+        }
     } // namespace
 
     HEOperator<Scheme::CKKS>::ManualScope::ManualScope()
@@ -151,7 +179,7 @@ namespace heongpu
         ManualScope manual;
         if (&storage != &input)
         {
-            storage = input;
+            copy_to_stream(input, storage, options.stream_);
         }
         rescale_inplace(storage, options);
         return storage;
@@ -168,7 +196,7 @@ namespace heongpu
         ManualScope manual;
         if (&storage != &input)
         {
-            storage = input;
+            copy_to_stream(input, storage, options.stream_);
         }
         while (storage.depth_ < depth - 1)
         {
@@ -281,6 +309,8 @@ namespace heongpu
         {
             ManualScope manual;
             storage2 = *input2;
+            wait_for(options.stream_, input2->device_locations_.stream());
+            storage2.device_locations_.set_stream(options.stream_);
             while (storage2.depth_ < input1->depth_)
             {
                 mod_drop_inplace(storage2, options);
@@ -967,8 +997,8 @@ namespace heongpu
             imag_rns_host[i] = NTL::to_long(imag_mod);
         }
 
-        DeviceVector<Data64> real_rns = DeviceVector<Data64>(real_rns_host);
-        DeviceVector<Data64> imag_rns = DeviceVector<Data64>(imag_rns_host);
+        DeviceVector<Data64> real_rns(real_rns_host, stream);
+        DeviceVector<Data64> imag_rns(imag_rns_host, stream);
 
         cipher_add_by_gaussian_integer_kernel<<<
             dim3((context_->n >> 8), current_decomp_count, cipher_size), 256, 0,
@@ -1063,8 +1093,8 @@ namespace heongpu
             imag_rns_host[i] = NTL::to_long(imag_mod);
         }
 
-        DeviceVector<Data64> real_rns = DeviceVector<Data64>(real_rns_host);
-        DeviceVector<Data64> imag_rns = DeviceVector<Data64>(imag_rns_host);
+        DeviceVector<Data64> real_rns(real_rns_host, stream);
+        DeviceVector<Data64> imag_rns(imag_rns_host, stream);
 
         cipher_mult_by_gaussian_integer_kernel<<<
             dim3((context_->n >> 8), current_decomp_count, cipher_size), 256, 0,
@@ -2553,7 +2583,8 @@ namespace heongpu
     }
 
     __host__ void HEOperator<Scheme::CKKS>::quick_ckks_encoder_constant_complex(
-        Complex64 input, Data64* output, const double scale)
+        Complex64 input, Data64* output, const double scale,
+        cudaStream_t stream)
     {
         // std::vector<Complex64> in = {input};
         std::vector<Complex64> in;
@@ -2561,10 +2592,10 @@ namespace heongpu
         {
             in.push_back(input);
         }
-        DeviceVector<Complex64> message_gpu(slot_count_);
-        cudaMemcpy(message_gpu.data(), in.data(), in.size() * sizeof(Complex64),
-                   cudaMemcpyHostToDevice);
-        HEONGPU_CUDA_CHECK(cudaGetLastError());
+        DeviceVector<Complex64> message_gpu(slot_count_, stream);
+        HEONGPU_CUDA_CHECK(cudaMemcpyAsync(message_gpu.data(), in.data(),
+                                           in.size() * sizeof(Complex64),
+                                           cudaMemcpyHostToDevice, stream));
 
         double fix = scale / static_cast<double>(slot_count_);
 
@@ -2572,13 +2603,13 @@ namespace heongpu
         cfg_ifft.n_power = log_slot_count_;
         cfg_ifft.fft_type = gpufft::type::INVERSE;
         cfg_ifft.mod_inverse = Complex64(fix, 0.0);
-        cfg_ifft.stream = 0;
+        cfg_ifft.stream = stream;
 
         gpufft::GPU_Special_FFT(message_gpu.data(),
                                 special_ifft_roots_table_->data(), cfg_ifft, 1);
 
-        encode_kernel_ckks_conversion<<<dim3(((slot_count_) >> 8), 1, 1),
-                                        256>>>(
+        encode_kernel_ckks_conversion<<<dim3(((slot_count_) >> 8), 1, 1), 256,
+                                        0, stream>>>(
             output, message_gpu.data(), context_->modulus_->data(),
             context_->Q_size, two_pow_64_, reverse_order_->data(),
             context_->n_power);
@@ -2590,7 +2621,7 @@ namespace heongpu
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
             .zero_padding = false,
-            .stream = 0};
+            .stream = stream};
 
         gpuntt::GPU_NTT_Inplace(output, context_->ntt_table_->data(),
                                 context_->modulus_->data(), cfg_ntt,
@@ -2598,24 +2629,25 @@ namespace heongpu
     }
 
     __host__ void HEOperator<Scheme::CKKS>::quick_ckks_encoder_constant_double(
-        double input, Data64* output, const double scale)
+        double input, Data64* output, const double scale, cudaStream_t stream)
     {
         double value = input * scale;
 
         encode_kernel_double_ckks_conversion<<<dim3((context_->n >> 8), 1, 1),
-                                               256>>>(
+                                               256, 0, stream>>>(
             output, value, context_->modulus_->data(), context_->Q_size,
             two_pow_64_, context_->n_power);
         HEONGPU_CUDA_CHECK(cudaGetLastError());
     }
 
     __host__ void HEOperator<Scheme::CKKS>::quick_ckks_encoder_constant_integer(
-        std::int64_t input, Data64* output, const double scale)
+        std::int64_t input, Data64* output, const double scale,
+        cudaStream_t stream)
     {
         double value = static_cast<double>(input) * scale;
 
         encode_kernel_double_ckks_conversion<<<dim3((context_->n >> 8), 1, 1),
-                                               256>>>(
+                                               256, 0, stream>>>(
             output, value, context_->modulus_->data(), context_->Q_size,
             two_pow_64_, context_->n_power);
         HEONGPU_CUDA_CHECK(cudaGetLastError());
@@ -2753,19 +2785,8 @@ namespace heongpu
         const Galoiskey<Scheme::CKKS>& galois_key,
         const ExecutionOptions& options)
     {
-        // The copy runs on the stream of cipher, after the work that wrote
-        // it; the stream of the operation waits for it.
-        Ciphertext<Scheme::CKKS> result = cipher;
-        if (cipher.stream() != options.stream_)
-        {
-            cudaEvent_t copied;
-            HEONGPU_CUDA_CHECK(
-                cudaEventCreateWithFlags(&copied, cudaEventDisableTiming));
-            HEONGPU_CUDA_CHECK(cudaEventRecord(copied, cipher.stream()));
-            HEONGPU_CUDA_CHECK(cudaStreamWaitEvent(options.stream_, copied, 0));
-            HEONGPU_CUDA_CHECK(cudaEventDestroy(copied));
-            result.switch_stream(options.stream_);
-        }
+        Ciphertext<Scheme::CKKS> result;
+        copy_to_stream(cipher, result, options.stream_);
 
         int matrix_count = diags_matrices_bsgs_.size();
         int n = context_->n;
@@ -3754,11 +3775,11 @@ namespace heongpu
         {
             Ciphertext<Scheme::CKKS> xi_term = powered_ciphers[i];
 
-            DeviceVector<Data64> encoded_coeff_i(context_->Q_size
-                                                 << context_->n_power);
-            quick_ckks_encoder_constant_complex(pol.coeffs_[i],
-                                                encoded_coeff_i.data(),
-                                                target_scale / xi_term.scale_);
+            DeviceVector<Data64> encoded_coeff_i(
+                context_->Q_size << context_->n_power, options.stream_);
+            quick_ckks_encoder_constant_complex(
+                pol.coeffs_[i], encoded_coeff_i.data(),
+                target_scale / xi_term.scale_, options.stream_);
             HEONGPU_CUDA_CHECK(cudaGetLastError());
 
             int current_decomp_count = context_->Q_size - xi_term.depth_;
@@ -4029,8 +4050,8 @@ namespace heongpu
         int degree = static_cast<int>(coefficients.size()) - 1;
         Polynomial pol(degree, coeffs, true, type, -1.0, 1.0);
 
-        // evaluate_poly moves its input to the stream of options.
-        Ciphertext<Scheme::CKKS> input = input1;
+        Ciphertext<Scheme::CKKS> input;
+        copy_to_stream(input1, input, options.stream_);
         if (target_scale == 0.0)
         {
             target_scale = input1.scale_;
@@ -5205,7 +5226,8 @@ namespace heongpu
         // An input above level 0 is brought down to it.
         if (input1.level() > 0)
         {
-            Ciphertext<Scheme::CKKS> dropped = input1;
+            Ciphertext<Scheme::CKKS> dropped;
+            copy_to_stream(input1, dropped, options.stream_);
             while (dropped.level() > 0)
             {
                 mod_drop_inplace(dropped, options);
@@ -5315,7 +5337,8 @@ namespace heongpu
         // An input above the SlotToCoeff start level is brought down to it.
         if (input1.level() > stc_config_.level_start_)
         {
-            Ciphertext<Scheme::CKKS> dropped = input1;
+            Ciphertext<Scheme::CKKS> dropped;
+            copy_to_stream(input1, dropped, options.stream_);
             while (dropped.level() > stc_config_.level_start_)
             {
                 mod_drop_inplace(dropped, options);
@@ -5677,7 +5700,8 @@ namespace heongpu
         // An input above the SlotToCoeff start level is brought down to it.
         if (input1.level() > stc_config_.level_start_)
         {
-            Ciphertext<Scheme::CKKS> dropped = input1;
+            Ciphertext<Scheme::CKKS> dropped;
+            copy_to_stream(input1, dropped, options.stream_);
             while (dropped.level() > stc_config_.level_start_)
             {
                 mod_drop_inplace(dropped, options);
