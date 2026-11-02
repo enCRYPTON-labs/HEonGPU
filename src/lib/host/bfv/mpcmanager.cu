@@ -266,7 +266,7 @@ namespace heongpu
                                         error_std_dev, e0,
                                         context_->modulus_->data(),
                                         context_->n_power,
-                                        context_->Q_prime_size, 2,
+                                        context_->Q_prime_size, 2 * context_->d,
                                         options.stream_);
 
                                 RandomNumberGenerator::instance().with_seed(

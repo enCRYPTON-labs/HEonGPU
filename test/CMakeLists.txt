@@ -73,6 +73,7 @@ set(EXECUTABLES
     random_testcases test_random.cpp
     inputs_testcases test_inputs.cpp
     storage_testcases test_storage.cpp
+    mpc_relinkey_testcases test_mpc_relinkey.cpp
 )
 
 function(add_test exe source)
