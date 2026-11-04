@@ -1,0 +1,104 @@
+name: GPU tests (simulated)
+
+# Optional, non-required check. The runners have no GPU, so this runs a subset
+# of the tests on a simulated NVIDIA A100
+# (https://github.com/pantheongpu/pantheonsim). A simulator cannot reproduce
+# hardware-specific behaviour or timing, so it complements real-GPU testing and
+# does not replace it.
+
+# Only changes that can affect the build run it, as in ci.yml. A push to main
+# keeps the simulator build cache on the default branch, where pull requests
+# can restore it.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "CMakeLists.txt"
+      - "cmake/**"
+      - "src/**"
+      - "test/**"
+      - "thirdparty/**"
+      - ".gitmodules"
+      - ".github/workflows/gpu-sim.yml"
+  pull_request:
+    paths:
+      - "CMakeLists.txt"
+      - "cmake/**"
+      - "src/**"
+      - "test/**"
+      - "thirdparty/**"
+      - ".gitmodules"
+      - ".github/workflows/gpu-sim.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gpu-tests:
+    name: ctest on a simulated A100
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgmp-dev libntl-dev libssl-dev zlib1g-dev
+          python3 -m pip install --user --no-cache-dir "cmake==4.0.3"
+
+      - name: Set up the simulated GPU and CUDA toolkit
+        uses: pantheongpu/setup-pantheonsim@dda0c8df8d72627c295edbae525354ba2bcb1687 # v0.1.4
+        with:
+          gpu: nvidia/a100
+          cuda-toolkit: "13.0"
+
+      # RMM links the static CUDA runtime, which cannot run on a simulated
+      # driver, so the CUDA::cudart_static target is pointed at the shared
+      # runtime. Without a GPU, the architecture cannot be detected, and the
+      # test executables cannot be run to list their tests at build time.
+      - name: Configure
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          cat > "$RUNNER_TEMP/shared-cudart.cmake" <<'CMAKE'
+          find_package(CUDAToolkit REQUIRED)
+          get_target_property(_cudart CUDA::cudart IMPORTED_LOCATION)
+          set_target_properties(CUDA::cudart_static PROPERTIES IMPORTED_LOCATION "${_cudart}")
+          CMAKE
+          cmake -S . -B build \
+            -D CMAKE_BUILD_TYPE=Release \
+            -D CMAKE_CUDA_ARCHITECTURES=80 \
+            -D CMAKE_CUDA_RUNTIME_LIBRARY=Shared \
+            -D CMAKE_PROJECT_INCLUDE="$RUNNER_TEMP/shared-cudart.cmake" \
+            -D HEonGPU_BUILD_SHARED=OFF \
+            -D HEonGPU_BUILD_TESTS=ON \
+            -D CMAKE_GTEST_DISCOVER_TESTS_DISCOVERY_MODE=PRE_TEST
+
+      - name: Build
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          cmake --build build -j2
+
+      # A simulated GPU is much slower than a real one, so the tests that
+      # take more than a few seconds are left out: the arithmetic tests with
+      # large ring sizes, the TFHE gates, the bootstrapping, the polynomial
+      # evaluation and the rescale modes. What runs includes the encoding,
+      # encryption, key generation, rotations, relinearization, serialization
+      # and session tests, whose kernels (NTT, key switching, RNG and others)
+      # run on the simulated GPU and whose results are checked against the
+      # plaintext.
+      - name: Test
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          vgpu run ctest --test-dir build --output-on-failure -j2 \
+            -R '^(CKKSCiphertextSerialization|HEonGPU/CKKSGaloiskey|RNSSecretKey|SecretKeySecurity|CKKSErrors|CKKSContextIdentity|BFVContextIdentity|SerializationContext|SerializationFormat|CKKSEncodeDepth|CKKSParameters\.|BFVParameters\.|CKKSSession|BFVSession|MpcRelinkey|CkksLogic|CkksStreamOrder|BFVMaxNorm|BFVNoiseBudget|PrimeGeneration|Storage|InputsOfSchemes)' \
+            -E 'TFHEEvaluationKeys|Bootstrapping|Streams|Squaring_On_The_GPU|CKKSSession\.(Sums_|Polynomials|Operators|Threads_)'
