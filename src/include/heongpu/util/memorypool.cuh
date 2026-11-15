@@ -38,6 +38,51 @@
 
 namespace heongpu
 {
+    /**
+     * @enum memory_topology
+     * @brief Where the memory of the GPU is.
+     *
+     * - `discrete`: the GPU has its own memory, separate from the memory of
+     *   the host.
+     * - `unified`: the GPU and the host share one physical memory, so the
+     *   device and host pools take memory from the same place.
+     */
+    enum class memory_topology : std::uint8_t
+    {
+        discrete = 0x1,
+        unified = 0x2
+    };
+
+    namespace detail
+    {
+        // The device attributes and memory sizes that tell the memory
+        // topology of a GPU.
+        struct DeviceMemoryAttributes
+        {
+            // cudaDevAttrIntegrated.
+            int integrated = 0;
+            // cudaDevAttrPageableMemoryAccessUsesHostPageTables.
+            int uses_host_page_tables = 0;
+            // cudaDevAttrConcurrentManagedAccess.
+            int concurrent_managed_access = 0;
+            // Total memory of the GPU (cudaMemGetInfo) and of the host
+            // (sysinfo), in bytes.
+            size_t device_memory = 0;
+            size_t host_memory = 0;
+        };
+
+        // Queries the attributes of device.
+        DeviceMemoryAttributes query_device_memory_attributes(int device);
+
+        // An integrated GPU shares the memory of the host. A GPU that uses
+        // the page tables of the host and reports a total memory within 10%
+        // of the host memory is taken as sharing it too; a GPU with its own
+        // memory that is coherent with the host, but of another size, is
+        // discrete.
+        memory_topology
+        classify_memory_topology(const DeviceMemoryAttributes& attributes);
+    } // namespace detail
+
     struct MemoryPoolConfig
     {
         // Fractions accept either 0.0-1.0 (ratio) or 0-100 (percentage).
@@ -114,6 +159,10 @@ namespace heongpu
         size_t get_current_host_pool_memory_usage() const;
         size_t get_free_host_pool_memory() const;
 
+        // The memory topology of the GPU, detected by initialize().
+        // discrete before the first initialization.
+        memory_topology topology() const;
+
         ~MemoryPool();
 
       private:
@@ -136,6 +185,8 @@ namespace heongpu
         static std::shared_ptr<DevicePoolResource> device_pool_;
         static std::shared_ptr<DeviceStatsAdaptor> device_stats_adaptor_;
         static bool initialized_;
+        static detail::DeviceMemoryAttributes attributes_;
+        static memory_topology topology_;
         // Set by use_memory_pool(); selects the resource for new allocations.
         static bool use_pool_;
         // Raw and host allocations served by the pools, so that they are

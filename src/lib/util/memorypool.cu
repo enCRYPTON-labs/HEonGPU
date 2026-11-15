@@ -21,12 +21,59 @@ namespace heongpu
     std::shared_ptr<MemoryPool::DeviceStatsAdaptor>
         MemoryPool::device_stats_adaptor_ = nullptr;
     bool MemoryPool::initialized_ = false;
+    detail::DeviceMemoryAttributes MemoryPool::attributes_;
+    memory_topology MemoryPool::topology_ = memory_topology::discrete;
     bool MemoryPool::use_pool_ = true;
     std::unordered_set<void*> MemoryPool::pooled_device_allocations_;
     std::unordered_set<void*> MemoryPool::pooled_host_allocations_;
     std::optional<cuda::mr::any_resource<cuda::mr::device_accessible>>
         MemoryPool::previous_rmm_default_;
     std::mutex MemoryPool::mutex_;
+
+    namespace detail
+    {
+        DeviceMemoryAttributes query_device_memory_attributes(int device)
+        {
+            cudaDeviceProp properties;
+            HEONGPU_CUDA_CHECK(cudaGetDeviceProperties(&properties, device));
+            DeviceMemoryAttributes attributes;
+            attributes.integrated = properties.integrated;
+            attributes.uses_host_page_tables =
+                properties.pageableMemoryAccessUsesHostPageTables;
+            attributes.concurrent_managed_access =
+                properties.concurrentManagedAccess;
+            attributes.device_memory = properties.totalGlobalMem;
+            struct sysinfo memory_info;
+            if (sysinfo(&memory_info) == 0)
+            {
+                attributes.host_memory =
+                    size_t(memory_info.totalram) * memory_info.mem_unit;
+            }
+            return attributes;
+        }
+
+        memory_topology
+        classify_memory_topology(const DeviceMemoryAttributes& attributes)
+        {
+            if (attributes.integrated != 0)
+            {
+                return memory_topology::unified;
+            }
+            if (attributes.uses_host_page_tables != 0 &&
+                attributes.host_memory != 0)
+            {
+                const size_t difference =
+                    attributes.device_memory > attributes.host_memory
+                        ? attributes.device_memory - attributes.host_memory
+                        : attributes.host_memory - attributes.device_memory;
+                if (difference < attributes.host_memory / 10)
+                {
+                    return memory_topology::unified;
+                }
+            }
+            return memory_topology::discrete;
+        }
+    } // namespace detail
 
     MemoryPoolConfig MemoryPoolConfig::Defaults()
     {
@@ -95,6 +142,10 @@ namespace heongpu
         if (!initialized_ || (config.use_memory_pool && !device_pool_))
         {
             ensure_base_resources();
+            int device = 0;
+            HEONGPU_CUDA_CHECK(cudaGetDevice(&device));
+            attributes_ = detail::query_device_memory_attributes(device);
+            topology_ = detail::classify_memory_topology(attributes_);
             size_t total_host_memory = get_host_avaliable_memory();
             size_t total_device_memory = get_decive_avaliable_memory();
 
@@ -439,6 +490,13 @@ namespace heongpu
             const auto host_free = host_total - host_used;
 
             os << "[HEonGPU] Memory Pool Status" << std::endl;
+            os << "  Topology    : "
+               << (topology_ == memory_topology::unified ? "unified"
+                                                         : "discrete")
+               << " (integrated " << attributes_.integrated
+               << ", host page tables " << attributes_.uses_host_page_tables
+               << ", concurrent managed access "
+               << attributes_.concurrent_managed_access << ")" << std::endl;
             os << "  Device Pool:" << std::endl;
             os << "    Total     : " << device_total << " bytes" << std::endl;
             os << "    Used      : " << device_used << " bytes" << std::endl;
@@ -497,6 +555,12 @@ namespace heongpu
         }
         auto host_status = host_stats_adaptor_->get_bytes_counter();
         return host_pool_->pool_size() - host_status.value;
+    }
+
+    memory_topology MemoryPool::topology() const
+    {
+        std::lock_guard<std::mutex> guard(mutex_);
+        return topology_;
     }
 
     MemoryPool::~MemoryPool()

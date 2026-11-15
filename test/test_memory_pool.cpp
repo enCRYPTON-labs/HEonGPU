@@ -7,6 +7,7 @@
 #include <heongpu/heongpu.hpp>
 #include <gtest/gtest.h>
 #include <memory>
+#include <sstream>
 #include <string>
 
 namespace
@@ -235,4 +236,56 @@ TEST(HEonGPU, MemoryPool_Initial_Device_Fraction_Can_Be_Chosen_By_User)
                             pool.get_current_device_pool_memory_usage());
     EXPECT_GT(reserved, 0.7 * static_cast<double>(free_before));
     EXPECT_LT(reserved, 0.85 * static_cast<double>(free_before));
+}
+
+TEST(HEonGPU, MemoryPool_Classifies_The_Memory_Topology)
+{
+    using heongpu::memory_topology;
+    using heongpu::detail::classify_memory_topology;
+    using Attributes = heongpu::detail::DeviceMemoryAttributes;
+    constexpr size_t GB = 1ULL << 30;
+
+    // A GPU with its own memory, with and without HMM.
+    EXPECT_EQ(classify_memory_topology(Attributes{0, 0, 1, 32 * GB, 128 * GB}),
+              memory_topology::discrete);
+    EXPECT_EQ(classify_memory_topology(Attributes{0, 0, 1, 128 * GB, 128 * GB}),
+              memory_topology::discrete);
+    // A GPU with its own memory that is coherent with the host and uses its
+    // page tables, but has another size.
+    EXPECT_EQ(classify_memory_topology(Attributes{0, 1, 1, 96 * GB, 480 * GB}),
+              memory_topology::discrete);
+    EXPECT_EQ(classify_memory_topology(Attributes{0, 1, 1, 100 * GB, 128 * GB}),
+              memory_topology::discrete);
+    // An integrated GPU.
+    EXPECT_EQ(classify_memory_topology(Attributes{1, 0, 0, 8 * GB, 8 * GB}),
+              memory_topology::unified);
+    EXPECT_EQ(classify_memory_topology(Attributes{1, 1, 1, 120 * GB, 128 * GB}),
+              memory_topology::unified);
+    // A GPU that uses the page tables of the host and reports about the
+    // memory of the host.
+    EXPECT_EQ(classify_memory_topology(Attributes{0, 1, 1, 120 * GB, 125 * GB}),
+              memory_topology::unified);
+    // The same when the memory of the host is unknown.
+    EXPECT_EQ(classify_memory_topology(Attributes{0, 1, 1, 120 * GB, 0}),
+              memory_topology::discrete);
+}
+
+TEST(HEonGPU, MemoryPool_Reports_The_Memory_Topology)
+{
+    auto context = make_context(true);
+    auto& pool = heongpu::MemoryPool::instance();
+
+    int device = 0;
+    ASSERT_EQ(cudaGetDevice(&device), cudaSuccess);
+    const heongpu::memory_topology expected =
+        heongpu::detail::classify_memory_topology(
+            heongpu::detail::query_device_memory_attributes(device));
+    EXPECT_EQ(pool.topology(), expected);
+
+    std::ostringstream status;
+    pool.print_memory_pool_status(status);
+    const std::string line = expected == heongpu::memory_topology::unified
+                                 ? "Topology    : unified"
+                                 : "Topology    : discrete";
+    EXPECT_NE(status.str().find(line), std::string::npos) << status.str();
 }
