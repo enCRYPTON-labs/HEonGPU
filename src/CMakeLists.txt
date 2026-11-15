@@ -80,6 +80,7 @@ set(HEONGPU_UTIL_SOURCES
     lib/util/runtime.cu
     lib/util/serializer.cpp
     lib/util/serialization_header.cpp
+    lib/util/serialization_payload.cu
     lib/util/util.cu
 )
 

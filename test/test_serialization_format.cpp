@@ -6,6 +6,7 @@
 
 #include <heongpu/heongpu.hpp>
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <cstdint>
 #include <sstream>
 #include <string>
@@ -238,6 +239,35 @@ TYPED_TEST(SerializationFormat, V1_And_V2_Data_Load)
         load(*context, save(*a.context).substr(header));
         EXPECT_EQ(context->context_id(), a.context->context_id());
     }
+}
+
+// A loaded object saves the same data as the object it was saved from. Galois
+// keys write their elements in the order of a hash map, which can change on
+// loading; Loaded_Keys_Give_The_Same_Results checks them.
+TYPED_TEST(SerializationFormat, Loaded_Objects_Save_The_Same_Data)
+{
+    auto& a = this->a;
+    auto expect_same_data = [](const auto& object)
+    {
+        const std::string saved = save(object);
+        std::decay_t<decltype(object)> loaded;
+        load(loaded, saved);
+        const std::string again = save(loaded);
+        const auto difference = std::mismatch(saved.begin(), saved.end(),
+                                              again.begin(), again.end())
+                                    .first -
+                                saved.begin();
+        EXPECT_TRUE(again == saved)
+            << "object type " << int(saved[6]) << ": " << again.size()
+            << " bytes instead of " << saved.size()
+            << ", first difference at byte " << difference;
+    };
+    expect_same_data(a.secret_key);
+    expect_same_data(a.public_key);
+    expect_same_data(a.relin_key);
+    expect_same_data(a.switch_key);
+    expect_same_data(a.encode());
+    expect_same_data(a.encrypt());
 }
 
 TYPED_TEST(SerializationFormat, Serializer_Keeps_The_Context)

@@ -5,6 +5,7 @@
 // Developer: Alişah Özcan
 
 #include <heongpu/host/ckks/secretkey.cuh>
+#include <heongpu/util/serialization_payload.cuh>
 #include "../secure_random.h"
 
 namespace heongpu
@@ -316,17 +317,11 @@ namespace heongpu
             {
                 uint32_t secretkey_memory_size =
                     coeff_modulus_count_ * ring_size_;
-                HostVector<Data64> host_locations_temp(secretkey_memory_size);
-                HEONGPU_CUDA_CHECK(cudaMemcpy(
-                    host_locations_temp.data(), device_locations_.data(),
-                    secretkey_memory_size * sizeof(Data64),
-                    cudaMemcpyDeviceToHost));
-                HEONGPU_CUDA_CHECK(cudaDeviceSynchronize());
-
                 os.write((char*) &secretkey_memory_size,
                          sizeof(secretkey_memory_size));
-                os.write((char*) host_locations_temp.data(),
-                         sizeof(Data64) * secretkey_memory_size);
+                detail::write_device_payload(os, device_locations_.data(),
+                                             secretkey_memory_size,
+                                             device_locations_.stream(), true);
             }
             else
             {
