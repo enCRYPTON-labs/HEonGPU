@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <heongpu/heongpu.hpp>
+#include "gpuntt/ntt_merge/ntt_cpu.cuh"
 #include <gtest/gtest.h>
 #include <sstream>
 

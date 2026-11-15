@@ -677,12 +677,11 @@ namespace heongpu
     __global__ void tfhe_bootstrapping_kernel(
         const int32_t* input_a, const int32_t* input_b, int32_t* output,
         const Data64* boot_key,
-        const Root64* __restrict__ forward_root_of_unity_table,
-        const Root64* __restrict__ inverse_root_of_unity_table,
-        const Ninverse64 n_inverse, const Modulus64 modulus,
-        const int32_t encoded, const int32_t bk_offset, const int32_t bk_mask,
-        const int32_t bk_half, int n, int N, int N_power, int k, int bk_bit,
-        int bk_length)
+        const Data64* __restrict__ forward_root_of_unity_table,
+        const Data64* __restrict__ inverse_root_of_unity_table,
+        const Data64 n_inverse, const Modulus64 modulus, const int32_t encoded,
+        const int32_t bk_offset, const int32_t bk_mask, const int32_t bk_half,
+        int n, int N, int N_power, int k, int bk_bit, int bk_length)
     {
         __shared__ uint32_t sdata32[1024];
         __shared__ Data64 sdata64[1024];
@@ -694,7 +693,7 @@ namespace heongpu
 
         const Modulus64 modulus_reg = modulus;
         const Data64 threshold = modulus_reg.value >> 1;
-        const Ninverse64 n_inverse_reg = n_inverse;
+        const Data64 n_inverse_reg = n_inverse;
 
         int32_t input_b_i = input_b[block_x];
         int32_t input_b_i_N = torus_modulus_switch_log(input_b_i, N_power);
@@ -876,7 +875,7 @@ namespace heongpu
     __global__ void tfhe_bootstrapping_kernel_unique_step1(
         const int32_t* input_a, const int32_t* input_b, Data64* output,
         const Data64* boot_key,
-        const Root64* __restrict__ forward_root_of_unity_table,
+        const Data64* __restrict__ forward_root_of_unity_table,
         const Modulus64 modulus, const int32_t encoded, const int32_t bk_offset,
         const int32_t bk_mask, const int32_t bk_half, int n, int N, int N_power,
         int k, int bk_bit, int bk_length)
@@ -1018,7 +1017,7 @@ namespace heongpu
     __global__ void tfhe_bootstrapping_kernel_regular_step1(
         const int32_t* input_a, const int32_t* input_b, const int32_t* input_c,
         Data64* output, const Data64* boot_key, int boot_index,
-        const Root64* __restrict__ forward_root_of_unity_table,
+        const Data64* __restrict__ forward_root_of_unity_table,
         const Modulus64 modulus, const int32_t bk_offset, const int32_t bk_mask,
         const int32_t bk_half, int n, int N, int N_power, int k, int bk_bit,
         int bk_length)
@@ -1142,9 +1141,9 @@ namespace heongpu
 
     __global__ void tfhe_bootstrapping_kernel_unique_step2(
         const Data64* input, const int32_t* input_b, int32_t* output,
-        const Root64* __restrict__ inverse_root_of_unity_table,
-        const Ninverse64 n_inverse, const Modulus64 modulus,
-        const int32_t encoded, int n, int N, int N_power, int k, int bk_length)
+        const Data64* __restrict__ inverse_root_of_unity_table,
+        const Data64 n_inverse, const Modulus64 modulus, const int32_t encoded,
+        int n, int N, int N_power, int k, int bk_length)
     {
         __shared__ Data64 shared_data64[1024];
 
@@ -1158,7 +1157,7 @@ namespace heongpu
         int32_t encoded_reg = encoded;
         const Modulus64 modulus_reg = modulus;
         const Data64 threshold = modulus_reg.value >> 1;
-        const Ninverse64 n_inverse_reg = n_inverse;
+        const Data64 n_inverse_reg = n_inverse;
 
         Data64 accum0 = 0ULL;
         Data64 accum1 = 0ULL;
@@ -1243,9 +1242,9 @@ namespace heongpu
 
     __global__ void tfhe_bootstrapping_kernel_regular_step2(
         const Data64* input, int32_t* output,
-        const Root64* __restrict__ inverse_root_of_unity_table,
-        const Ninverse64 n_inverse, const Modulus64 modulus, int n, int N,
-        int k, int bk_length)
+        const Data64* __restrict__ inverse_root_of_unity_table,
+        const Data64 n_inverse, const Modulus64 modulus, int n, int N, int k,
+        int bk_length)
     {
         __shared__ Data64 shared_data64[1024];
 
@@ -1258,7 +1257,7 @@ namespace heongpu
 
         const Modulus64 modulus_reg = modulus;
         const Data64 threshold = modulus_reg.value >> 1;
-        const Ninverse64 n_inverse_reg = n_inverse;
+        const Data64 n_inverse_reg = n_inverse;
 
         Data64 accum0 = 0ULL;
         Data64 accum1 = 0ULL;

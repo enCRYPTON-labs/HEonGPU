@@ -10,7 +10,7 @@ namespace heongpu
 {
     template <typename T>
     __device__ void
-    SmallForwardNTT(T* polynomial_in_shared, const Root<T>* root_of_unity_table,
+    SmallForwardNTT(T* polynomial_in_shared, const T* root_of_unity_table,
                     const Modulus<T> modulus, bool reduction_poly_check)
     {
         const int idx_x = threadIdx.x;
@@ -79,10 +79,10 @@ namespace heongpu
     }
 
     template <typename T>
-    __device__ void
-    SmallInverseNTT(T* polynomial_in_shared, const Root<T>* root_of_unity_table,
-                    const Modulus<T> modulus, const Ninverse<T> n_inverse,
-                    bool reduction_poly_check)
+    __device__ void SmallInverseNTT(T* polynomial_in_shared,
+                                    const T* root_of_unity_table,
+                                    const Modulus<T> modulus, const T n_inverse,
+                                    bool reduction_poly_check)
     {
         const int idx_x = threadIdx.x;
 
@@ -129,21 +129,23 @@ namespace heongpu
     }
 
     template __device__ void SmallForwardNTT<Data32>(
-        Data32* polynomial_in_shared, const Root<Data32>* root_of_unity_table,
+        Data32* polynomial_in_shared, const Data32* root_of_unity_table,
         const Modulus<Data32> modulus, bool reduction_poly_check);
 
     template __device__ void SmallForwardNTT<Data64>(
-        Data64* polynomial_in_shared, const Root<Data64>* root_of_unity_table,
+        Data64* polynomial_in_shared, const Data64* root_of_unity_table,
         const Modulus<Data64> modulus, bool reduction_poly_check);
 
-    template __device__ void SmallInverseNTT<Data32>(
-        Data32* polynomial_in_shared, const Root<Data32>* root_of_unity_table,
-        const Modulus<Data32> modulus, const Ninverse<Data32> n_inverse,
-        bool reduction_poly_check);
+    template __device__ void
+    SmallInverseNTT<Data32>(Data32* polynomial_in_shared,
+                            const Data32* root_of_unity_table,
+                            const Modulus<Data32> modulus,
+                            const Data32 n_inverse, bool reduction_poly_check);
 
-    template __device__ void SmallInverseNTT<Data64>(
-        Data64* polynomial_in_shared, const Root<Data64>* root_of_unity_table,
-        const Modulus<Data64> modulus, const Ninverse<Data64> n_inverse,
-        bool reduction_poly_check);
+    template __device__ void
+    SmallInverseNTT<Data64>(Data64* polynomial_in_shared,
+                            const Data64* root_of_unity_table,
+                            const Modulus<Data64> modulus,
+                            const Data64 n_inverse, bool reduction_poly_check);
 
 } // namespace heongpu

@@ -198,9 +198,9 @@ namespace heongpu
         int total_bit_count_;
 
         std::shared_ptr<DeviceVector<Modulus64>> modulus_;
-        std::shared_ptr<DeviceVector<Root64>> ntt_table_;
-        std::shared_ptr<DeviceVector<Root64>> intt_table_;
-        std::shared_ptr<DeviceVector<Ninverse64>> n_inverse_;
+        std::shared_ptr<DeviceVector<Data64>> ntt_table_;
+        std::shared_ptr<DeviceVector<Data64>> intt_table_;
+        std::shared_ptr<DeviceVector<Data64>> n_inverse_;
         std::shared_ptr<DeviceVector<Data64>> last_q_modinv_;
         std::shared_ptr<DeviceVector<Data64>> half_p_;
         std::shared_ptr<DeviceVector<Data64>> half_mod_;
@@ -227,9 +227,9 @@ namespace heongpu
         int r_prime_leveled;
 
         std::shared_ptr<DeviceVector<Modulus64>> B_prime_leveled;
-        std::shared_ptr<DeviceVector<Root64>> B_prime_ntt_tables_leveled;
-        std::shared_ptr<DeviceVector<Root64>> B_prime_intt_tables_leveled;
-        std::shared_ptr<DeviceVector<Ninverse64>> B_prime_n_inverse_leveled;
+        std::shared_ptr<DeviceVector<Data64>> B_prime_ntt_tables_leveled;
+        std::shared_ptr<DeviceVector<Data64>> B_prime_intt_tables_leveled;
+        std::shared_ptr<DeviceVector<Data64>> B_prime_n_inverse_leveled;
 
         std::shared_ptr<std::vector<DeviceVector<Data64>>>
             base_change_matrix_D_to_B_leveled;

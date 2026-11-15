@@ -64,7 +64,6 @@ namespace heongpu
             .ntt_type = gpuntt::FORWARD,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .stream = stream};
         if (!ciphertext.in_ntt_domain_)
         {
@@ -89,7 +88,6 @@ namespace heongpu
             .ntt_type = gpuntt::INVERSE,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .mod_inverse = ctx->n_inverse_->data(),
             .stream = stream};
 
@@ -141,7 +139,6 @@ namespace heongpu
             .ntt_type = gpuntt::FORWARD,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .stream = stream};
 
         gpuntt::GPU_NTT_Inplace(ct1, ctx->ntt_table_->data(),
@@ -157,7 +154,6 @@ namespace heongpu
             .ntt_type = gpuntt::INVERSE,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .mod_inverse = ctx->n_inverse_->data(),
             .stream = stream};
 
@@ -196,7 +192,6 @@ namespace heongpu
                     .ntt_type = gpuntt::FORWARD,
                     .ntt_layout = gpuntt::PerPolynomial,
                     .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-                    .zero_padding = false,
                     .stream = options.stream_};
 
                 DeviceVector<Data64> temp_memory(n * Q_size, options.stream_);
@@ -215,7 +210,6 @@ namespace heongpu
                     .ntt_type = gpuntt::INVERSE,
                     .ntt_layout = gpuntt::PerPolynomial,
                     .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-                    .zero_padding = false,
                     .mod_inverse = ctx->n_inverse_->data(),
                     .stream = options.stream_};
 

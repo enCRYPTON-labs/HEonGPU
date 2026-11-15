@@ -445,14 +445,14 @@ namespace heongpu
         return all_sk_pair_new;
     }
 
-    std::vector<Root64> KeySwitchParameterGenerator::B_prime_ntt_tables()
+    std::vector<Data64> KeySwitchParameterGenerator::B_prime_ntt_tables()
     {
         int lg = log2(n_);
-        std::vector<Root64> forward_table; // bit reverse order
+        std::vector<Data64> forward_table; // bit reverse order
 
         for (int i = 0; i < r_prime_; i++)
         {
-            std::vector<Root64> table;
+            std::vector<Data64> table;
             table.push_back(1);
 
             for (int j = 1; j < n_; j++)
@@ -471,14 +471,14 @@ namespace heongpu
         return forward_table;
     }
 
-    std::vector<Root64> KeySwitchParameterGenerator::B_prime_intt_tables()
+    std::vector<Data64> KeySwitchParameterGenerator::B_prime_intt_tables()
     {
         int lg = log2(n_);
-        std::vector<Root64> forward_table; // bit reverse order
+        std::vector<Data64> forward_table; // bit reverse order
 
         for (int i = 0; i < r_prime_; i++)
         {
-            std::vector<Root64> table;
+            std::vector<Data64> table;
             table.push_back(1);
             Data64 inv_root = OPERATOR64::modinv(B_prime_psi[i], B_prime[i]);
             for (int j = 1; j < n_; j++)
@@ -497,10 +497,10 @@ namespace heongpu
         return forward_table;
     }
 
-    std::vector<Ninverse64> KeySwitchParameterGenerator::B_prime_n_inverse()
+    std::vector<Data64> KeySwitchParameterGenerator::B_prime_n_inverse()
     {
         Data64 n_inner = n_;
-        std::vector<Ninverse64> n_inverse_;
+        std::vector<Data64> n_inverse_;
         for (int i = 0; i < B_prime.size(); i++)
         {
             n_inverse_.push_back(OPERATOR64::modinv(n_inner, B_prime[i]));

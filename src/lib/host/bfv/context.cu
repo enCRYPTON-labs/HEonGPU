@@ -391,21 +391,21 @@ namespace heongpu
 
             std::vector<Data64> base_q_psi =
                 generate_primitive_root_of_unity(n, prime_vector_);
-            std::vector<Root64> Qprime_ntt_table =
+            std::vector<Data64> Qprime_ntt_table =
                 generate_ntt_table(base_q_psi, prime_vector_, n_power);
-            std::vector<Root64> Qprime_intt_table =
+            std::vector<Data64> Qprime_intt_table =
                 generate_intt_table(base_q_psi, prime_vector_, n_power);
-            std::vector<Ninverse64> Qprime_n_inverse =
+            std::vector<Data64> Qprime_n_inverse =
                 generate_n_inverse(n, prime_vector_);
 
             ntt_table_ =
-                std::make_shared<DeviceVector<Root64>>(Qprime_ntt_table);
+                std::make_shared<DeviceVector<Data64>>(Qprime_ntt_table);
 
             intt_table_ =
-                std::make_shared<DeviceVector<Root64>>(Qprime_intt_table);
+                std::make_shared<DeviceVector<Data64>>(Qprime_intt_table);
 
             n_inverse_ =
-                std::make_shared<DeviceVector<Ninverse64>>(Qprime_n_inverse);
+                std::make_shared<DeviceVector<Data64>>(Qprime_n_inverse);
 
             std::vector<Data64> last_q_modinv =
                 calculate_last_q_modinv(prime_vector_, Q_prime_size, P_size);
@@ -453,12 +453,12 @@ namespace heongpu
 
             Data64 plain_psi = find_minimal_primitive_root(2 * n, plain_mod);
 
-            std::vector<Root64> plain_forward_table =
+            std::vector<Data64> plain_forward_table =
                 generate_ntt_table({plain_psi}, {plain_mod}, n_power);
-            std::vector<Root64> plain_inverse_table =
+            std::vector<Data64> plain_inverse_table =
                 generate_intt_table({plain_psi}, {plain_mod}, n_power);
             Data64 n_ = n;
-            std::vector<Ninverse64> plain_n_inverse;
+            std::vector<Data64> plain_n_inverse;
             std::vector<Modulus64> plain_mod2;
             plain_n_inverse.push_back(OPERATOR64::modinv(n_, plain_mod));
             plain_mod2.push_back(plain_mod);
@@ -506,23 +506,23 @@ namespace heongpu
 
             std::vector<Data64> base_Bsk_psi =
                 generate_primitive_root_of_unity(n, base_Bsk_mod);
-            std::vector<Root64> Bsk_ntt_table =
+            std::vector<Data64> Bsk_ntt_table =
                 generate_ntt_table(base_Bsk_psi, base_Bsk_mod, n_power);
-            std::vector<Root64> Bsk_intt_table =
+            std::vector<Data64> Bsk_intt_table =
                 generate_intt_table(base_Bsk_psi, base_Bsk_mod, n_power);
-            std::vector<Ninverse64> Bsk_n_inverse =
+            std::vector<Data64> Bsk_n_inverse =
                 generate_n_inverse(n, base_Bsk_mod);
 
             base_Bsk_ = std::make_shared<DeviceVector<Modulus64>>(base_Bsk_mod);
 
             bsk_ntt_tables_ =
-                std::make_shared<DeviceVector<Root64>>(Bsk_ntt_table);
+                std::make_shared<DeviceVector<Data64>>(Bsk_ntt_table);
 
             bsk_intt_tables_ =
-                std::make_shared<DeviceVector<Root64>>(Bsk_intt_table);
+                std::make_shared<DeviceVector<Data64>>(Bsk_intt_table);
 
             bsk_n_inverse_ =
-                std::make_shared<DeviceVector<Ninverse64>>(Bsk_n_inverse);
+                std::make_shared<DeviceVector<Data64>>(Bsk_n_inverse);
 
             std::vector<Data64> base_matrix_q_Bsk =
                 generate_base_matrix_q_Bsk(prime_vector_, base_Bsk_mod, Q_size);
@@ -569,11 +569,11 @@ namespace heongpu
             std::vector<Data64> q_Bsk_merge_root =
                 generate_q_Bsk_merge_root(base_q_psi, base_Bsk_psi, Q_size);
 
-            std::vector<Root64> q_Bsk_forward_tables = generate_ntt_table(
+            std::vector<Data64> q_Bsk_forward_tables = generate_ntt_table(
                 q_Bsk_merge_root, q_Bsk_merge_modulus, n_power);
-            std::vector<Root64> q_Bsk_inverse_tables = generate_intt_table(
+            std::vector<Data64> q_Bsk_inverse_tables = generate_intt_table(
                 q_Bsk_merge_root, q_Bsk_merge_modulus, n_power);
-            std::vector<Ninverse64> q_Bsk_n_inverse =
+            std::vector<Data64> q_Bsk_n_inverse =
                 generate_n_inverse(n, q_Bsk_merge_modulus);
 
             std::vector<Data64> Qi_t =
@@ -636,25 +636,25 @@ namespace heongpu
                 std::make_shared<DeviceVector<Modulus64>>(q_Bsk_merge_modulus);
 
             q_Bsk_merge_ntt_tables_ =
-                std::make_shared<DeviceVector<Root64>>(q_Bsk_forward_tables);
+                std::make_shared<DeviceVector<Data64>>(q_Bsk_forward_tables);
 
             q_Bsk_merge_intt_tables_ =
-                std::make_shared<DeviceVector<Root64>>(q_Bsk_inverse_tables);
+                std::make_shared<DeviceVector<Data64>>(q_Bsk_inverse_tables);
 
             q_Bsk_n_inverse_ =
-                std::make_shared<DeviceVector<Ninverse64>>(q_Bsk_n_inverse);
+                std::make_shared<DeviceVector<Data64>>(q_Bsk_n_inverse);
 
             plain_modulus2_ =
                 std::make_shared<DeviceVector<Modulus64>>(plain_mod2);
 
             n_plain_inverse_ =
-                std::make_shared<DeviceVector<Ninverse64>>(plain_n_inverse);
+                std::make_shared<DeviceVector<Data64>>(plain_n_inverse);
 
             plain_ntt_tables_ =
-                std::make_shared<DeviceVector<Root64>>(plain_forward_table);
+                std::make_shared<DeviceVector<Data64>>(plain_forward_table);
 
             plain_intt_tables_ =
-                std::make_shared<DeviceVector<Root64>>(plain_inverse_table);
+                std::make_shared<DeviceVector<Data64>>(plain_inverse_table);
 
             gamma_ = gamma_mod;
 

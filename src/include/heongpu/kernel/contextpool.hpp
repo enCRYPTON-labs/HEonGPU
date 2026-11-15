@@ -79,9 +79,9 @@ namespace heongpu
         std::vector<int> sk_pair_counter(const std::vector<int> d_counter,
                                          int Q_size);
 
-        std::vector<Root64> B_prime_ntt_tables();
-        std::vector<Root64> B_prime_intt_tables();
-        std::vector<Ninverse64> B_prime_n_inverse();
+        std::vector<Data64> B_prime_ntt_tables();
+        std::vector<Data64> B_prime_intt_tables();
+        std::vector<Data64> B_prime_n_inverse();
 
         std::vector<Data64> base_change_matrix_D_to_B();
         std::vector<Data64> base_change_matrix_B_to_D();

@@ -354,21 +354,21 @@ namespace heongpu
 
             std::vector<Data64> base_q_psi =
                 generate_primitive_root_of_unity(n, prime_vector_);
-            std::vector<Root64> Qprime_ntt_table =
+            std::vector<Data64> Qprime_ntt_table =
                 generate_ntt_table(base_q_psi, prime_vector_, n_power);
-            std::vector<Root64> Qprime_intt_table =
+            std::vector<Data64> Qprime_intt_table =
                 generate_intt_table(base_q_psi, prime_vector_, n_power);
-            std::vector<Ninverse64> Qprime_n_inverse =
+            std::vector<Data64> Qprime_n_inverse =
                 generate_n_inverse(n, prime_vector_);
 
             ntt_table_ =
-                std::make_shared<DeviceVector<Root64>>(Qprime_ntt_table);
+                std::make_shared<DeviceVector<Data64>>(Qprime_ntt_table);
 
             intt_table_ =
-                std::make_shared<DeviceVector<Root64>>(Qprime_intt_table);
+                std::make_shared<DeviceVector<Data64>>(Qprime_intt_table);
 
             n_inverse_ =
-                std::make_shared<DeviceVector<Ninverse64>>(Qprime_n_inverse);
+                std::make_shared<DeviceVector<Data64>>(Qprime_n_inverse);
 
             std::vector<Data64> last_q_modinv =
                 calculate_last_q_modinv(prime_vector_, Q_prime_size, P_size);

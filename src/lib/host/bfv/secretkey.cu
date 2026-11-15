@@ -6,6 +6,7 @@
 
 #include <heongpu/host/bfv/secretkey.cuh>
 #include <heongpu/util/serialization_payload.cuh>
+#include "gpuntt/ntt_merge/ntt_cpu.cuh"
 #include "../secure_random.h"
 
 namespace heongpu
@@ -118,7 +119,6 @@ namespace heongpu
             .ntt_type = gpuntt::FORWARD,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .stream = stream};
 
         gpuntt::GPU_NTT_Inplace(device_locations_.data(),
@@ -188,7 +188,6 @@ namespace heongpu
             .ntt_type = gpuntt::FORWARD,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .stream = stream};
 
         gpuntt::GPU_NTT_Inplace(device_locations_.data(),
