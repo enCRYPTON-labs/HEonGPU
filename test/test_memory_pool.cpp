@@ -6,6 +6,8 @@
 
 #include <heongpu/heongpu.hpp>
 #include <gtest/gtest.h>
+#include <filesystem>
+#include <fstream>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -288,4 +290,106 @@ TEST(HEonGPU, MemoryPool_Reports_The_Memory_Topology)
                                  ? "Topology    : unified"
                                  : "Topology    : discrete";
     EXPECT_NE(status.str().find(line), std::string::npos) << status.str();
+}
+
+namespace
+{
+    // A directory with the files that read_available_host_memory reads.
+    class FakeRoot
+    {
+      public:
+        explicit FakeRoot(const std::string& name)
+            : path_(std::filesystem::path(::testing::TempDir()) /
+                    ("heongpu_memory_" + name))
+        {
+            std::filesystem::remove_all(path_);
+        }
+        ~FakeRoot() { std::filesystem::remove_all(path_); }
+
+        void write(const std::string& file, const std::string& content)
+        {
+            const std::filesystem::path full = path_ / file;
+            std::filesystem::create_directories(full.parent_path());
+            std::ofstream(full) << content;
+        }
+
+        std::string path() const { return path_.string(); }
+
+      private:
+        std::filesystem::path path_;
+    };
+
+    constexpr size_t MB = 1ULL << 20;
+
+    std::string meminfo(size_t available)
+    {
+        return "MemTotal:       67108864 kB\nMemFree:         1048576 kB\n"
+               "MemAvailable:   " +
+               std::to_string(available / 1024) + " kB\n";
+    }
+} // namespace
+
+TEST(HEonGPU, MemoryPool_Reads_The_Available_Host_Memory)
+{
+    using heongpu::detail::read_available_host_memory;
+
+    {
+        FakeRoot root("no_cgroup");
+        root.write("proc/meminfo", meminfo(8192 * MB));
+        EXPECT_EQ(read_available_host_memory(root.path()), 8192 * MB);
+    }
+    {
+        // The reclaimable page cache of the cgroup is not counted as used.
+        FakeRoot root("v2_limit");
+        root.write("proc/meminfo", meminfo(8192 * MB));
+        root.write("proc/self/cgroup", "0::/\n");
+        root.write("sys/fs/cgroup/memory.max", std::to_string(4096 * MB));
+        root.write("sys/fs/cgroup/memory.current", std::to_string(3072 * MB));
+        root.write("sys/fs/cgroup/memory.stat",
+                   "anon 1\ninactive_file " + std::to_string(1024 * MB) + "\n");
+        EXPECT_EQ(read_available_host_memory(root.path()), 2048 * MB);
+    }
+    {
+        FakeRoot root("v2_no_limit");
+        root.write("proc/meminfo", meminfo(8192 * MB));
+        root.write("proc/self/cgroup", "0::/\n");
+        root.write("sys/fs/cgroup/memory.max", "max\n");
+        root.write("sys/fs/cgroup/memory.current", std::to_string(3072 * MB));
+        EXPECT_EQ(read_available_host_memory(root.path()), 8192 * MB);
+    }
+    {
+        // A parent cgroup with a tighter limit.
+        FakeRoot root("v2_nested");
+        root.write("proc/meminfo", meminfo(8192 * MB));
+        root.write("proc/self/cgroup", "0::/a/b\n");
+        root.write("sys/fs/cgroup/a/b/memory.max", "max\n");
+        root.write("sys/fs/cgroup/a/b/memory.current", "0\n");
+        root.write("sys/fs/cgroup/a/memory.max", std::to_string(2048 * MB));
+        root.write("sys/fs/cgroup/a/memory.current", std::to_string(512 * MB));
+        EXPECT_EQ(read_available_host_memory(root.path()), 1536 * MB);
+    }
+    {
+        FakeRoot root("v1_limit");
+        root.write("proc/meminfo", meminfo(8192 * MB));
+        root.write("proc/self/cgroup", "12:cpu,cpuacct:/\n4:memory:/job\n");
+        root.write("sys/fs/cgroup/memory/job/memory.limit_in_bytes",
+                   std::to_string(2048 * MB));
+        root.write("sys/fs/cgroup/memory/job/memory.usage_in_bytes",
+                   std::to_string(1536 * MB));
+        root.write("sys/fs/cgroup/memory/job/memory.stat",
+                   "total_inactive_file " + std::to_string(512 * MB) + "\n");
+        EXPECT_EQ(read_available_host_memory(root.path()), 1024 * MB);
+    }
+    {
+        FakeRoot root("no_meminfo");
+        root.write("proc/self/cgroup", "0::/\n");
+        EXPECT_EQ(read_available_host_memory(root.path()), 0u);
+    }
+
+    // The host of the test.
+    const size_t available = read_available_host_memory();
+    struct sysinfo info;
+    ASSERT_EQ(sysinfo(&info), 0);
+    EXPECT_GT(available, 0u);
+    EXPECT_LE(available, size_t(info.totalram) * info.mem_unit);
 }

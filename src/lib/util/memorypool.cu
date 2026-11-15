@@ -5,6 +5,10 @@
 // Developer: Alişah Özcan
 
 #include <heongpu/util/memorypool.cuh>
+#include <algorithm>
+#include <limits>
+#include <fstream>
+#include <sstream>
 
 namespace heongpu
 {
@@ -50,6 +54,142 @@ namespace heongpu
                     size_t(memory_info.totalram) * memory_info.mem_unit;
             }
             return attributes;
+        }
+
+        namespace
+        {
+            // The first value of a cgroup file such as memory.max; false for
+            // "max" (no limit) or an unreadable file.
+            bool read_cgroup_value(const std::string& path, size_t& value)
+            {
+                std::ifstream file(path);
+                std::string token;
+                if (!(file >> token) || token == "max")
+                {
+                    return false;
+                }
+                try
+                {
+                    value = std::stoull(token);
+                }
+                catch (const std::exception&)
+                {
+                    return false;
+                }
+                return true;
+            }
+
+            // The value of key in a file of "key value" lines, 0 when it is
+            // missing.
+            size_t read_keyed_value(const std::string& path,
+                                    const std::string& key)
+            {
+                std::ifstream file(path);
+                std::string name;
+                size_t value = 0;
+                while (file >> name >> value)
+                {
+                    if (name == key)
+                    {
+                        return value;
+                    }
+                    file.ignore(std::numeric_limits<std::streamsize>::max(),
+                                '\n');
+                }
+                return 0;
+            }
+
+            // Lowers available to what the cgroup at directory and its
+            // parents up to base still allow. The page cache that the kernel
+            // can reclaim (inactive_key of memory.stat) is not counted as
+            // used.
+            void limit_by_cgroup(size_t& available, const std::string& base,
+                                 std::string directory,
+                                 const std::string& limit_file,
+                                 const std::string& usage_file,
+                                 const std::string& inactive_key)
+            {
+                while (true)
+                {
+                    size_t limit = 0;
+                    size_t usage = 0;
+                    if (read_cgroup_value(directory + "/" + limit_file,
+                                          limit) &&
+                        read_cgroup_value(directory + "/" + usage_file, usage))
+                    {
+                        const size_t inactive = std::min(
+                            usage, read_keyed_value(directory + "/memory.stat",
+                                                    inactive_key));
+                        const size_t used = usage - inactive;
+                        available = std::min(available,
+                                             limit > used ? limit - used : 0);
+                    }
+                    if (directory.size() <= base.size())
+                    {
+                        break;
+                    }
+                    directory = directory.substr(0, directory.rfind('/'));
+                }
+            }
+        } // namespace
+
+        size_t read_available_host_memory(const std::string& root)
+        {
+            std::ifstream meminfo(root + "/proc/meminfo");
+            std::string line;
+            size_t available = 0;
+            bool found = false;
+            while (std::getline(meminfo, line))
+            {
+                std::istringstream fields(line);
+                std::string name;
+                size_t kilobytes = 0;
+                if (fields >> name >> kilobytes && name == "MemAvailable:")
+                {
+                    available = kilobytes * 1024;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                return 0;
+            }
+
+            // Lines of /proc/self/cgroup are "id:controllers:path"; cgroup
+            // v2 has id 0 and no controllers.
+            std::ifstream cgroups(root + "/proc/self/cgroup");
+            while (std::getline(cgroups, line))
+            {
+                const size_t first = line.find(':');
+                const size_t second = line.find(':', first + 1);
+                if (first == std::string::npos || second == std::string::npos)
+                {
+                    continue;
+                }
+                const std::string id = line.substr(0, first);
+                const std::string controllers =
+                    "," + line.substr(first + 1, second - first - 1) + ",";
+                std::string path = line.substr(second + 1);
+                while (!path.empty() && path.back() == '/')
+                {
+                    path.pop_back();
+                }
+                if (id == "0" && controllers == ",,")
+                {
+                    const std::string base = root + "/sys/fs/cgroup";
+                    limit_by_cgroup(available, base, base + path, "memory.max",
+                                    "memory.current", "inactive_file");
+                }
+                else if (controllers.find(",memory,") != std::string::npos)
+                {
+                    const std::string base = root + "/sys/fs/cgroup/memory";
+                    limit_by_cgroup(
+                        available, base, base + path, "memory.limit_in_bytes",
+                        "memory.usage_in_bytes", "total_inactive_file");
+                }
+            }
+            return available;
         }
 
         memory_topology
@@ -109,6 +249,11 @@ namespace heongpu
 
     size_t MemoryPool::get_host_avaliable_memory() const
     {
+        const size_t available = detail::read_available_host_memory();
+        if (available != 0)
+        {
+            return available;
+        }
         struct sysinfo memInfo;
         sysinfo(&memInfo);
         size_t free_memory = memInfo.freeram * memInfo.mem_unit;

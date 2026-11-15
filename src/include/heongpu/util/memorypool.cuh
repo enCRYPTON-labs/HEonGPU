@@ -11,6 +11,7 @@
 #include <memory>
 #include <vector>
 #include <optional>
+#include <string>
 #include <unordered_set>
 #include <sys/sysinfo.h>
 
@@ -81,6 +82,14 @@ namespace heongpu
         // discrete.
         memory_topology
         classify_memory_topology(const DeviceMemoryAttributes& attributes);
+
+        // The memory the host can still give to the process, in bytes:
+        // MemAvailable of /proc/meminfo, which counts the page cache that the
+        // kernel can reclaim, lowered to what the memory cgroups of the
+        // process (v1 or v2, and their parents) still allow, as in a
+        // container with a memory limit. Returns 0 when MemAvailable cannot
+        // be read. root is prepended to the paths, for tests.
+        size_t read_available_host_memory(const std::string& root = "");
     } // namespace detail
 
     struct MemoryPoolConfig
