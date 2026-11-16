@@ -17,6 +17,20 @@ namespace heongpu
     {
         namespace
         {
+            // Managed memory, as in the unified memory mode, and host memory
+            // can be read and written by the host in place.
+            bool host_accessible(const void* data)
+            {
+                cudaPointerAttributes attributes;
+                if (cudaPointerGetAttributes(&attributes, data) != cudaSuccess)
+                {
+                    cudaGetLastError();
+                    return false;
+                }
+                return attributes.type == cudaMemoryTypeManaged ||
+                       attributes.type == cudaMemoryTypeHost;
+            }
+
             HostVector<Data64> staging_buffer(std::size_t count,
                                               std::size_t chunk_values)
             {
@@ -35,6 +49,13 @@ namespace heongpu
         {
             if (count == 0)
             {
+                return;
+            }
+            if (host_accessible(data))
+            {
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
+                os.write(reinterpret_cast<const char*>(data),
+                         count * sizeof(Data64));
                 return;
             }
             HostVector<Data64> staging = staging_buffer(count, chunk_values);
@@ -63,6 +84,14 @@ namespace heongpu
         {
             if (count == 0)
             {
+                return;
+            }
+            if (host_accessible(data))
+            {
+                // The memory may still be in use by work on stream that freed
+                // it before it was allocated again.
+                HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
+                is.read(reinterpret_cast<char*>(data), count * sizeof(Data64));
                 return;
             }
             HostVector<Data64> staging = staging_buffer(count, chunk_values);

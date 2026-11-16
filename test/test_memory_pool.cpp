@@ -755,3 +755,55 @@ TEST(HEonGPU, MemoryPool_Unified_Mode_Keeps_Objects_In_Device_Memory)
     }
     heongpu::shutdown();
 }
+
+TEST(HEonGPU, MemoryPool_Unified_Mode_Serializes_Without_Host_Memory)
+{
+    int device = 0;
+    ASSERT_EQ(cudaGetDevice(&device), cudaSuccess);
+    if (heongpu::detail::query_device_memory_attributes(device)
+            .concurrent_managed_access == 0)
+    {
+        GTEST_SKIP() << "The GPU has no concurrent managed access.";
+    }
+    auto& pool = heongpu::MemoryPool::instance();
+    heongpu::shutdown();
+    {
+        heongpu::HEContext<heongpu::Scheme::CKKS> context =
+            heongpu::GenHEContext<heongpu::Scheme::CKKS>(
+                heongpu::sec_level_type::none);
+        context->set_poly_modulus_degree(4096);
+        context->set_coeff_modulus_bit_sizes({40, 30}, {40});
+        heongpu::MemoryPoolConfig pool_config;
+        pool_config.initial_device_bytes = 256ULL << 20;
+        pool_config.max_device_bytes = 1024ULL << 20;
+        pool_config.memory_mode = heongpu::memory_mode::unified;
+        context->generate(pool_config);
+        if (pool.mode() != heongpu::memory_mode::unified)
+        {
+            GTEST_SKIP() << "HEONGPU_MEMORY_MODE selects another mode.";
+        }
+
+        heongpu::HEKeyGenerator<heongpu::Scheme::CKKS> keygen(context);
+        heongpu::Secretkey<heongpu::Scheme::CKKS> secret_key(context);
+        keygen.generate_secret_key(secret_key);
+        heongpu::Relinkey<heongpu::Scheme::CKKS> relin_key(context);
+        keygen.generate_relin_key(relin_key, secret_key);
+        ASSERT_EQ(cudaDeviceSynchronize(), cudaSuccess);
+
+        // The host pool serves no staging buffer while the key is saved and
+        // loaded.
+        auto host_allocations = [&]
+        { return pool.get_host_resource()->get_bytes_counter().total; };
+        const auto before = host_allocations();
+        std::stringstream saved;
+        relin_key.save(saved);
+        heongpu::Relinkey<heongpu::Scheme::CKKS> loaded(context);
+        std::stringstream input(saved.str());
+        loaded.load(input);
+        std::stringstream saved_again;
+        loaded.save(saved_again);
+        EXPECT_EQ(host_allocations(), before);
+        EXPECT_EQ(saved_again.str(), saved.str());
+    }
+    heongpu::shutdown();
+}

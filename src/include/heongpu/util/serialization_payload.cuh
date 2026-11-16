@@ -25,7 +25,9 @@ namespace heongpu
         // Writes count values of device memory to os. The copy runs on
         // stream, after the work queued on it before. A sensitive payload,
         // such as a secret key, is erased from the host memory it passes
-        // through.
+        // through. Memory that the host can access, such as managed memory
+        // in the unified memory mode, is written directly, without host
+        // memory in between.
         void
         write_device_payload(std::ostream& os, const Data64* data,
                              std::size_t count, cudaStream_t stream,
@@ -34,7 +36,9 @@ namespace heongpu
 
         // Reads count values from is into device memory, on stream, and
         // waits for the copy. Reading stops where is ends; the values read
-        // until then are copied and the caller checks the state of is.
+        // until then are copied, a value read in part may be changed, and
+        // the caller checks the state of is. Memory that the host can access
+        // is read into directly.
         void
         read_device_payload(std::istream& is, Data64* data, std::size_t count,
                             cudaStream_t stream, bool sensitive = false,
