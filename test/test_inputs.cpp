@@ -511,7 +511,9 @@ TEST(Inputs, TFHE_Gates_Leave_Their_Inputs)
         const Ciphertext x = placed(x0, where);
         const Ciphertext y = placed(y0, where);
         const Ciphertext z = placed(z0, where);
-        const bool on_device = where == placement::device;
+        // Objects stay on the device in the unified memory mode.
+        const bool on_device = where == placement::device ||
+                               heongpu::detail::objects_stay_on_device();
 
         std::vector<bool> nand(size), mux(size), negated(size);
         for (int i = 0; i < size; i++)

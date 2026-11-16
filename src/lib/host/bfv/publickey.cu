@@ -80,6 +80,11 @@ namespace heongpu
 
     void Publickey<Scheme::BFV>::store_in_host(cudaStream_t stream)
     {
+        if (detail::objects_stay_on_device())
+        {
+            detail::wait_for_host_access(device_locations_.stream(), stream);
+            return;
+        }
         if (storage_type_ == storage_type::device)
         {
             if (memory_size() == 0)

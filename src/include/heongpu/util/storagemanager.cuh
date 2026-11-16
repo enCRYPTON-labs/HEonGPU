@@ -101,6 +101,36 @@ namespace heongpu
         }
     };
 
+    namespace detail
+    {
+        // True in the unified memory mode (memory_mode::unified): the host
+        // uses the device memory of objects directly, so objects keep their
+        // data there for storage_type::host as well and stay on the device.
+        bool objects_stay_on_device();
+
+        // The storage an object gets for requested.
+        inline storage_type stored_type(storage_type requested)
+        {
+            return objects_stay_on_device() ? storage_type::device : requested;
+        }
+
+        // Waits for the work on the stream of an object and on stream, so
+        // that the host can read the object in device memory.
+        inline void wait_for_host_access(cudaStream_t object_stream,
+                                         cudaStream_t stream)
+        {
+            for (cudaStream_t s : {object_stream, stream})
+            {
+                const cudaError_t error = cudaStreamSynchronize(s);
+                if (error != cudaSuccess)
+                {
+                    throw SystemError(error_message("CUDA error: ",
+                                                    cudaGetErrorString(error)));
+                }
+            }
+        }
+    } // namespace detail
+
     /**
      * @brief Manages the input storage and conditionally transfers data to the
      * appropriate location (e.g., device or host) before executing a function

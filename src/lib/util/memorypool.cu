@@ -954,6 +954,11 @@ namespace heongpu
         return topology_;
     }
 
+    bool detail::objects_stay_on_device()
+    {
+        return MemoryPool::instance().mode() == memory_mode::unified;
+    }
+
     memory_mode MemoryPool::mode() const
     {
         std::lock_guard<std::mutex> guard(mutex_);

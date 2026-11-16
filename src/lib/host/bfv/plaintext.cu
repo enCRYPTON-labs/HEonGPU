@@ -23,7 +23,7 @@ namespace heongpu
         scheme_ = context->scheme_;
         context_id_ = context->context_id_;
         plain_size_ = context->n;
-        storage_type_ = options.storage_;
+        storage_type_ = detail::stored_type(options.storage_);
     }
 
     void Plaintext<Scheme::BFV>::store_in_device(cudaStream_t stream)
@@ -54,6 +54,11 @@ namespace heongpu
 
     void Plaintext<Scheme::BFV>::store_in_host(cudaStream_t stream)
     {
+        if (detail::objects_stay_on_device())
+        {
+            detail::wait_for_host_access(device_locations_.stream(), stream);
+            return;
+        }
         if (storage_type_ == storage_type::device)
         {
             if (memory_size() == 0)

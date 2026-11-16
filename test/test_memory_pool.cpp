@@ -673,3 +673,85 @@ TEST(HEonGPU, MemoryPool_Allocates_Managed_Memory_In_The_Unified_Mode)
     }
     heongpu::shutdown();
 }
+
+TEST(HEonGPU, MemoryPool_Unified_Mode_Keeps_Objects_In_Device_Memory)
+{
+    int device = 0;
+    ASSERT_EQ(cudaGetDevice(&device), cudaSuccess);
+    if (heongpu::detail::query_device_memory_attributes(device)
+            .concurrent_managed_access == 0)
+    {
+        GTEST_SKIP() << "The GPU has no concurrent managed access.";
+    }
+    using Ciphertext = heongpu::Ciphertext<heongpu::Scheme::CKKS>;
+    auto& pool = heongpu::MemoryPool::instance();
+    heongpu::shutdown();
+    {
+        heongpu::HEContext<heongpu::Scheme::CKKS> context =
+            heongpu::GenHEContext<heongpu::Scheme::CKKS>(
+                heongpu::sec_level_type::none);
+        context->set_poly_modulus_degree(4096);
+        context->set_coeff_modulus_bit_sizes({40, 30}, {40});
+        heongpu::MemoryPoolConfig pool_config;
+        pool_config.initial_device_bytes = 256ULL << 20;
+        pool_config.max_device_bytes = 1024ULL << 20;
+        pool_config.memory_mode = heongpu::memory_mode::unified;
+        context->generate(pool_config);
+        if (pool.mode() != heongpu::memory_mode::unified)
+        {
+            GTEST_SKIP() << "HEONGPU_MEMORY_MODE selects another mode.";
+        }
+
+        heongpu::HEKeyGenerator<heongpu::Scheme::CKKS> keygen(context);
+        heongpu::Secretkey<heongpu::Scheme::CKKS> secret_key(context);
+        keygen.generate_secret_key(secret_key);
+        heongpu::Publickey<heongpu::Scheme::CKKS> public_key(context);
+        keygen.generate_public_key(public_key, secret_key);
+        heongpu::HEEncoder<heongpu::Scheme::CKKS> encoder(context);
+        heongpu::HEEncryptor<heongpu::Scheme::CKKS> encryptor(context,
+                                                              public_key);
+        heongpu::HEDecryptor<heongpu::Scheme::CKKS> decryptor(context,
+                                                              secret_key);
+        heongpu::HEArithmeticOperator<heongpu::Scheme::CKKS> operators(context,
+                                                                       encoder);
+
+        const std::vector<double> message(2048, 0.25);
+        heongpu::Plaintext<heongpu::Scheme::CKKS> plaintext(context);
+        encoder.encode(plaintext, message, std::pow(2.0, 30));
+        Ciphertext ciphertext(context);
+        encryptor.encrypt(ciphertext, plaintext);
+        std::vector<Data64> expected;
+        ciphertext.get_data(expected);
+        ASSERT_EQ(cudaDeviceSynchronize(), cudaSuccess);
+
+        // Storing in host memory neither copies nor allocates: the host
+        // reads the data where it is.
+        const size_t device_used = pool.get_current_device_pool_memory_usage();
+        const size_t host_used = pool.get_current_host_pool_memory_usage();
+        ciphertext.store_in_host();
+        EXPECT_TRUE(ciphertext.is_on_device());
+        EXPECT_EQ(pool.get_current_device_pool_memory_usage(), device_used);
+        EXPECT_EQ(pool.get_current_host_pool_memory_usage(), host_used);
+        const Data64* data = ciphertext.data();
+        EXPECT_EQ(std::vector<Data64>(data, data + expected.size()), expected);
+
+        // So does an operation that asks for host memory.
+        Ciphertext sum(context);
+        operators.add(ciphertext, ciphertext, sum,
+                      heongpu::ExecutionOptions().set_storage_type(
+                          heongpu::storage_type::host));
+        EXPECT_TRUE(sum.is_on_device());
+        EXPECT_EQ(pool.get_current_host_pool_memory_usage(), host_used);
+
+        heongpu::Plaintext<heongpu::Scheme::CKKS> decrypted(context);
+        decryptor.decrypt(decrypted, sum);
+        std::vector<double> result;
+        encoder.decode(result, decrypted);
+        ASSERT_EQ(result.size(), message.size());
+        for (size_t i = 0; i < message.size(); i++)
+        {
+            EXPECT_NEAR(result[i], 2 * message[i], 1e-3);
+        }
+    }
+    heongpu::shutdown();
+}

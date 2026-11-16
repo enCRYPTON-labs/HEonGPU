@@ -352,7 +352,8 @@ namespace heongpu
                             context_->Q_size, context_->P_size);
                         HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                        if (options.storage_ == storage_type::device)
+                        if (detail::stored_type(options.storage_) ==
+                            storage_type::device)
                         {
                             gk.device_location_[galois.second] =
                                 std::move(output_memory);
@@ -415,7 +416,8 @@ namespace heongpu
                         context_->P_size);
                     HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                    if (options.storage_ == storage_type::device)
+                    if (detail::stored_type(options.storage_) ==
+                        storage_type::device)
                     {
                         gk.zero_device_location_ = std::move(output_memory);
                     }
@@ -481,7 +483,8 @@ namespace heongpu
                             context_->Q_size, context_->P_size);
                         HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                        if (options.storage_ == storage_type::device)
+                        if (detail::stored_type(options.storage_) ==
+                            storage_type::device)
                         {
                             gk.device_location_[galois_] =
                                 std::move(output_memory);
@@ -544,7 +547,8 @@ namespace heongpu
                         context_->P_size);
                     HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                    if (options.storage_ == storage_type::device)
+                    if (detail::stored_type(options.storage_) ==
+                        storage_type::device)
                     {
                         gk.zero_device_location_ = std::move(output_memory);
                     }
@@ -560,7 +564,7 @@ namespace heongpu
                 }
 
                 gk.galois_key_generated_ = true;
-                gk.storage_type_ = options.storage_;
+                gk.storage_type_ = detail::stored_type(options.storage_);
             },
             options, false);
     }
