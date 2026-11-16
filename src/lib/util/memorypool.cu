@@ -215,6 +215,263 @@ namespace heongpu
         }
     } // namespace detail
 
+    namespace detail
+    {
+        namespace
+        {
+            size_t roundup_256(size_t size)
+            {
+                return ((size + 255) / 256) * 256;
+            }
+
+            float normalize_fraction(float value, const char* label)
+            {
+                if (value <= 0.0f)
+                {
+                    throw std::invalid_argument(std::string(label) +
+                                                " must be > 0");
+                }
+                if (value > 1.0f)
+                {
+                    if (value > 100.0f)
+                    {
+                        throw std::invalid_argument(
+                            std::string(label) +
+                            " must be in (0,1] or (0,100]");
+                    }
+                    return value / 100.0f;
+                }
+                return value;
+            }
+
+            void check_bytes(const std::optional<size_t>& bytes,
+                             const char* label)
+            {
+                if (bytes.has_value() && *bytes == 0)
+                {
+                    throw std::invalid_argument(std::string(label) +
+                                                " bytes must be > 0");
+                }
+            }
+
+            void check_resolved(size_t resolved, size_t total_memory,
+                                const char* label)
+            {
+                if (resolved == 0)
+                {
+                    throw std::invalid_argument(std::string(label) +
+                                                " resolved to 0 bytes");
+                }
+                if (total_memory != 0 && resolved > total_memory)
+                {
+                    throw std::invalid_argument(
+                        std::string(label) +
+                        " exceeds available memory at initialization");
+                }
+            }
+
+            // A fraction is taken in float, as before the shared budget, or
+            // in double when precise.
+            size_t resolve_pool_size(const std::optional<size_t>& bytes,
+                                     const std::optional<float>& fraction,
+                                     size_t total_memory, size_t default_bytes,
+                                     float default_fraction, const char* label,
+                                     bool precise = false)
+            {
+                auto part = [&](float f)
+                {
+                    return precise
+                               ? static_cast<size_t>(double(total_memory) * f)
+                               : static_cast<size_t>(total_memory * f);
+                };
+                check_bytes(bytes, label);
+                size_t resolved = 0;
+                if (bytes.has_value())
+                {
+                    resolved = *bytes;
+                }
+                else if (fraction.has_value())
+                {
+                    resolved = part(normalize_fraction(*fraction, label));
+                }
+                else if (default_bytes != 0)
+                {
+                    resolved = default_bytes;
+                }
+                else
+                {
+                    resolved =
+                        part(normalize_fraction(default_fraction, label));
+                }
+                check_resolved(resolved, total_memory, label);
+                return roundup_256(resolved);
+            }
+
+            size_t resolve_initial_host(const MemoryPoolConfig& config,
+                                        size_t total_memory,
+                                        bool precise = false)
+            {
+                if (!config.initial_host_bytes.has_value() &&
+                    !config.initial_host_fraction.has_value())
+                {
+                    return roundup_256(static_cast<size_t>(104857600));
+                }
+                return resolve_pool_size(
+                    config.initial_host_bytes, config.initial_host_fraction,
+                    total_memory, 0, initial_host_memorypool_size,
+                    "host initial pool size", precise);
+            }
+
+            void check_initial(size_t initial, size_t max, const char* pool)
+            {
+                if (max < initial)
+                {
+                    throw std::invalid_argument(std::string(pool) +
+                                                " max pool size must be >= " +
+                                                pool + " initial pool size");
+                }
+            }
+
+            PoolBudget resolve_discrete_budget(const MemoryPoolConfig& config,
+                                               size_t device_available,
+                                               size_t host_available)
+            {
+                PoolBudget budget;
+                budget.initial_host =
+                    resolve_initial_host(config, host_available);
+                budget.max_host = resolve_pool_size(
+                    config.max_host_bytes, config.max_host_fraction,
+                    host_available, 0, max_host_memorypool_size,
+                    "host max pool size");
+                check_initial(budget.initial_host, budget.max_host, "host");
+
+                budget.initial_device = resolve_pool_size(
+                    config.initial_device_bytes, config.initial_device_fraction,
+                    device_available, 0, initial_device_memorypool_size,
+                    "device initial pool size");
+                budget.max_device = resolve_pool_size(
+                    config.max_device_bytes, config.max_device_fraction,
+                    device_available, 0, max_device_memorypool_size,
+                    "device max pool size");
+                check_initial(budget.initial_device, budget.max_device,
+                              "device");
+                return budget;
+            }
+
+            // Both pools share total; see MemoryPoolConfig.
+            PoolBudget resolve_unified_budget(const MemoryPoolConfig& config,
+                                              size_t host_available)
+            {
+                // In double: a float is off by kilobytes at these sizes.
+                const size_t total = static_cast<size_t>(
+                    double(host_available) * unified_memorypool_budget);
+                constexpr size_t min_device = 64ULL << 20;
+                constexpr size_t min_host = 256ULL << 20;
+
+                check_bytes(config.max_device_bytes, "device max pool size");
+                check_bytes(config.max_host_bytes, "host max pool size");
+                const float device_fraction =
+                    config.max_device_fraction.has_value()
+                        ? normalize_fraction(*config.max_device_fraction,
+                                             "device max pool size")
+                        : unified_max_device_memorypool_size;
+                const float host_fraction =
+                    config.max_host_fraction.has_value()
+                        ? normalize_fraction(*config.max_host_fraction,
+                                             "host max pool size")
+                        : unified_max_host_memorypool_size;
+
+                PoolBudget budget;
+                if (config.max_device_bytes.has_value() &&
+                    config.max_host_bytes.has_value())
+                {
+                    budget.max_device = *config.max_device_bytes;
+                    budget.max_host = *config.max_host_bytes;
+                    if (budget.max_device + budget.max_host > total)
+                    {
+                        throw std::invalid_argument(
+                            "device and host max pool sizes together exceed "
+                            "the memory available at initialization, which "
+                            "both pools share on this GPU");
+                    }
+                }
+                else if (config.max_device_bytes.has_value())
+                {
+                    budget.max_device = *config.max_device_bytes;
+                    check_resolved(budget.max_device, total,
+                                   "device max pool size");
+                    budget.max_host = std::max(
+                        min_host, std::min(static_cast<size_t>(double(total) *
+                                                               host_fraction),
+                                           total - budget.max_device));
+                }
+                else if (config.max_host_bytes.has_value())
+                {
+                    budget.max_host = *config.max_host_bytes;
+                    check_resolved(budget.max_host, total,
+                                   "host max pool size");
+                    budget.max_device =
+                        std::max(min_device,
+                                 std::min(static_cast<size_t>(double(total) *
+                                                              device_fraction),
+                                          total - budget.max_host));
+                }
+                else
+                {
+                    const double sum = double(device_fraction) + host_fraction;
+                    const double scale = sum > 1.0 ? 1.0 / sum : 1.0;
+                    budget.max_device = static_cast<size_t>(
+                        double(total) * device_fraction * scale);
+                    budget.max_host =
+                        std::min(static_cast<size_t>(double(total) *
+                                                     host_fraction * scale),
+                                 total - budget.max_device);
+                }
+                check_resolved(budget.max_device, total,
+                               "device max pool size");
+                check_resolved(budget.max_host, total, "host max pool size");
+                budget.max_device = roundup_256(budget.max_device);
+                budget.max_host = roundup_256(budget.max_host);
+
+                // Initial sizes from a fraction or the defaults stay within
+                // the max size; one given in bytes must fit.
+                budget.initial_host = resolve_initial_host(config, total, true);
+                if (!config.initial_host_bytes.has_value())
+                {
+                    budget.initial_host =
+                        std::min(budget.initial_host, budget.max_host);
+                }
+                check_initial(budget.initial_host, budget.max_host, "host");
+
+                budget.initial_device = resolve_pool_size(
+                    config.initial_device_bytes, config.initial_device_fraction,
+                    total, unified_initial_device_memorypool_bytes, 0.0f,
+                    "device initial pool size", true);
+                if (!config.initial_device_bytes.has_value())
+                {
+                    budget.initial_device =
+                        std::min(budget.initial_device, budget.max_device);
+                }
+                check_initial(budget.initial_device, budget.max_device,
+                              "device");
+                return budget;
+            }
+        } // namespace
+
+        PoolBudget resolve_pool_budget(const MemoryPoolConfig& config,
+                                       memory_topology topology,
+                                       size_t device_available,
+                                       size_t host_available)
+        {
+            if (topology == memory_topology::unified)
+            {
+                return resolve_unified_budget(config, host_available);
+            }
+            return resolve_discrete_budget(config, device_available,
+                                           host_available);
+        }
+    } // namespace detail
+
     MemoryPoolConfig MemoryPoolConfig::Defaults()
     {
         MemoryPoolConfig config;
@@ -291,125 +548,21 @@ namespace heongpu
             HEONGPU_CUDA_CHECK(cudaGetDevice(&device));
             attributes_ = detail::query_device_memory_attributes(device);
             topology_ = detail::classify_memory_topology(attributes_);
-            size_t total_host_memory = get_host_avaliable_memory();
-            size_t total_device_memory = get_decive_avaliable_memory();
-
-            auto normalize_fraction = [](float value,
-                                         const char* label) -> float
-            {
-                if (value <= 0.0f)
-                {
-                    throw std::invalid_argument(std::string(label) +
-                                                " must be > 0");
-                }
-                if (value > 1.0f)
-                {
-                    if (value > 100.0f)
-                    {
-                        throw std::invalid_argument(
-                            std::string(label) +
-                            " must be in (0,1] or (0,100]");
-                    }
-                    return value / 100.0f;
-                }
-                return value;
-            };
-
-            auto resolve_pool_size =
-                [&](const std::optional<size_t>& bytes,
-                    const std::optional<float>& fraction, size_t total_memory,
-                    size_t default_bytes, float default_fraction,
-                    const char* label) -> size_t
-            {
-                size_t resolved = 0;
-                if (bytes.has_value())
-                {
-                    if (*bytes == 0)
-                    {
-                        throw std::invalid_argument(std::string(label) +
-                                                    " bytes must be > 0");
-                    }
-                    resolved = *bytes;
-                }
-                else if (fraction.has_value())
-                {
-                    float f = normalize_fraction(*fraction, label);
-                    resolved = static_cast<size_t>(total_memory * f);
-                }
-                else if (default_bytes != 0)
-                {
-                    resolved = default_bytes;
-                }
-                else
-                {
-                    float f = normalize_fraction(default_fraction, label);
-                    resolved = static_cast<size_t>(total_memory * f);
-                }
-
-                if (resolved == 0)
-                {
-                    throw std::invalid_argument(std::string(label) +
-                                                " resolved to 0 bytes");
-                }
-                if (total_memory != 0 && resolved > total_memory)
-                {
-                    throw std::invalid_argument(
-                        std::string(label) +
-                        " exceeds available memory at initialization");
-                }
-
-                return roundup_256(resolved);
-            };
+            const size_t host_available = get_host_avaliable_memory();
+            const size_t device_available = get_decive_avaliable_memory();
 
             if (config.use_memory_pool)
             {
-                size_t initial_host_pool_size = 0;
-                if (!config.initial_host_bytes.has_value() &&
-                    !config.initial_host_fraction.has_value())
-                {
-                    initial_host_pool_size =
-                        roundup_256(static_cast<size_t>(104857600));
-                }
-                else
-                {
-                    initial_host_pool_size = resolve_pool_size(
-                        config.initial_host_bytes, config.initial_host_fraction,
-                        total_host_memory, 0, initial_host_memorypool_size,
-                        "host initial pool size");
-                }
-
-                size_t max_host_pool_size = resolve_pool_size(
-                    config.max_host_bytes, config.max_host_fraction,
-                    total_host_memory, 0, max_host_memorypool_size,
-                    "host max pool size");
-
-                if (max_host_pool_size < initial_host_pool_size)
-                {
-                    throw std::invalid_argument(
-                        "host max pool size must be >= host initial pool "
-                        "size");
-                }
+                const detail::PoolBudget budget = detail::resolve_pool_budget(
+                    config, topology_, device_available, host_available);
 
                 host_pool_ = std::make_shared<HostPoolResource>(
-                    *host_base_, initial_host_pool_size, max_host_pool_size);
+                    *host_base_, budget.initial_host, budget.max_host);
                 host_stats_adaptor_ =
                     std::make_shared<HostStatsAdaptor>(*host_pool_);
 
-                size_t initial_device_pool_size = resolve_pool_size(
-                    config.initial_device_bytes, config.initial_device_fraction,
-                    total_device_memory, 0, initial_device_memorypool_size,
-                    "device initial pool size");
-                size_t max_device_pool_size = resolve_pool_size(
-                    config.max_device_bytes, config.max_device_fraction,
-                    total_device_memory, 0, max_device_memorypool_size,
-                    "device max pool size");
-
-                if (max_device_pool_size < initial_device_pool_size)
-                {
-                    throw std::invalid_argument(
-                        "device max pool size must be >= device initial pool "
-                        "size");
-                }
+                size_t initial_device_pool_size = budget.initial_device;
+                const size_t max_device_pool_size = budget.max_device;
 
                 // An initial size derived from the free memory can become too
                 // large if another process allocates in the meantime. Retry
@@ -425,8 +578,12 @@ namespace heongpu
                         // them, which avoids failed allocations and RMM
                         // error logs.
                         constexpr size_t headroom = 64ULL << 20;
+                        // A GPU that shares the memory of the host takes
+                        // the pool from the available host memory.
                         const size_t free_memory =
-                            get_decive_avaliable_memory();
+                            topology_ == memory_topology::unified
+                                ? get_host_avaliable_memory()
+                                : get_decive_avaliable_memory();
                         while (initial_device_pool_size >
                                    min_initial_device_pool_size &&
                                initial_device_pool_size + headroom >

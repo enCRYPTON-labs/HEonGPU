@@ -95,6 +95,15 @@ namespace heongpu
     struct MemoryPoolConfig
     {
         // Fractions accept either 0.0-1.0 (ratio) or 0-100 (percentage).
+        //
+        // On a GPU with its own memory, the device fractions are of the free
+        // device memory and the host fractions of the available host memory.
+        // On a GPU that shares the memory of the host (memory_topology::
+        // unified), both pools take from one budget, 80% of the available
+        // host memory, and the fractions are of that budget: fractions whose
+        // sum is above 100% are scaled down to it, and a pool given in bytes
+        // leaves the rest of the budget to the other one. Sizes in bytes that
+        // do not fit in the budget together are rejected.
         std::optional<float> initial_device_fraction;
         std::optional<float> max_device_fraction;
         std::optional<size_t> initial_device_bytes;
@@ -123,6 +132,27 @@ namespace heongpu
 
         static MemoryPoolConfig Defaults();
     };
+
+    namespace detail
+    {
+        // Sizes of the pools in bytes.
+        struct PoolBudget
+        {
+            size_t initial_device = 0;
+            size_t max_device = 0;
+            size_t initial_host = 0;
+            size_t max_host = 0;
+        };
+
+        // The pool sizes of config for a GPU with the given topology, with
+        // device_available bytes of free device memory and host_available
+        // bytes of available host memory. Throws std::invalid_argument for
+        // sizes that cannot be met.
+        PoolBudget resolve_pool_budget(const MemoryPoolConfig& config,
+                                       memory_topology topology,
+                                       size_t device_available,
+                                       size_t host_available);
+    } // namespace detail
 
     class MemoryPool
     {

@@ -213,6 +213,15 @@ TEST(HEonGPU, MemoryPool_Shrinks_Initial_Size_That_Does_Not_Fit)
 
 TEST(HEonGPU, MemoryPool_Initial_Device_Fraction_Can_Be_Chosen_By_User)
 {
+    int device = 0;
+    ASSERT_EQ(cudaGetDevice(&device), cudaSuccess);
+    if (heongpu::detail::classify_memory_topology(
+            heongpu::detail::query_device_memory_attributes(device)) ==
+        heongpu::memory_topology::unified)
+    {
+        GTEST_SKIP() << "The fraction is of the shared budget on this GPU; "
+                        "MemoryPool_Budget_Of_A_Unified_GPU checks it.";
+    }
     auto& pool = heongpu::MemoryPool::instance();
     // Start from a process without a memory pool.
     heongpu::shutdown();
@@ -392,4 +401,144 @@ TEST(HEonGPU, MemoryPool_Reads_The_Available_Host_Memory)
     ASSERT_EQ(sysinfo(&info), 0);
     EXPECT_GT(available, 0u);
     EXPECT_LE(available, size_t(info.totalram) * info.mem_unit);
+}
+
+namespace
+{
+    constexpr size_t GB = 1ULL << 30;
+
+    size_t roundup_256(size_t size)
+    {
+        return ((size + 255) / 256) * 256;
+    }
+
+    // The size the pool gives to a fraction of total, as the pool computes
+    // it: in float for a discrete GPU, in double for the shared budget.
+    size_t fraction_of(size_t total, float fraction)
+    {
+        return roundup_256(static_cast<size_t>(total * fraction));
+    }
+
+    size_t budget_fraction_of(size_t total, float fraction)
+    {
+        return roundup_256(static_cast<size_t>(double(total) * fraction));
+    }
+} // namespace
+
+TEST(HEonGPU, MemoryPool_Budget_Of_A_Discrete_GPU)
+{
+    using heongpu::detail::resolve_pool_budget;
+    const auto discrete = heongpu::memory_topology::discrete;
+
+    heongpu::MemoryPoolConfig config;
+    auto budget = resolve_pool_budget(config, discrete, 10 * GB, 20 * GB);
+    EXPECT_EQ(budget.initial_device, fraction_of(10 * GB, 0.5f));
+    EXPECT_EQ(budget.max_device, fraction_of(10 * GB, 0.95f));
+    EXPECT_EQ(budget.initial_host, roundup_256(100ULL << 20));
+    EXPECT_EQ(budget.max_host, fraction_of(20 * GB, 0.4f));
+
+    // Each pool has its own memory, so fractions of both can be large.
+    config.max_device_fraction = 90.0f;
+    config.max_host_fraction = 90.0f;
+    budget = resolve_pool_budget(config, discrete, 10 * GB, 20 * GB);
+    EXPECT_EQ(budget.max_device, fraction_of(10 * GB, 0.9f));
+    EXPECT_EQ(budget.max_host, fraction_of(20 * GB, 0.9f));
+
+    config = heongpu::MemoryPoolConfig();
+    config.max_device_bytes = 11 * GB;
+    EXPECT_THROW(resolve_pool_budget(config, discrete, 10 * GB, 20 * GB),
+                 std::invalid_argument);
+
+    config = heongpu::MemoryPoolConfig();
+    config.initial_device_bytes = 2 * GB;
+    config.max_device_bytes = 1 * GB;
+    EXPECT_THROW(resolve_pool_budget(config, discrete, 10 * GB, 20 * GB),
+                 std::invalid_argument);
+}
+
+TEST(HEonGPU, MemoryPool_Budget_Of_A_Unified_GPU)
+{
+    using heongpu::detail::resolve_pool_budget;
+    const auto unified = heongpu::memory_topology::unified;
+    // 80% of the available host memory; the free device memory, which is
+    // the same memory, is not used.
+    const size_t host_available = 100 * GB;
+    const size_t total = static_cast<size_t>(double(host_available) * 0.8f);
+    const size_t device_available = 1 * GB;
+    auto expect_within_budget = [&](const heongpu::detail::PoolBudget& budget)
+    {
+        EXPECT_LE(budget.max_device + budget.max_host, total + 512);
+        EXPECT_LE(budget.initial_device, budget.max_device);
+        EXPECT_LE(budget.initial_host, budget.max_host);
+    };
+
+    heongpu::MemoryPoolConfig config;
+    auto budget =
+        resolve_pool_budget(config, unified, device_available, host_available);
+    expect_within_budget(budget);
+    EXPECT_EQ(budget.initial_device, 64ULL << 20);
+    EXPECT_EQ(budget.max_device, budget_fraction_of(total, 0.75f));
+    EXPECT_EQ(budget.initial_host, roundup_256(100ULL << 20));
+    EXPECT_EQ(budget.max_host, budget_fraction_of(total, 0.25f));
+
+    // Fractions above 100% together are scaled down to the budget.
+    config.initial_device_fraction = 80.0f;
+    config.max_device_fraction = 90.0f;
+    config.max_host_fraction = 50.0f;
+    budget =
+        resolve_pool_budget(config, unified, device_available, host_available);
+    expect_within_budget(budget);
+    EXPECT_GT(budget.max_device + budget.max_host, total - total / 100);
+    EXPECT_NEAR(double(budget.max_device) / budget.max_host, 0.9 / 0.5, 0.01);
+    // The initial size of 80% does not fit in the scaled max size.
+    EXPECT_EQ(budget.initial_device, budget.max_device);
+
+    // A pool given in bytes leaves the rest to the other one.
+    config = heongpu::MemoryPoolConfig();
+    config.initial_device_fraction = 1.0f;
+    config.max_device_fraction = 1.0f;
+    config.initial_host_bytes = 64ULL << 20;
+    config.max_host_bytes = 256ULL << 20;
+    budget =
+        resolve_pool_budget(config, unified, device_available, host_available);
+    expect_within_budget(budget);
+    // An initial size of 100% of the budget is not rejected for rounding.
+    EXPECT_EQ(budget.max_host, 256ULL << 20);
+    EXPECT_EQ(budget.max_device, roundup_256(total - (256ULL << 20)));
+    EXPECT_EQ(budget.initial_device, budget.max_device);
+
+    // The same with a host memory that a float does not hold exactly.
+    for (size_t available : {size_t(100 * GB) + 1, size_t(127 * GB) + 4097,
+                             size_t(31 * GB) + 123457})
+    {
+        EXPECT_NO_THROW(
+            resolve_pool_budget(config, unified, device_available, available));
+    }
+
+    config = heongpu::MemoryPoolConfig();
+    config.max_device_bytes = 70 * GB;
+    budget =
+        resolve_pool_budget(config, unified, device_available, host_available);
+    expect_within_budget(budget);
+    EXPECT_EQ(budget.max_device, 70 * GB);
+    EXPECT_EQ(budget.max_host, roundup_256(total - 70 * GB));
+
+    // Sizes in bytes that do not fit together, or alone.
+    config = heongpu::MemoryPoolConfig();
+    config.max_device_bytes = 70 * GB;
+    config.max_host_bytes = 20 * GB;
+    EXPECT_THROW(
+        resolve_pool_budget(config, unified, device_available, host_available),
+        std::invalid_argument);
+    config = heongpu::MemoryPoolConfig();
+    config.max_device_bytes = 90 * GB;
+    EXPECT_THROW(
+        resolve_pool_budget(config, unified, device_available, host_available),
+        std::invalid_argument);
+    config = heongpu::MemoryPoolConfig();
+    config.initial_device_bytes = 30 * GB;
+    config.max_device_bytes = 20 * GB;
+    EXPECT_THROW(
+        resolve_pool_budget(config, unified, device_available, host_available),
+        std::invalid_argument);
 }
