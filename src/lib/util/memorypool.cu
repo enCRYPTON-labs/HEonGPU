@@ -6,6 +6,7 @@
 
 #include <heongpu/util/memorypool.cuh>
 #include <algorithm>
+#include <cstdlib>
 #include <limits>
 #include <fstream>
 #include <sstream>
@@ -20,6 +21,8 @@ namespace heongpu
 
     std::shared_ptr<MemoryPool::DeviceResource> MemoryPool::device_base_ =
         nullptr;
+    std::shared_ptr<MemoryPool::ManagedResource> MemoryPool::managed_base_ =
+        nullptr;
     std::shared_ptr<MemoryPool::DevicePoolResource> MemoryPool::device_pool_ =
         nullptr;
     std::shared_ptr<MemoryPool::DeviceStatsAdaptor>
@@ -27,6 +30,7 @@ namespace heongpu
     bool MemoryPool::initialized_ = false;
     detail::DeviceMemoryAttributes MemoryPool::attributes_;
     memory_topology MemoryPool::topology_ = memory_topology::discrete;
+    memory_mode MemoryPool::mode_ = memory_mode::copy;
     bool MemoryPool::use_pool_ = true;
     std::unordered_set<void*> MemoryPool::pooled_device_allocations_;
     std::unordered_set<void*> MemoryPool::pooled_host_allocations_;
@@ -132,6 +136,57 @@ namespace heongpu
                 }
             }
         } // namespace
+
+        memory_mode select_memory_mode(memory_mode requested,
+                                       memory_topology topology,
+                                       const DeviceMemoryAttributes& attributes)
+        {
+            const bool managed = attributes.concurrent_managed_access != 0;
+            switch (requested)
+            {
+                case memory_mode::copy:
+                    return memory_mode::copy;
+                case memory_mode::unified:
+                    if (!managed)
+                    {
+                        throw std::invalid_argument(
+                            "memory_mode::unified needs a GPU with concurrent "
+                            "managed access, so that the host can use managed "
+                            "memory while the GPU runs");
+                    }
+                    return memory_mode::unified;
+                case memory_mode::automatic:
+                    return (topology == memory_topology::unified && managed)
+                               ? memory_mode::unified
+                               : memory_mode::copy;
+            }
+            throw std::invalid_argument("Invalid memory_mode");
+        }
+
+        memory_mode memory_mode_from_environment(const char* value,
+                                                 memory_mode fallback)
+        {
+            if (value == nullptr || *value == '\0')
+            {
+                return fallback;
+            }
+            const std::string name(value);
+            if (name == "automatic")
+            {
+                return memory_mode::automatic;
+            }
+            if (name == "copy")
+            {
+                return memory_mode::copy;
+            }
+            if (name == "unified")
+            {
+                return memory_mode::unified;
+            }
+            throw std::invalid_argument("HEONGPU_MEMORY_MODE must be "
+                                        "automatic, copy or unified, not \"" +
+                                        name + "\"");
+        }
 
         size_t read_available_host_memory(const std::string& root)
         {
@@ -502,6 +557,10 @@ namespace heongpu
         {
             device_base_ = std::make_shared<DeviceResource>();
         }
+        if (!managed_base_)
+        {
+            managed_base_ = std::make_shared<ManagedResource>();
+        }
     }
 
     size_t MemoryPool::get_host_avaliable_memory() const
@@ -548,6 +607,10 @@ namespace heongpu
             HEONGPU_CUDA_CHECK(cudaGetDevice(&device));
             attributes_ = detail::query_device_memory_attributes(device);
             topology_ = detail::classify_memory_topology(attributes_);
+            mode_ = detail::select_memory_mode(
+                detail::memory_mode_from_environment(
+                    std::getenv("HEONGPU_MEMORY_MODE"), config.memory_mode),
+                topology_, attributes_);
             const size_t host_available = get_host_avaliable_memory();
             const size_t device_available = get_decive_avaliable_memory();
 
@@ -595,9 +658,14 @@ namespace heongpu
                     }
                     try
                     {
-                        device_pool_ = std::make_shared<DevicePoolResource>(
-                            *device_base_, initial_device_pool_size,
-                            max_device_pool_size);
+                        device_pool_ =
+                            mode_ == memory_mode::unified
+                                ? std::make_shared<DevicePoolResource>(
+                                      *managed_base_, initial_device_pool_size,
+                                      max_device_pool_size)
+                                : std::make_shared<DevicePoolResource>(
+                                      *device_base_, initial_device_pool_size,
+                                      max_device_pool_size);
                         break;
                     }
                     catch (const rmm::out_of_memory&)
@@ -700,6 +768,10 @@ namespace heongpu
             return rmm::device_async_resource_ref{*device_stats_adaptor_};
         }
         ensure_base_resources();
+        if (mode_ == memory_mode::unified)
+        {
+            return rmm::device_async_resource_ref{*managed_base_};
+        }
         return rmm::device_async_resource_ref{*device_base_};
     }
 
@@ -714,6 +786,11 @@ namespace heongpu
             return ptr;
         }
         ensure_base_resources();
+        if (mode_ == memory_mode::unified)
+        {
+            return managed_base_->allocate(stream, size,
+                                           rmm::CUDA_ALLOCATION_ALIGNMENT);
+        }
         return device_base_->allocate(stream, size,
                                       rmm::CUDA_ALLOCATION_ALIGNMENT);
     }
@@ -728,6 +805,14 @@ namespace heongpu
             return;
         }
         ensure_base_resources();
+        // Both base resources free with cudaFree, so an allocation made
+        // before the mode changed is returned correctly as well.
+        if (mode_ == memory_mode::unified)
+        {
+            managed_base_->deallocate(stream, ptr, size,
+                                      rmm::CUDA_ALLOCATION_ALIGNMENT);
+            return;
+        }
         device_base_->deallocate(stream, ptr, size,
                                  rmm::CUDA_ALLOCATION_ALIGNMENT);
     }
@@ -799,6 +884,10 @@ namespace heongpu
                << ", host page tables " << attributes_.uses_host_page_tables
                << ", concurrent managed access "
                << attributes_.concurrent_managed_access << ")" << std::endl;
+            os << "  Mode        : "
+               << (mode_ == memory_mode::unified ? "unified (managed memory)"
+                                                 : "copy")
+               << std::endl;
             os << "  Device Pool:" << std::endl;
             os << "    Total     : " << device_total << " bytes" << std::endl;
             os << "    Used      : " << device_used << " bytes" << std::endl;
@@ -865,6 +954,12 @@ namespace heongpu
         return topology_;
     }
 
+    memory_mode MemoryPool::mode() const
+    {
+        std::lock_guard<std::mutex> guard(mutex_);
+        return mode_;
+    }
+
     MemoryPool::~MemoryPool()
     {
         clean_pool();
@@ -892,6 +987,7 @@ namespace heongpu
             device_stats_adaptor_.reset();
             device_pool_.reset();
             device_base_.reset();
+            managed_base_.reset();
             pooled_device_allocations_.clear();
             pooled_host_allocations_.clear();
             use_pool_ = true;

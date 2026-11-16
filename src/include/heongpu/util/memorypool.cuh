@@ -29,6 +29,7 @@
 #include <rmm/resource_ref.hpp>
 #include <rmm/mr/pinned_host_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
+#include <rmm/mr/managed_memory_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
 #include <rmm/mr/statistics_resource_adaptor.hpp>
 #include <rmm/mr/per_device_resource.hpp>
@@ -52,6 +53,29 @@ namespace heongpu
     {
         discrete = 0x1,
         unified = 0x2
+    };
+
+    /**
+     * @enum memory_mode
+     * @brief How HEonGPU allocates its device memory.
+     *
+     * - `automatic`: `unified` on a GPU that shares the memory of the host
+     *   and lets the host use managed memory while the GPU runs, `copy`
+     *   otherwise.
+     * - `copy`: device memory that only the GPU uses (cudaMalloc), with
+     *   copies between host and device memory.
+     * - `unified`: managed memory (cudaMallocManaged) that the host and the
+     *   GPU both use. Requires concurrent managed access; on a GPU with its
+     *   own memory it works, more slowly, and is meant for tests.
+     *
+     * The environment variable HEONGPU_MEMORY_MODE (automatic, copy or
+     * unified) overrides MemoryPoolConfig::memory_mode.
+     */
+    enum class memory_mode : std::uint8_t
+    {
+        automatic = 0x1,
+        copy = 0x2,
+        unified = 0x3
     };
 
     namespace detail
@@ -90,6 +114,20 @@ namespace heongpu
         // container with a memory limit. Returns 0 when MemAvailable cannot
         // be read. root is prepended to the paths, for tests.
         size_t read_available_host_memory(const std::string& root = "");
+
+        // The memory mode to use for the requested one on a GPU with the
+        // given topology and attributes: copy or unified. Throws
+        // std::invalid_argument when unified is requested and the GPU has no
+        // concurrent managed access.
+        memory_mode
+        select_memory_mode(memory_mode requested, memory_topology topology,
+                           const DeviceMemoryAttributes& attributes);
+
+        // The memory mode named by value (automatic, copy or unified), or
+        // fallback when value is null or empty. Throws std::invalid_argument
+        // for another value.
+        memory_mode memory_mode_from_environment(const char* value,
+                                                 memory_mode fallback);
     } // namespace detail
 
     struct MemoryPoolConfig
@@ -130,6 +168,9 @@ namespace heongpu
         // StateError instead of raising a limit that is too low.
         bool raise_kernel_stack_size = true;
 
+        // See memory_mode; HEONGPU_MEMORY_MODE overrides it.
+        heongpu::memory_mode memory_mode = heongpu::memory_mode::automatic;
+
         static MemoryPoolConfig Defaults();
     };
 
@@ -157,6 +198,7 @@ namespace heongpu
     class MemoryPool
     {
         using DeviceResource = rmm::mr::cuda_memory_resource;
+        using ManagedResource = rmm::mr::managed_memory_resource;
         using DevicePoolResource = rmm::mr::pool_memory_resource;
         using DeviceStatsAdaptor = rmm::mr::statistics_resource_adaptor;
 
@@ -202,6 +244,10 @@ namespace heongpu
         // discrete before the first initialization.
         memory_topology topology() const;
 
+        // The memory mode chosen by initialize(): copy or unified. copy
+        // before the first initialization.
+        memory_mode mode() const;
+
         ~MemoryPool();
 
       private:
@@ -221,11 +267,13 @@ namespace heongpu
         static std::shared_ptr<HostStatsAdaptor> host_stats_adaptor_;
 
         static std::shared_ptr<DeviceResource> device_base_;
+        static std::shared_ptr<ManagedResource> managed_base_;
         static std::shared_ptr<DevicePoolResource> device_pool_;
         static std::shared_ptr<DeviceStatsAdaptor> device_stats_adaptor_;
         static bool initialized_;
         static detail::DeviceMemoryAttributes attributes_;
         static memory_topology topology_;
+        static memory_mode mode_;
         // Set by use_memory_pool(); selects the resource for new allocations.
         static bool use_pool_;
         // Raw and host allocations served by the pools, so that they are

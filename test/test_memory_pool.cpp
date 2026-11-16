@@ -6,6 +6,8 @@
 
 #include <heongpu/heongpu.hpp>
 #include <gtest/gtest.h>
+#include <cmath>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -541,4 +543,133 @@ TEST(HEonGPU, MemoryPool_Budget_Of_A_Unified_GPU)
     EXPECT_THROW(
         resolve_pool_budget(config, unified, device_available, host_available),
         std::invalid_argument);
+}
+
+TEST(HEonGPU, MemoryPool_Selects_The_Memory_Mode)
+{
+    using heongpu::memory_mode;
+    using heongpu::memory_topology;
+    using heongpu::detail::select_memory_mode;
+    using Attributes = heongpu::detail::DeviceMemoryAttributes;
+    const Attributes managed{0, 0, 1, 0, 0};
+    const Attributes no_managed{1, 0, 0, 0, 0};
+
+    EXPECT_EQ(select_memory_mode(memory_mode::automatic,
+                                 memory_topology::discrete, managed),
+              memory_mode::copy);
+    EXPECT_EQ(select_memory_mode(memory_mode::automatic,
+                                 memory_topology::unified, managed),
+              memory_mode::unified);
+    // Without concurrent managed access the host can not use managed memory
+    // while the GPU runs.
+    EXPECT_EQ(select_memory_mode(memory_mode::automatic,
+                                 memory_topology::unified, no_managed),
+              memory_mode::copy);
+    EXPECT_EQ(select_memory_mode(memory_mode::copy, memory_topology::unified,
+                                 managed),
+              memory_mode::copy);
+    EXPECT_EQ(select_memory_mode(memory_mode::unified,
+                                 memory_topology::discrete, managed),
+              memory_mode::unified);
+    EXPECT_THROW(select_memory_mode(memory_mode::unified,
+                                    memory_topology::unified, no_managed),
+                 std::invalid_argument);
+}
+
+TEST(HEonGPU, MemoryPool_Reads_The_Memory_Mode_From_The_Environment)
+{
+    using heongpu::memory_mode;
+    using heongpu::detail::memory_mode_from_environment;
+    EXPECT_EQ(memory_mode_from_environment(nullptr, memory_mode::copy),
+              memory_mode::copy);
+    EXPECT_EQ(memory_mode_from_environment("", memory_mode::unified),
+              memory_mode::unified);
+    EXPECT_EQ(memory_mode_from_environment("automatic", memory_mode::copy),
+              memory_mode::automatic);
+    EXPECT_EQ(memory_mode_from_environment("copy", memory_mode::unified),
+              memory_mode::copy);
+    EXPECT_EQ(memory_mode_from_environment("unified", memory_mode::copy),
+              memory_mode::unified);
+    EXPECT_THROW(memory_mode_from_environment("managed", memory_mode::copy),
+                 std::invalid_argument);
+}
+
+TEST(HEonGPU, MemoryPool_Allocates_Managed_Memory_In_The_Unified_Mode)
+{
+    int device = 0;
+    ASSERT_EQ(cudaGetDevice(&device), cudaSuccess);
+    const auto attributes =
+        heongpu::detail::query_device_memory_attributes(device);
+    if (attributes.concurrent_managed_access == 0)
+    {
+        GTEST_SKIP() << "The GPU has no concurrent managed access.";
+    }
+    auto& pool = heongpu::MemoryPool::instance();
+
+    for (heongpu::memory_mode requested :
+         {heongpu::memory_mode::unified, heongpu::memory_mode::copy})
+    {
+        heongpu::shutdown();
+        heongpu::HEContext<heongpu::Scheme::CKKS> context =
+            heongpu::GenHEContext<heongpu::Scheme::CKKS>(
+                heongpu::sec_level_type::none);
+        context->set_poly_modulus_degree(4096);
+        context->set_coeff_modulus_bit_sizes({40, 30}, {40});
+        heongpu::MemoryPoolConfig pool_config;
+        pool_config.initial_device_bytes = 256ULL << 20;
+        pool_config.max_device_bytes = 1024ULL << 20;
+        pool_config.memory_mode = requested;
+        context->generate(pool_config);
+
+        // HEONGPU_MEMORY_MODE overrides the configuration.
+        const heongpu::memory_mode expected =
+            heongpu::detail::select_memory_mode(
+                heongpu::detail::memory_mode_from_environment(
+                    std::getenv("HEONGPU_MEMORY_MODE"), requested),
+                pool.topology(), attributes);
+        EXPECT_EQ(pool.mode(), expected);
+
+        heongpu::DeviceVector<double> device_vector(count);
+        cudaPointerAttributes pointer;
+        ASSERT_EQ(cudaPointerGetAttributes(&pointer, device_vector.data()),
+                  cudaSuccess);
+        EXPECT_EQ(pointer.type, expected == heongpu::memory_mode::unified
+                                    ? cudaMemoryTypeManaged
+                                    : cudaMemoryTypeDevice);
+
+        std::ostringstream status;
+        pool.print_memory_pool_status(status);
+        EXPECT_NE(status.str().find(expected == heongpu::memory_mode::unified
+                                        ? "Mode        : unified"
+                                        : "Mode        : copy"),
+                  std::string::npos)
+            << status.str();
+
+        // Encryption and decryption work in both modes.
+        heongpu::HEKeyGenerator<heongpu::Scheme::CKKS> keygen(context);
+        heongpu::Secretkey<heongpu::Scheme::CKKS> secret_key(context);
+        keygen.generate_secret_key(secret_key);
+        heongpu::Publickey<heongpu::Scheme::CKKS> public_key(context);
+        keygen.generate_public_key(public_key, secret_key);
+        heongpu::HEEncoder<heongpu::Scheme::CKKS> encoder(context);
+        heongpu::HEEncryptor<heongpu::Scheme::CKKS> encryptor(context,
+                                                              public_key);
+        heongpu::HEDecryptor<heongpu::Scheme::CKKS> decryptor(context,
+                                                              secret_key);
+        const std::vector<double> message(2048, 0.5);
+        heongpu::Plaintext<heongpu::Scheme::CKKS> plaintext(context);
+        encoder.encode(plaintext, message, std::pow(2.0, 30));
+        heongpu::Ciphertext<heongpu::Scheme::CKKS> ciphertext(context);
+        encryptor.encrypt(ciphertext, plaintext);
+        heongpu::Plaintext<heongpu::Scheme::CKKS> decrypted(context);
+        decryptor.decrypt(decrypted, ciphertext);
+        std::vector<double> result;
+        encoder.decode(result, decrypted);
+        ASSERT_EQ(result.size(), message.size());
+        for (size_t i = 0; i < message.size(); i++)
+        {
+            EXPECT_NEAR(result[i], message[i], 1e-3);
+        }
+    }
+    heongpu::shutdown();
 }
