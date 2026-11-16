@@ -50,5 +50,7 @@ constexpr static float unified_memorypool_budget = 0.8f; // 80% of CPU memory
 constexpr static size_t unified_initial_device_memorypool_bytes = 64ULL << 20;
 constexpr static float unified_max_device_memorypool_size = 0.75f;
 constexpr static float unified_max_host_memorypool_size = 0.25f;
+// Memory a releasing device pool keeps beyond what is in use.
+constexpr static size_t device_pool_release_threshold_bytes = 1ULL << 30;
 
 #endif // HEONGPU_DEFINES_H

@@ -30,6 +30,9 @@
 #include <rmm/mr/pinned_host_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/managed_memory_resource.hpp>
+#include <rmm/mr/cuda_async_memory_resource.hpp>
+#include <rmm/mr/cuda_async_view_memory_resource.hpp>
+#include <rmm/mr/limiting_resource_adaptor.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
 #include <rmm/mr/statistics_resource_adaptor.hpp>
 #include <rmm/mr/per_device_resource.hpp>
@@ -171,11 +174,40 @@ namespace heongpu
         // See memory_mode; HEONGPU_MEMORY_MODE overrides it.
         heongpu::memory_mode memory_mode = heongpu::memory_mode::automatic;
 
+        // When the device pool takes the memory of the host (a GPU that
+        // shares it, or memory_mode::unified), it returns the memory it does
+        // not use to the system at synchronizations, beyond this many bytes
+        // that it keeps for new allocations. 1 GB by default. Such a pool
+        // also keeps at most this much of its initial size.
+        std::optional<size_t> device_release_threshold_bytes;
+
         static MemoryPoolConfig Defaults();
     };
 
     namespace detail
     {
+        // How the device pool keeps memory.
+        // - growing: it keeps all the memory it took until it is destroyed.
+        // - releasing: a CUDA stream-ordered pool that returns the memory it
+        //   does not use beyond its release threshold at synchronizations.
+        enum class device_pool_kind : std::uint8_t
+        {
+            growing = 0x1,
+            releasing = 0x2
+        };
+
+        // releasing when the device pool takes the memory of the host (a GPU
+        // with memory_topology::unified, or memory_mode::unified) and the
+        // GPU supports stream-ordered pools; growing otherwise.
+        device_pool_kind select_device_pool_kind(memory_topology topology,
+                                                 memory_mode mode,
+                                                 bool pools_supported);
+
+        // For tests: the kind of device pool for the initializations that
+        // follow, instead of the selected one; std::nullopt to select again.
+        void override_device_pool_kind(std::optional<device_pool_kind> kind);
+        std::optional<device_pool_kind> overridden_device_pool_kind();
+
         // Sizes of the pools in bytes.
         struct PoolBudget
         {
@@ -248,6 +280,9 @@ namespace heongpu
         // before the first initialization.
         memory_mode mode() const;
 
+        // The kind of the device pool chosen by initialize().
+        detail::device_pool_kind device_pool_kind() const;
+
         ~MemoryPool();
 
       private:
@@ -269,6 +304,26 @@ namespace heongpu
         static std::shared_ptr<DeviceResource> device_base_;
         static std::shared_ptr<ManagedResource> managed_base_;
         static std::shared_ptr<DevicePoolResource> device_pool_;
+        // The releasing device pool: a stream-ordered pool of device memory,
+        // or one of managed memory that HEonGPU creates, below an adaptor
+        // that limits it to the max size.
+        static std::shared_ptr<rmm::mr::cuda_async_memory_resource>
+            async_device_pool_;
+        static cudaMemPool_t managed_pool_handle_;
+        static std::shared_ptr<rmm::mr::cuda_async_view_memory_resource>
+            managed_pool_;
+        static std::shared_ptr<rmm::mr::limiting_resource_adaptor>
+            limited_device_pool_;
+        static detail::device_pool_kind device_pool_kind_;
+        static size_t release_threshold_;
+        // Bytes the device pool holds: its size, or the memory reserved by
+        // the stream-ordered pool. The caller holds mutex_.
+        size_t device_pool_size() const;
+        // Creates the releasing device pool; false when the GPU or the CUDA
+        // version does not support it. The caller holds mutex_.
+        bool create_releasing_device_pool(int device,
+                                          const detail::PoolBudget& budget);
+        void destroy_device_pool();
         static std::shared_ptr<DeviceStatsAdaptor> device_stats_adaptor_;
         static bool initialized_;
         static detail::DeviceMemoryAttributes attributes_;

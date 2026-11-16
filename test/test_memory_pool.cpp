@@ -244,6 +244,11 @@ TEST(HEonGPU, MemoryPool_Initial_Device_Fraction_Can_Be_Chosen_By_User)
     pool_config.max_host_bytes = 256ULL * 1024 * 1024;
     context->generate(pool_config);
 
+    if (pool.device_pool_kind() == heongpu::detail::device_pool_kind::releasing)
+    {
+        GTEST_SKIP() << "A releasing device pool keeps at most its release "
+                        "threshold of the initial size.";
+    }
     const double reserved =
         static_cast<double>(pool.get_free_device_pool_memory() +
                             pool.get_current_device_pool_memory_usage());
@@ -806,4 +811,102 @@ TEST(HEonGPU, MemoryPool_Unified_Mode_Serializes_Without_Host_Memory)
         EXPECT_EQ(saved_again.str(), saved.str());
     }
     heongpu::shutdown();
+}
+
+TEST(HEonGPU, MemoryPool_Selects_The_Device_Pool_Kind)
+{
+    using heongpu::memory_mode;
+    using heongpu::memory_topology;
+    using heongpu::detail::device_pool_kind;
+    using heongpu::detail::select_device_pool_kind;
+    EXPECT_EQ(select_device_pool_kind(memory_topology::discrete,
+                                      memory_mode::copy, true),
+              device_pool_kind::growing);
+    EXPECT_EQ(select_device_pool_kind(memory_topology::unified,
+                                      memory_mode::copy, true),
+              device_pool_kind::releasing);
+    EXPECT_EQ(select_device_pool_kind(memory_topology::discrete,
+                                      memory_mode::unified, true),
+              device_pool_kind::releasing);
+    EXPECT_EQ(select_device_pool_kind(memory_topology::unified,
+                                      memory_mode::unified, false),
+              device_pool_kind::growing);
+}
+
+TEST(HEonGPU, MemoryPool_Releasing_Device_Pool_Returns_Unused_Memory)
+{
+    int device = 0;
+    ASSERT_EQ(cudaGetDevice(&device), cudaSuccess);
+    int pools_supported = 0;
+    ASSERT_EQ(cudaDeviceGetAttribute(&pools_supported,
+                                     cudaDevAttrMemoryPoolsSupported, device),
+              cudaSuccess);
+    if (pools_supported == 0)
+    {
+        GTEST_SKIP() << "The GPU has no stream-ordered memory pools.";
+    }
+    const bool managed = heongpu::detail::query_device_memory_attributes(device)
+                             .concurrent_managed_access != 0;
+    auto& pool = heongpu::MemoryPool::instance();
+    constexpr size_t threshold = 64ULL << 20;
+
+    for (heongpu::memory_mode mode :
+         {heongpu::memory_mode::copy, heongpu::memory_mode::unified})
+    {
+        if (mode == heongpu::memory_mode::unified && !managed)
+        {
+            continue;
+        }
+        SCOPED_TRACE(static_cast<int>(mode));
+        heongpu::shutdown();
+        heongpu::detail::override_device_pool_kind(
+            heongpu::detail::device_pool_kind::releasing);
+        {
+            heongpu::HEContext<heongpu::Scheme::CKKS> context =
+                heongpu::GenHEContext<heongpu::Scheme::CKKS>(
+                    heongpu::sec_level_type::none);
+            context->set_poly_modulus_degree(4096);
+            context->set_coeff_modulus_bit_sizes({40, 30}, {40});
+            heongpu::MemoryPoolConfig pool_config;
+            pool_config.initial_device_bytes = 64ULL << 20;
+            pool_config.max_device_bytes = 2ULL << 30;
+            pool_config.device_release_threshold_bytes = threshold;
+            pool_config.memory_mode = mode;
+            context->generate(pool_config);
+            if (pool.device_pool_kind() !=
+                heongpu::detail::device_pool_kind::releasing)
+            {
+                // A CUDA version without pools of managed memory.
+                continue;
+            }
+
+            {
+                heongpu::DeviceVector<Data64> large((1ULL << 30) /
+                                                    sizeof(Data64));
+                ASSERT_EQ(cudaDeviceSynchronize(), cudaSuccess);
+                EXPECT_GE(pool.get_free_device_pool_memory() +
+                              pool.get_current_device_pool_memory_usage(),
+                          1ULL << 30);
+            }
+            // The memory beyond the threshold returns to the system at the
+            // synchronization.
+            ASSERT_EQ(cudaDeviceSynchronize(), cudaSuccess);
+            EXPECT_LE(pool.get_free_device_pool_memory() +
+                          pool.get_current_device_pool_memory_usage(),
+                      threshold + (32ULL << 20));
+
+            // The pool stays within its max size.
+            EXPECT_THROW(
+                heongpu::DeviceVector<Data64>((3ULL << 30) / sizeof(Data64)),
+                rmm::out_of_memory);
+
+            std::ostringstream status;
+            pool.print_memory_pool_status(status);
+            EXPECT_NE(status.str().find("Kind      : releasing"),
+                      std::string::npos)
+                << status.str();
+        }
+        heongpu::shutdown();
+    }
+    heongpu::detail::override_device_pool_kind(std::nullopt);
 }

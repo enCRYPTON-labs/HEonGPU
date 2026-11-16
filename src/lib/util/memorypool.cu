@@ -25,6 +25,16 @@ namespace heongpu
         nullptr;
     std::shared_ptr<MemoryPool::DevicePoolResource> MemoryPool::device_pool_ =
         nullptr;
+    std::shared_ptr<rmm::mr::cuda_async_memory_resource>
+        MemoryPool::async_device_pool_ = nullptr;
+    cudaMemPool_t MemoryPool::managed_pool_handle_ = nullptr;
+    std::shared_ptr<rmm::mr::cuda_async_view_memory_resource>
+        MemoryPool::managed_pool_ = nullptr;
+    std::shared_ptr<rmm::mr::limiting_resource_adaptor>
+        MemoryPool::limited_device_pool_ = nullptr;
+    detail::device_pool_kind MemoryPool::device_pool_kind_ =
+        detail::device_pool_kind::growing;
+    size_t MemoryPool::release_threshold_ = 0;
     std::shared_ptr<MemoryPool::DeviceStatsAdaptor>
         MemoryPool::device_stats_adaptor_ = nullptr;
     bool MemoryPool::initialized_ = false;
@@ -161,6 +171,32 @@ namespace heongpu
                                : memory_mode::copy;
             }
             throw std::invalid_argument("Invalid memory_mode");
+        }
+
+        namespace
+        {
+            std::optional<device_pool_kind> device_pool_kind_override;
+        } // namespace
+
+        device_pool_kind select_device_pool_kind(memory_topology topology,
+                                                 memory_mode mode,
+                                                 bool pools_supported)
+        {
+            const bool host_memory = topology == memory_topology::unified ||
+                                     mode == memory_mode::unified;
+            return (host_memory && pools_supported)
+                       ? device_pool_kind::releasing
+                       : device_pool_kind::growing;
+        }
+
+        void override_device_pool_kind(std::optional<device_pool_kind> kind)
+        {
+            device_pool_kind_override = kind;
+        }
+
+        std::optional<device_pool_kind> overridden_device_pool_kind()
+        {
+            return device_pool_kind_override;
         }
 
         memory_mode memory_mode_from_environment(const char* value,
@@ -590,6 +626,112 @@ namespace heongpu
         return ((size + 255) / 256) * 256;
     }
 
+    bool
+    MemoryPool::create_releasing_device_pool(int device,
+                                             const detail::PoolBudget& budget)
+    {
+        try
+        {
+            if (mode_ == memory_mode::unified)
+            {
+#if CUDART_VERSION >= 13000
+                // A pool of managed memory of HEonGPU, so that its release
+                // threshold does not change the default pool of the process.
+                cudaMemPoolProps properties = {};
+                properties.allocType = cudaMemAllocationTypeManaged;
+                properties.location.type = cudaMemLocationTypeDevice;
+                properties.location.id = device;
+                if (cudaMemPoolCreate(&managed_pool_handle_, &properties) !=
+                    cudaSuccess)
+                {
+                    cudaGetLastError();
+                    managed_pool_handle_ = nullptr;
+                    return false;
+                }
+                std::uint64_t threshold = release_threshold_;
+                HEONGPU_CUDA_CHECK(cudaMemPoolSetAttribute(
+                    managed_pool_handle_, cudaMemPoolAttrReleaseThreshold,
+                    &threshold));
+                // Reserve the initial size, as the other pools do; a
+                // releasing pool keeps at most its threshold.
+                const size_t initial =
+                    std::min(budget.initial_device, release_threshold_);
+                if (initial != 0)
+                {
+                    void* reserved = nullptr;
+                    HEONGPU_CUDA_CHECK(cudaMallocFromPoolAsync(
+                        &reserved, initial, managed_pool_handle_, nullptr));
+                    HEONGPU_CUDA_CHECK(cudaFreeAsync(reserved, nullptr));
+                    HEONGPU_CUDA_CHECK(cudaStreamSynchronize(nullptr));
+                }
+                managed_pool_ =
+                    std::make_shared<rmm::mr::cuda_async_view_memory_resource>(
+                        managed_pool_handle_);
+                limited_device_pool_ =
+                    std::make_shared<rmm::mr::limiting_resource_adaptor>(
+                        *managed_pool_, budget.max_device);
+                return true;
+#else
+                (void) device;
+                return false;
+#endif
+            }
+            async_device_pool_ =
+                std::make_shared<rmm::mr::cuda_async_memory_resource>(
+                    std::min(budget.initial_device, release_threshold_),
+                    release_threshold_);
+            limited_device_pool_ =
+                std::make_shared<rmm::mr::limiting_resource_adaptor>(
+                    *async_device_pool_, budget.max_device);
+            return true;
+        }
+        catch (const std::exception&)
+        {
+            destroy_device_pool();
+            return false;
+        }
+    }
+
+    size_t MemoryPool::device_pool_size() const
+    {
+        if (device_pool_)
+        {
+            return device_pool_->pool_size();
+        }
+        cudaMemPool_t handle = managed_pool_handle_;
+        if (!handle && async_device_pool_)
+        {
+            handle = async_device_pool_->pool_handle();
+        }
+        if (!handle)
+        {
+            return 0;
+        }
+        std::uint64_t reserved = 0;
+        if (cudaMemPoolGetAttribute(handle, cudaMemPoolAttrReservedMemCurrent,
+                                    &reserved) != cudaSuccess)
+        {
+            cudaGetLastError();
+            return 0;
+        }
+        return static_cast<size_t>(reserved);
+    }
+
+    void MemoryPool::destroy_device_pool()
+    {
+        device_pool_.reset();
+        limited_device_pool_.reset();
+        managed_pool_.reset();
+        async_device_pool_.reset();
+        if (managed_pool_handle_)
+        {
+            // Not checked: at exit the CUDA runtime may be shut down already.
+            cudaMemPoolDestroy(managed_pool_handle_);
+            cudaGetLastError();
+            managed_pool_handle_ = nullptr;
+        }
+    }
+
     void MemoryPool::initialize()
     {
         initialize(MemoryPoolConfig::Defaults());
@@ -600,7 +742,7 @@ namespace heongpu
         std::lock_guard<std::mutex> guard(mutex_);
         // The pools are created by the first initialization that requests
         // them, even if an earlier one ran without a pool.
-        if (!initialized_ || (config.use_memory_pool && !device_pool_))
+        if (!initialized_ || (config.use_memory_pool && !device_stats_adaptor_))
         {
             ensure_base_resources();
             int device = 0;
@@ -624,63 +766,97 @@ namespace heongpu
                 host_stats_adaptor_ =
                     std::make_shared<HostStatsAdaptor>(*host_pool_);
 
-                size_t initial_device_pool_size = budget.initial_device;
-                const size_t max_device_pool_size = budget.max_device;
-
-                // An initial size derived from the free memory can become too
-                // large if another process allocates in the meantime. Retry
-                // with smaller sizes; the pool grows on demand up to its max.
-                constexpr size_t min_initial_device_pool_size = 64ULL << 20;
-                const bool shrinkable =
-                    !config.initial_device_bytes.has_value();
-                while (true)
+                int pools_supported = 0;
+                if (cudaDeviceGetAttribute(&pools_supported,
+                                           cudaDevAttrMemoryPoolsSupported,
+                                           device) != cudaSuccess)
                 {
-                    if (shrinkable)
+                    cudaGetLastError();
+                    pools_supported = 0;
+                }
+                device_pool_kind_ =
+                    detail::overridden_device_pool_kind().value_or(
+                        detail::select_device_pool_kind(topology_, mode_,
+                                                        pools_supported != 0));
+                release_threshold_ =
+                    config.device_release_threshold_bytes.value_or(
+                        device_pool_release_threshold_bytes);
+                if (device_pool_kind_ == detail::device_pool_kind::releasing &&
+                    !create_releasing_device_pool(device, budget))
+                {
+                    device_pool_kind_ = detail::device_pool_kind::growing;
+                }
+
+                if (device_pool_kind_ == detail::device_pool_kind::releasing)
+                {
+                    device_stats_adaptor_ =
+                        std::make_shared<DeviceStatsAdaptor>(
+                            *limited_device_pool_);
+                }
+                else
+                {
+                    size_t initial_device_pool_size = budget.initial_device;
+                    const size_t max_device_pool_size = budget.max_device;
+
+                    // An initial size derived from the free memory can become
+                    // too large if another process allocates in the meantime.
+                    // Retry with smaller sizes; the pool grows on demand up to
+                    // its max.
+                    constexpr size_t min_initial_device_pool_size = 64ULL << 20;
+                    const bool shrinkable =
+                        !config.initial_device_bytes.has_value();
+                    while (true)
                     {
-                        // Skip sizes that no longer fit instead of attempting
-                        // them, which avoids failed allocations and RMM
-                        // error logs.
-                        constexpr size_t headroom = 64ULL << 20;
-                        // A GPU that shares the memory of the host takes
-                        // the pool from the available host memory.
-                        const size_t free_memory =
-                            topology_ == memory_topology::unified
-                                ? get_host_avaliable_memory()
-                                : get_decive_avaliable_memory();
-                        while (initial_device_pool_size >
-                                   min_initial_device_pool_size &&
-                               initial_device_pool_size + headroom >
-                                   free_memory)
+                        if (shrinkable)
                         {
+                            // Skip sizes that no longer fit instead of
+                            // attempting them, which avoids failed allocations
+                            // and RMM error logs.
+                            constexpr size_t headroom = 64ULL << 20;
+                            // A GPU that shares the memory of the host takes
+                            // the pool from the available host memory.
+                            const size_t free_memory =
+                                topology_ == memory_topology::unified
+                                    ? get_host_avaliable_memory()
+                                    : get_decive_avaliable_memory();
+                            while (initial_device_pool_size >
+                                       min_initial_device_pool_size &&
+                                   initial_device_pool_size + headroom >
+                                       free_memory)
+                            {
+                                initial_device_pool_size =
+                                    roundup_256(initial_device_pool_size / 2);
+                            }
+                        }
+                        try
+                        {
+                            device_pool_ =
+                                mode_ == memory_mode::unified
+                                    ? std::make_shared<DevicePoolResource>(
+                                          *managed_base_,
+                                          initial_device_pool_size,
+                                          max_device_pool_size)
+                                    : std::make_shared<DevicePoolResource>(
+                                          *device_base_,
+                                          initial_device_pool_size,
+                                          max_device_pool_size);
+                            break;
+                        }
+                        catch (const rmm::out_of_memory&)
+                        {
+                            if (!shrinkable || initial_device_pool_size <=
+                                                   min_initial_device_pool_size)
+                            {
+                                throw;
+                            }
                             initial_device_pool_size =
                                 roundup_256(initial_device_pool_size / 2);
                         }
                     }
-                    try
-                    {
-                        device_pool_ =
-                            mode_ == memory_mode::unified
-                                ? std::make_shared<DevicePoolResource>(
-                                      *managed_base_, initial_device_pool_size,
-                                      max_device_pool_size)
-                                : std::make_shared<DevicePoolResource>(
-                                      *device_base_, initial_device_pool_size,
-                                      max_device_pool_size);
-                        break;
-                    }
-                    catch (const rmm::out_of_memory&)
-                    {
-                        if (!shrinkable || initial_device_pool_size <=
-                                               min_initial_device_pool_size)
-                        {
-                            throw;
-                        }
-                        initial_device_pool_size =
-                            roundup_256(initial_device_pool_size / 2);
-                    }
+
+                    device_stats_adaptor_ =
+                        std::make_shared<DeviceStatsAdaptor>(*device_pool_);
                 }
-                device_stats_adaptor_ =
-                    std::make_shared<DeviceStatsAdaptor>(*device_pool_);
             }
 
             initialized_ = true;
@@ -752,7 +928,7 @@ namespace heongpu
         // The base resources are kept: memory that was allocated without the
         // pool can still be returned to them.
         device_stats_adaptor_.reset();
-        device_pool_.reset();
+        destroy_device_pool();
         host_stats_adaptor_.reset();
         host_pool_.reset();
         pooled_device_allocations_.clear();
@@ -863,13 +1039,13 @@ namespace heongpu
     void MemoryPool::print_memory_pool_status(std::ostream& os) const
     {
         std::lock_guard<std::mutex> guard(mutex_);
-        if (device_stats_adaptor_ && device_pool_ && host_stats_adaptor_ &&
-            host_pool_)
+        if (device_stats_adaptor_ && host_stats_adaptor_ && host_pool_)
         {
             auto device_status = device_stats_adaptor_->get_bytes_counter();
-            const auto device_total = device_pool_->pool_size();
-            const auto device_used = device_status.value;
-            const auto device_free = device_total - device_used;
+            const size_t device_total = device_pool_size();
+            const size_t device_used = device_status.value;
+            const size_t device_free =
+                device_total > device_used ? device_total - device_used : 0;
 
             auto host_status = host_stats_adaptor_->get_bytes_counter();
             const auto host_total = host_pool_->pool_size();
@@ -889,6 +1065,15 @@ namespace heongpu
                                                  : "copy")
                << std::endl;
             os << "  Device Pool:" << std::endl;
+            if (device_pool_kind_ == detail::device_pool_kind::releasing)
+            {
+                os << "    Kind      : releasing (keeps up to "
+                   << release_threshold_ << " unused bytes)" << std::endl;
+            }
+            else
+            {
+                os << "    Kind      : growing" << std::endl;
+            }
             os << "    Total     : " << device_total << " bytes" << std::endl;
             os << "    Used      : " << device_used << " bytes" << std::endl;
             os << "    Free      : " << device_free << " bytes" << std::endl;
@@ -918,12 +1103,14 @@ namespace heongpu
     size_t MemoryPool::get_free_device_pool_memory() const
     {
         std::lock_guard<std::mutex> guard(mutex_);
-        if (!device_stats_adaptor_ || !device_pool_)
+        if (!device_stats_adaptor_)
         {
             return 0;
         }
         auto device_status = device_stats_adaptor_->get_bytes_counter();
-        return device_pool_->pool_size() - device_status.value;
+        const size_t total = device_pool_size();
+        const size_t used = device_status.value;
+        return total > used ? total - used : 0;
     }
 
     size_t MemoryPool::get_current_host_pool_memory_usage() const
@@ -965,6 +1152,12 @@ namespace heongpu
         return mode_;
     }
 
+    detail::device_pool_kind MemoryPool::device_pool_kind() const
+    {
+        std::lock_guard<std::mutex> guard(mutex_);
+        return device_pool_kind_;
+    }
+
     MemoryPool::~MemoryPool()
     {
         clean_pool();
@@ -976,7 +1169,7 @@ namespace heongpu
     {
         std::lock_guard<std::mutex> guard(mutex_);
         if (initialized_ || host_base_ || device_base_ || host_pool_ ||
-            device_pool_)
+            device_pool_ || limited_device_pool_)
         {
             // Restore the RMM default before destroying the resources it may
             // refer to; a default set by the application stays as it is.
@@ -990,7 +1183,7 @@ namespace heongpu
             host_pool_.reset();
             host_base_.reset();
             device_stats_adaptor_.reset();
-            device_pool_.reset();
+            destroy_device_pool();
             device_base_.reset();
             managed_base_.reset();
             pooled_device_allocations_.clear();
