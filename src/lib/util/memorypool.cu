@@ -73,12 +73,22 @@ namespace heongpu
             attributes.concurrent_managed_access =
                 properties.concurrentManagedAccess;
             attributes.device_memory = properties.totalGlobalMem;
+#ifdef _WIN32
+            MEMORYSTATUSEX memory_info{};
+            memory_info.dwLength = sizeof(memory_info);
+            if (GlobalMemoryStatusEx(&memory_info))
+            {
+                attributes.host_memory =
+                    static_cast<size_t>(memory_info.ullTotalPhys);
+            }
+#else
             struct sysinfo memory_info;
             if (sysinfo(&memory_info) == 0)
             {
                 attributes.host_memory =
                     size_t(memory_info.totalram) * memory_info.mem_unit;
             }
+#endif
             return attributes;
         }
 

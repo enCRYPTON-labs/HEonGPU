@@ -402,12 +402,14 @@ TEST(HEonGPU, MemoryPool_Reads_The_Available_Host_Memory)
         EXPECT_EQ(read_available_host_memory(root.path()), 0u);
     }
 
+#ifndef _WIN32
     // The host of the test.
     const size_t available = read_available_host_memory();
     struct sysinfo info;
     ASSERT_EQ(sysinfo(&info), 0);
     EXPECT_GT(available, 0u);
     EXPECT_LE(available, size_t(info.totalram) * info.mem_unit);
+#endif
 }
 
 namespace
