@@ -8,14 +8,7 @@
 #include <gtest/gtest.h>
 #include <rmm/device_buffer.hpp>
 #include <rmm/logger.hpp>
-#if defined(__HIP_PLATFORM_AMD__)
-// hipMM, which provides RMM on AMD GPUs, follows the RMM 25.x API.
-#include <rmm/mr/device/per_device_resource.hpp>
-#define set_current_device_resource set_current_device_resource_ref
-#define reset_current_device_resource reset_current_device_resource_ref
-#else
 #include <rmm/mr/per_device_resource.hpp>
-#endif
 
 // HEonGPU allocates from its own memory resource and leaves the process-wide
 // RMM default alone, unless MemoryPoolConfig::set_as_rmm_default asks for it.

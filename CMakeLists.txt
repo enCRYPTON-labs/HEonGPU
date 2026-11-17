@@ -79,8 +79,10 @@ if(USE_HIP)
     find_package(hip REQUIRED)
     find_package(hiprand REQUIRED)
 
-    # rocThrust is a drop-in for Thrust on HIP
-    find_package(rocthrust REQUIRED)
+    # rocThrust is a drop-in for Thrust on HIP. hipMM looks it up again from
+    # its own directory and makes its targets global, which CMake allows only
+    # for imported targets that are global already or created there.
+    find_package(rocthrust REQUIRED GLOBAL)
 else()
     set(CMAKE_CUDA_STANDARD 20)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)

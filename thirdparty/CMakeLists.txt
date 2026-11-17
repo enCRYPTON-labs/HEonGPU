@@ -73,7 +73,7 @@ endif()
 # which keeps RMM's target name, rmm:: namespace, and header layout. hipMM has
 # its own version numbers.
 if(USE_HIP)
-    set(_heongpu_rmm_version 4.0)
+    set(_heongpu_rmm_version 5.0)
 else()
     set(_heongpu_rmm_version 26.08)
 endif()
@@ -116,9 +116,9 @@ else()
         FetchContent_Declare(
             rmm
             GIT_REPOSITORY https://github.com/AMD-Ecosystem/hipMM
-            # release/rocmds-26.03 line, pinned by commit: hipMM publishes no
-            # release tags yet and the branch moves.
-            GIT_TAG        22732e49aa00ba179847e3b314371f2307f47a9a
+            # hipMM 5.0.0 (release/26.10 line), pinned by commit: hipMM
+            # publishes no release tags yet and the branch moves.
+            GIT_TAG        dccfd94fc2d513abf3f9f62867e330433f9086e0
             SOURCE_SUBDIR  cpp
             ${_heongpu_rmm_options}
         )
@@ -151,6 +151,19 @@ else()
         set(CPM_DOWNLOAD_${_rmm_pkg} ON)
         unset(${_rmm_pkg}_DIR CACHE)
     endforeach()
+
+    if(USE_HIP)
+        # hipMM needs libhipcxx 3.4 (the CCCL port), newer than the one ROCm
+        # ships, and the build scripts it uses download it from a repository
+        # that does not exist. The first declaration of a dependency is the one
+        # used, so declare the public one here, pinned by commit (the tip of
+        # its release/26.10 branch, which hipMM's scripts ask for).
+        FetchContent_Declare(
+            libhipcxx
+            GIT_REPOSITORY https://github.com/ROCm/libhipcxx
+            GIT_TAG        90b6a2b5768fecb243d30fb3c0f34223031bd355
+        )
+    endif()
 
     FetchContent_MakeAvailable(rmm)
     if(USE_HIP)

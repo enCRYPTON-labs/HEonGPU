@@ -29,19 +29,10 @@
 #include <rmm/error.hpp>
 #include <rmm/resource_ref.hpp>
 #include <rmm/mr/pinned_host_memory_resource.hpp>
-#if defined(__HIP_PLATFORM_AMD__)
-// On AMD GPUs RMM comes from hipMM, which follows the RMM 25.x API: the
-// resources are templates over their upstream resource and live under mr/device.
-#include <rmm/mr/device/cuda_memory_resource.hpp>
-#include <rmm/mr/device/pool_memory_resource.hpp>
-#include <rmm/mr/device/statistics_resource_adaptor.hpp>
-#include <rmm/mr/device/per_device_resource.hpp>
-#else
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
 #include <rmm/mr/statistics_resource_adaptor.hpp>
 #include <rmm/mr/per_device_resource.hpp>
-#endif
 
 // --------------------- //
 // Author: Alisah Ozcan
@@ -84,28 +75,12 @@ namespace heongpu
     class MemoryPool
     {
         using DeviceResource = rmm::mr::cuda_memory_resource;
-        using HostResource = rmm::mr::pinned_host_memory_resource;
-#if defined(__HIP_PLATFORM_AMD__)
-        using DevicePoolResource = rmm::mr::pool_memory_resource<DeviceResource>;
-        using DeviceStatsAdaptor =
-            rmm::mr::statistics_resource_adaptor<DevicePoolResource>;
-
-        using HostPoolResource = rmm::mr::pool_memory_resource<HostResource>;
-        using HostStatsAdaptor =
-            rmm::mr::statistics_resource_adaptor<HostPoolResource>;
-
-        // hipMM sets the default resource by reference and does not own it.
-        using RmmDefaultResource = rmm::device_async_resource_ref;
-#else
         using DevicePoolResource = rmm::mr::pool_memory_resource;
         using DeviceStatsAdaptor = rmm::mr::statistics_resource_adaptor;
 
+        using HostResource = rmm::mr::pinned_host_memory_resource;
         using HostPoolResource = rmm::mr::pool_memory_resource;
         using HostStatsAdaptor = rmm::mr::statistics_resource_adaptor;
-
-        using RmmDefaultResource =
-            cuda::mr::any_resource<cuda::mr::device_accessible>;
-#endif
 
       public:
         static MemoryPool& instance();
@@ -171,7 +146,9 @@ namespace heongpu
         static std::unordered_set<void*> pooled_host_allocations_;
         // The RMM default that set_as_rmm_default(true) replaced, restored by
         // set_as_rmm_default(false) and at exit.
-        static std::optional<RmmDefaultResource> previous_rmm_default_;
+        static std::optional<
+            cuda::mr::any_resource<cuda::mr::device_accessible>>
+            previous_rmm_default_;
         static std::mutex mutex_;
     };
 
@@ -179,11 +156,7 @@ namespace heongpu
     {
         using value_type = T;
         using HostResource = rmm::mr::pinned_host_memory_resource;
-#if defined(__HIP_PLATFORM_AMD__)
-        using HostPoolResource = rmm::mr::pool_memory_resource<HostResource>;
-#else
         using HostPoolResource = rmm::mr::pool_memory_resource;
-#endif
 
         rmm_pinned_allocator() = default;
 
