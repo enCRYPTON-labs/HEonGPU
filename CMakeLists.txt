@@ -68,6 +68,13 @@ if(USE_HIP)
         set(CMAKE_HIP_FLAGS_RELEASE "${CMAKE_HIP_FLAGS_RELEASE} -O3")
     endif()
 
+    # CMake gives C++ sources /EHsc under clang-cl but not HIP sources, which
+    # then compile with C++ exceptions disabled: a throw still leaves them,
+    # but their catch handlers are dropped, so nothing they catch is caught.
+    if(CMAKE_HIP_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+        add_compile_options($<$<COMPILE_LANGUAGE:HIP>:/EHsc>)
+    endif()
+
     # Find hip and hiprand
     find_package(hip REQUIRED)
     find_package(hiprand REQUIRED)
