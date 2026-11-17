@@ -30,9 +30,9 @@ endif()
 find_dependency(GPUNTT REQUIRED)
 find_dependency(GPUFFT REQUIRED)
 if("@USE_HIP@")
-    # hipMM, which provides the rmm package on AMD GPUs, has its own version
-    # numbers.
-    find_dependency(rmm REQUIRED)
+    # hipMM provides the rmm package on AMD GPUs under its own version
+    # numbers; the headers need hipMM 5.0, which has the RMM 26.x API.
+    find_dependency(rmm 5.0 REQUIRED)
 else()
     find_dependency(rmm 26.08 REQUIRED)
 endif()
