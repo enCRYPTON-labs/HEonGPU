@@ -70,7 +70,7 @@ The library uses a standard CMake build process. The most critical configuration
        * - Blackwell
          - 100, 120
 
-    On AMD GPUs, configure with ``-D USE_HIP=ON`` instead. ``CMAKE_HIP_ARCHITECTURES`` is auto-detected from the GPU in the build machine; set it explicitly to cross-compile for another card. This builds the GPU sources with HIP and uses hipRAND and rocThrust in place of cuRAND and Thrust; RMM is replaced by hipMM (https://github.com/AMD-Ecosystem/hipMM), the ROCm-DS port of RMM, which keeps RMM's names and headers at the API level of RMM 25.x.
+    On AMD GPUs, configure with ``-D USE_HIP=ON`` instead. ``CMAKE_HIP_ARCHITECTURES`` is auto-detected from the GPU in the build machine; set it explicitly to cross-compile for another card. This builds the GPU sources with HIP and uses hipRAND and rocThrust in place of cuRAND and Thrust; RMM is replaced by hipMM (https://github.com/AMD-Ecosystem/hipMM), the ROCm-DS port of RMM, which keeps RMM's names and headers. hipMM 5.0 is derived from RMM 26.06, and HEonGPU uses it with the same code as RMM 26.08.
 
     .. code-block:: bash
 

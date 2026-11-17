@@ -339,7 +339,7 @@ The default install prefix is `/usr/local`. To install somewhere else, for examp
 
 #### AMD GPUs (ROCm)
 
-Build with `-D USE_HIP=ON` to target AMD GPUs through HIP. This selects the HIP language for the GPU sources and links hipRAND and rocThrust in place of cuRAND and Thrust; RMM is replaced by hipMM (https://github.com/AMD-Ecosystem/hipMM), the ROCm-DS port of RMM. hipMM keeps RMM's names and headers at the API level of RMM 25.x, which HEonGPU supports on AMD GPUs alongside RMM 26.08 on NVIDIA GPUs. The RMM options above then apply to hipMM, which has its own version numbers (4.0).
+Build with `-D USE_HIP=ON` to target AMD GPUs through HIP. This selects the HIP language for the GPU sources and links hipRAND and rocThrust in place of cuRAND and Thrust; RMM is replaced by hipMM (https://github.com/AMD-Ecosystem/hipMM), the ROCm-DS port of RMM. hipMM keeps RMM's names and headers; hipMM 5.0 is derived from RMM 26.06 and builds with the same HEonGPU code as RMM 26.08 on NVIDIA GPUs. Configuring also downloads libhipcxx, the ROCm port of the CUDA C++ library that hipMM needs, because ROCm ships an older version. The RMM options above then apply to hipMM, which has its own version numbers (5.0).
 
 <div align="center">
 
