@@ -70,6 +70,7 @@
 // Device attributes
 #define cudaDeviceGetAttribute      hipDeviceGetAttribute
 #define cudaDevAttrMultiProcessorCount hipDeviceAttributeMultiprocessorCount
+#define cudaDevAttrMemoryPoolsSupported hipDeviceAttributeMemoryPoolsSupported
 
 // Async memory allocation
 #define cudaMallocAsync             hipMallocAsync
@@ -80,7 +81,9 @@
 #define cudaMemPoolCreate           hipMemPoolCreate
 #define cudaMemPoolDestroy          hipMemPoolDestroy
 #define cudaMemPoolSetAttribute     hipMemPoolSetAttribute
+#define cudaMemPoolGetAttribute     hipMemPoolGetAttribute
 #define cudaMemPoolAttrReleaseThreshold hipMemPoolAttrReleaseThreshold
+#define cudaMemPoolAttrReservedMemCurrent hipMemPoolAttrReservedMemCurrent
 #define cudaMemAllocationTypePinned hipMemAllocationTypePinned
 #define cudaMemLocationTypeDevice   hipMemLocationTypeDevice
 

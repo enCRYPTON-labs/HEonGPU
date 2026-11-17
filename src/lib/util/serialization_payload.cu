@@ -5,6 +5,14 @@
 // Developer: Alişah Özcan
 
 #include <heongpu/util/serialization_payload.cuh>
+#ifdef __HIP_PLATFORM_AMD__
+// hostvector.cuh and devicevector.cuh include each other. Entered through
+// hostvector.cuh, DeviceVector is defined while HostVector is still only
+// declared, and clang rejects its constructors that take a HostVector, since
+// it requires complete types in non-dependent code when the template is
+// defined.
+#include <heongpu/util/devicevector.cuh>
+#endif
 #include <heongpu/util/hostvector.cuh>
 #include <heongpu/util/util.cuh>
 #include <openssl/crypto.h>
