@@ -292,6 +292,12 @@ if(USE_HIP)
         HIP_ARCHITECTURES "${CMAKE_HIP_ARCHITECTURES}"
     )
     target_compile_definitions(heongpu PRIVATE USE_HIP)
+    # Programs compile their sources that include these headers as HIP, and
+    # under clang-cl those get no /EHsc either, so they could not catch what
+    # the library throws.
+    target_compile_options(heongpu INTERFACE
+        $<$<AND:$<COMPILE_LANGUAGE:HIP>,$<STREQUAL:$<HIP_COMPILER_FRONTEND_VARIANT>,MSVC>>:/EHsc>
+    )
 else()
     set_target_properties(heongpu PROPERTIES
         VERSION ${PROJECT_VERSION}
