@@ -10,7 +10,6 @@
 #include <mutex>
 #include <memory>
 #include <vector>
-#include <sys/sysinfo.h>
 #include <heongpu/util/error.h>
 #include "gpuntt/common/common.cuh"
 #include "gpufft/complex.cuh"

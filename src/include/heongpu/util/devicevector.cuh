@@ -63,6 +63,12 @@ namespace heongpu
             return *this;
         }
 
+        // shrink_to_fit with stream (matches RMM device_uvector API)
+        void shrink_to_fit(cudaStream_t stream = cudaStreamDefault)
+        {
+            Dvec::shrink_to_fit(stream);
+        }
+
         explicit DeviceVector(const HostVector<T>& ref,
                               cudaStream_t stream = cudaStreamDefault,
                               Source memory_resource =

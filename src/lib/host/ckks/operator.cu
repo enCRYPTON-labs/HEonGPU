@@ -12,6 +12,35 @@
 
 namespace heongpu
 {
+    namespace
+    {
+        // NTL's long conversions carry 64 bits under the LP64 data model but
+        // only 32 under LLP64, and the moduli and residues moved through them
+        // below are up to 60 bits wide. Going through the byte representation
+        // keeps the whole value on both models.
+        NTL::ZZ zz_from_u64(const Data64& value)
+        {
+            unsigned char bytes[sizeof(Data64)];
+            for (size_t i = 0; i < sizeof(Data64); i++)
+            {
+                bytes[i] = static_cast<unsigned char>(value >> (8 * i));
+            }
+            return NTL::ZZFromBytes(bytes, sizeof(Data64));
+        }
+
+        Data64 u64_from_zz(const NTL::ZZ& value)
+        {
+            unsigned char bytes[sizeof(Data64)];
+            NTL::BytesFromZZ(bytes, value, sizeof(Data64));
+            Data64 result = 0;
+            for (size_t i = 0; i < sizeof(Data64); i++)
+            {
+                result |= static_cast<Data64>(bytes[i]) << (8 * i);
+            }
+            return result;
+        }
+    } // namespace
+
     __host__
     HEOperator<Scheme::CKKS>::HEOperator(HEContext<Scheme::CKKS> context,
                                          HEEncoder<Scheme::CKKS>& encoder)
@@ -977,8 +1006,7 @@ namespace heongpu
         for (int i = 0; i < current_decomp_count; i++)
         {
             Data64 qi = context_->prime_vector_[i].value;
-            NTL::ZZ qi_zz;
-            NTL::conv(qi_zz, static_cast<long>(qi));
+            NTL::ZZ qi_zz = zz_from_u64(qi);
 
             // Compute (real_zz % qi)
             NTL::ZZ real_mod = real_zz % qi_zz;
@@ -986,7 +1014,7 @@ namespace heongpu
             {
                 real_mod += qi_zz;
             }
-            real_rns_host[i] = NTL::to_long(real_mod);
+            real_rns_host[i] = u64_from_zz(real_mod);
 
             // Compute (imag_zz % qi)
             NTL::ZZ imag_mod = imag_zz % qi_zz;
@@ -994,7 +1022,7 @@ namespace heongpu
             {
                 imag_mod += qi_zz;
             }
-            imag_rns_host[i] = NTL::to_long(imag_mod);
+            imag_rns_host[i] = u64_from_zz(imag_mod);
         }
 
         DeviceVector<Data64> real_rns(real_rns_host, stream);
@@ -1073,8 +1101,7 @@ namespace heongpu
         for (int i = 0; i < current_decomp_count; i++)
         {
             Data64 qi = context_->prime_vector_[i].value;
-            NTL::ZZ qi_zz;
-            NTL::conv(qi_zz, static_cast<long>(qi));
+            NTL::ZZ qi_zz = zz_from_u64(qi);
 
             // Compute (real_zz % qi)
             NTL::ZZ real_mod = real_zz % qi_zz;
@@ -1082,7 +1109,7 @@ namespace heongpu
             {
                 real_mod += qi_zz;
             }
-            real_rns_host[i] = NTL::to_long(real_mod);
+            real_rns_host[i] = u64_from_zz(real_mod);
 
             // Compute (imag_zz % qi)
             NTL::ZZ imag_mod = imag_zz % qi_zz;
@@ -1090,7 +1117,7 @@ namespace heongpu
             {
                 imag_mod += qi_zz;
             }
-            imag_rns_host[i] = NTL::to_long(imag_mod);
+            imag_rns_host[i] = u64_from_zz(imag_mod);
         }
 
         DeviceVector<Data64> real_rns(real_rns_host, stream);

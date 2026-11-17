@@ -19,7 +19,48 @@ namespace heongpu
     {
       public:
         using Hvec = std::vector<T, rmm_pinned_allocator<T>>;
-        using Hvec::vector;
+        using typename Hvec::value_type;
+        using typename Hvec::allocator_type;
+        using typename Hvec::size_type;
+        using typename Hvec::difference_type;
+        using typename Hvec::reference;
+        using typename Hvec::const_reference;
+        using typename Hvec::pointer;
+        using typename Hvec::const_pointer;
+        using typename Hvec::iterator;
+        using typename Hvec::const_iterator;
+
+        // Inherit constructors
+        using Hvec::Hvec;
+
+        // Default constructor
+        HostVector() = default;
+
+        // Copy constructor
+        HostVector(const HostVector& other) : Hvec(other) {}
+
+        // Move constructor
+        HostVector(HostVector&& other) noexcept : Hvec(std::move(other)) {}
+
+        // Copy assignment operator
+        HostVector& operator=(const HostVector& other)
+        {
+            if (this != &other)
+            {
+                Hvec::operator=(other);
+            }
+            return *this;
+        }
+
+        // Move assignment operator
+        HostVector& operator=(HostVector&& other) noexcept
+        {
+            if (this != &other)
+            {
+                Hvec::operator=(std::move(other));
+            }
+            return *this;
+        }
 
         explicit HostVector(const DeviceVector<T>& ref,
                             cudaStream_t stream = cudaStreamDefault)

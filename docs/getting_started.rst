@@ -16,7 +16,8 @@ Before building the library, ensure your development environment meets the follo
 * **GCC**: A modern C++ compiler with C++20 support (tested with GCC 11.4)
 * **GMP**: The GNU Multiple Precision Arithmetic Library
 * **NTL**: A Library for doing Number Theory
-* **CUDA Toolkit**: Version 12.8 or higher
+* **CUDA Toolkit**: Version 12.8 or higher (for NVIDIA GPUs)
+* **ROCm**: Version 7.2 or higher (for AMD GPUs)
 * **OpenSSL**: Version 1.1.1 or higher
 * **ZLIB**: The data compression library
 
@@ -69,6 +70,29 @@ The library uses a standard CMake build process. The most critical configuration
        * - Blackwell
          - 100, 120
 
+    On AMD GPUs, configure with ``-D USE_HIP=ON`` instead. ``CMAKE_HIP_ARCHITECTURES`` is auto-detected from the GPU in the build machine; set it explicitly to cross-compile for another card. This builds the GPU sources with HIP and uses hipRAND and rocThrust in place of cuRAND and Thrust; RMM is replaced by hipMM (https://github.com/AMD-Ecosystem/hipMM), the ROCm-DS port of RMM, which keeps RMM's names and headers. hipMM 5.0 is derived from RMM 26.06, and HEonGPU uses it with the same code as RMM 26.08.
+
+    The ROCm build is supported on Linux. It does not currently build on Windows, because hipMM 5.0 builds only on Linux.
+
+    .. code-block:: bash
+
+        cmake -S . -D USE_HIP=ON -D CMAKE_HIP_ARCHITECTURES=gfx90a -B build
+
+    .. list-table:: GPU Architecture to CMAKE_HIP_ARCHITECTURES Mapping
+       :widths: 25 25
+       :header-rows: 1
+
+       * - GPU Architecture
+         - Target
+       * - CDNA2
+         - gfx90a
+       * - CDNA3
+         - gfx942
+       * - RDNA3
+         - gfx1100, gfx1101, gfx1102
+       * - RDNA4
+         - gfx1200, gfx1201
+
 **Step 3: Compile the Library**
     Once configuration is complete, build the library using the following command. The ``-jN`` flag will use multiple cores to speed up compilation. Replace ``N`` by the number of your logical cores (i.e. the output of ``nproc``).
 
@@ -92,7 +116,7 @@ The library uses a standard CMake build process. The most critical configuration
 Verifying the Installation
 --------------------------
 
-After a successful build, you can verify the library's functionality by running the built-in tests, benchmarks, and examples. To do this, you must enable them during the CMake configuration step.
+After a successful build, you can verify the library's functionality by running the built-in tests, benchmarks, and examples. To do this, you must enable them during the CMake configuration step. On AMD GPUs, use ``-D USE_HIP=ON -D CMAKE_HIP_ARCHITECTURES=<target>`` in place of ``-D CMAKE_CUDA_ARCHITECTURES=<arch>`` in the commands below; tests, examples and benchmarks all build and run there.
 
 * **To build and run tests**:
     .. code-block:: bash

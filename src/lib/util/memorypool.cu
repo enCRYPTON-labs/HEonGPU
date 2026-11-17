@@ -4,6 +4,18 @@
 // SPDX-License-Identifier: Apache-2.0
 // Developer: Alişah Özcan
 
+#ifdef _WIN32
+// Must precede any other header that may pull in <windows.h>, so that the
+// min/max macros never reach the C++ standard library or Thrust.
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
 #include <heongpu/util/memorypool.cuh>
 #include <algorithm>
 #include <cstdlib>
@@ -61,12 +73,22 @@ namespace heongpu
             attributes.concurrent_managed_access =
                 properties.concurrentManagedAccess;
             attributes.device_memory = properties.totalGlobalMem;
+#ifdef _WIN32
+            MEMORYSTATUSEX memory_info{};
+            memory_info.dwLength = sizeof(memory_info);
+            if (GlobalMemoryStatusEx(&memory_info))
+            {
+                attributes.host_memory =
+                    static_cast<size_t>(memory_info.ullTotalPhys);
+            }
+#else
             struct sysinfo memory_info;
             if (sysinfo(&memory_info) == 0)
             {
                 attributes.host_memory =
                     size_t(memory_info.totalram) * memory_info.mem_unit;
             }
+#endif
             return attributes;
         }
 
@@ -601,6 +623,13 @@ namespace heongpu
 
     size_t MemoryPool::get_host_avaliable_memory() const
     {
+#ifdef _WIN32
+        MEMORYSTATUSEX memInfo{};
+        memInfo.dwLength = sizeof(memInfo);
+        GlobalMemoryStatusEx(&memInfo);
+        size_t free_memory = static_cast<size_t>(memInfo.ullAvailPhys);
+        return free_memory;
+#else
         const size_t available = detail::read_available_host_memory();
         if (available != 0)
         {
@@ -610,6 +639,7 @@ namespace heongpu
         sysinfo(&memInfo);
         size_t free_memory = memInfo.freeram * memInfo.mem_unit;
         return free_memory;
+#endif
     }
 
     size_t MemoryPool::get_decive_avaliable_memory() const

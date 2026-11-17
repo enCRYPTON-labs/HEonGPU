@@ -899,7 +899,7 @@ namespace heongpu
 
         storage_type storage_type_;
         Data64 galoiskey_size_;
-        std::vector<u_int32_t> custom_galois_elt;
+        std::vector<uint32_t> custom_galois_elt;
         // Rotations without their own key are built from the keys for the
         // steps 1, 2, 4, ..., 2^max_shift_ (see set_rotation_limits()).
         int max_shift_ = -1;

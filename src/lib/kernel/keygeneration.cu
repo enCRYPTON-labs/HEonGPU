@@ -826,7 +826,7 @@ namespace heongpu
         int block_x = blockIdx.x;
 
         int lane = idx & (warpSize - 1);
-        int wid = idx >> 5;
+        int wid = idx / warpSize;
         int nWarps = (blockDim.x + warpSize - 1) / warpSize;
 
         int base_bit_reg = base_bit;

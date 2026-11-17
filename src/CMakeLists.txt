@@ -7,6 +7,28 @@
 set(HEONGPU_INCLUDE_PARENT ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(HEONGPU_INCLUDE_ROOT ${HEONGPU_INCLUDE_PARENT}/heongpu)
 
+# Helper function to set HIP properties on targets with .cu sources
+function(heongpu_set_gpu_properties target_name sources)
+    if(USE_HIP)
+        set_source_files_properties(${sources} PROPERTIES LANGUAGE HIP)
+        set_target_properties(${target_name} PROPERTIES
+            POSITION_INDEPENDENT_CODE ON
+            HIP_ARCHITECTURES "${CMAKE_HIP_ARCHITECTURES}"
+        )
+        target_compile_definitions(${target_name} PRIVATE USE_HIP)
+        # Add hip_compat shim headers before system includes
+        target_include_directories(${target_name} SYSTEM BEFORE PRIVATE ${CMAKE_SOURCE_DIR}/thirdparty/hip_compat)
+    else()
+        set_target_properties(${target_name} PROPERTIES
+            POSITION_INDEPENDENT_CODE ON
+            CUDA_SEPARABLE_COMPILATION ON
+            CUDA_RESOLVE_DEVICE_SYMBOLS ON
+            CUDA_RUNTIME_LIBRARY Shared
+            CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
+        )
+    endif()
+endfunction()
+
 # GMP
 # We use <gmp.h> in public headers and link against libgmp. Some environments
 # don't provide a CMake package that defines GMP::GMP, so create an imported
@@ -104,13 +126,7 @@ target_link_libraries(heongpu_util
         rmm::rmm
         GMP::GMP
 )
-set_target_properties(heongpu_util PROPERTIES
-    POSITION_INDEPENDENT_CODE ON
-    CUDA_SEPARABLE_COMPILATION ON
-    CUDA_RESOLVE_DEVICE_SYMBOLS ON
-    CUDA_RUNTIME_LIBRARY Shared
-    CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
-)
+heongpu_set_gpu_properties(heongpu_util "${HEONGPU_UTIL_SOURCES}")
 
 set(HEONGPU_KERNEL_SOURCES
     lib/kernel/addition.cu
@@ -121,7 +137,6 @@ set(HEONGPU_KERNEL_SOURCES
     lib/kernel/encryption.cu
     lib/kernel/keygeneration.cu
     lib/kernel/multiplication.cu
-    lib/kernel/small_ntt.cu
     lib/kernel/switchkey.cu
 )
 
@@ -137,13 +152,7 @@ target_include_directories(heongpu_kernel
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_ROOT}/util>
 )
 target_link_libraries(heongpu_kernel PUBLIC heongpu_util)
-set_target_properties(heongpu_kernel PROPERTIES
-    POSITION_INDEPENDENT_CODE ON
-    CUDA_SEPARABLE_COMPILATION ON
-    CUDA_RESOLVE_DEVICE_SYMBOLS ON
-    CUDA_RUNTIME_LIBRARY Shared
-    CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
-)
+heongpu_set_gpu_properties(heongpu_kernel "${HEONGPU_KERNEL_SOURCES}")
 
 set(HEONGPU_HOST_CORE_SOURCES
     lib/heongpu.cpp
@@ -162,13 +171,7 @@ target_include_directories(heongpu_host_core
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_ROOT}/kernel>
 )
 target_link_libraries(heongpu_host_core PUBLIC heongpu_kernel heongpu_util)
-set_target_properties(heongpu_host_core PROPERTIES
-    POSITION_INDEPENDENT_CODE ON
-    CUDA_SEPARABLE_COMPILATION ON
-    CUDA_RESOLVE_DEVICE_SYMBOLS ON
-    CUDA_RUNTIME_LIBRARY Shared
-    CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
-)
+heongpu_set_gpu_properties(heongpu_host_core "${HEONGPU_HOST_CORE_SOURCES}")
 
 set(HEONGPU_HOST_BFV_SOURCES
     lib/host/bfv/ciphertext.cu
@@ -200,13 +203,7 @@ target_include_directories(heongpu_host_bfv
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_ROOT}/kernel>
 )
 target_link_libraries(heongpu_host_bfv PUBLIC heongpu_host_core heongpu_kernel heongpu_util PRIVATE OpenSSL::Crypto)
-set_target_properties(heongpu_host_bfv PROPERTIES
-    POSITION_INDEPENDENT_CODE ON
-    CUDA_SEPARABLE_COMPILATION ON
-    CUDA_RESOLVE_DEVICE_SYMBOLS ON
-    CUDA_RUNTIME_LIBRARY Shared
-    CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
-)
+heongpu_set_gpu_properties(heongpu_host_bfv "${HEONGPU_HOST_BFV_SOURCES}")
 
 set(HEONGPU_HOST_CKKS_SOURCES
     lib/host/ckks/bootstrapping.cu
@@ -243,13 +240,7 @@ target_include_directories(heongpu_host_ckks
 )
 target_link_libraries(heongpu_host_ckks PUBLIC heongpu_host_core heongpu_kernel heongpu_util
     PRIVATE OpenSSL::Crypto NTL::NTL)
-set_target_properties(heongpu_host_ckks PROPERTIES
-    POSITION_INDEPENDENT_CODE ON
-    CUDA_SEPARABLE_COMPILATION ON
-    CUDA_RESOLVE_DEVICE_SYMBOLS ON
-    CUDA_RUNTIME_LIBRARY Shared
-    CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
-)
+heongpu_set_gpu_properties(heongpu_host_ckks "${HEONGPU_HOST_CKKS_SOURCES}")
 
 set(HEONGPU_HOST_TFHE_SOURCES
     lib/host/tfhe/ciphertext.cu
@@ -275,13 +266,7 @@ target_include_directories(heongpu_host_tfhe
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_ROOT}/kernel>
 )
 target_link_libraries(heongpu_host_tfhe PUBLIC heongpu_host_core heongpu_kernel heongpu_util PRIVATE OpenSSL::Crypto)
-set_target_properties(heongpu_host_tfhe PROPERTIES
-    POSITION_INDEPENDENT_CODE ON
-    CUDA_SEPARABLE_COMPILATION ON
-    CUDA_RESOLVE_DEVICE_SYMBOLS ON
-    CUDA_RUNTIME_LIBRARY Shared
-    CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
-)
+heongpu_set_gpu_properties(heongpu_host_tfhe "${HEONGPU_HOST_TFHE_SOURCES}")
 
 option(HEonGPU_BUILD_SHARED "Build HEonGPU as a shared library" OFF)
 if(HEonGPU_BUILD_SHARED)
@@ -300,15 +285,31 @@ add_library(heongpu ${_heongpu_library_type}
 )
 target_compile_features(heongpu PUBLIC cxx_std_20)
 
-set_target_properties(heongpu PROPERTIES
-    VERSION ${PROJECT_VERSION}
-    OUTPUT_NAME "heongpu"
-    CUDA_SEPARABLE_COMPILATION ON
-    POSITION_INDEPENDENT_CODE ON
-    CUDA_RESOLVE_DEVICE_SYMBOLS OFF
-    CUDA_RUNTIME_LIBRARY Shared
-    CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
-)
+if(USE_HIP)
+    set_target_properties(heongpu PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        OUTPUT_NAME "heongpu"
+        POSITION_INDEPENDENT_CODE ON
+        HIP_ARCHITECTURES "${CMAKE_HIP_ARCHITECTURES}"
+    )
+    target_compile_definitions(heongpu PRIVATE USE_HIP)
+    # Programs compile their sources that include these headers as HIP, and
+    # under clang-cl those get no /EHsc either, so they could not catch what
+    # the library throws.
+    target_compile_options(heongpu INTERFACE
+        $<$<AND:$<COMPILE_LANGUAGE:HIP>,$<STREQUAL:$<HIP_COMPILER_FRONTEND_VARIANT>,MSVC>>:/EHsc>
+    )
+else()
+    set_target_properties(heongpu PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        OUTPUT_NAME "heongpu"
+        CUDA_SEPARABLE_COMPILATION ON
+        POSITION_INDEPENDENT_CODE ON
+        CUDA_RESOLVE_DEVICE_SYMBOLS OFF
+        CUDA_RUNTIME_LIBRARY Shared
+        CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
+    )
+endif()
 if(HEonGPU_BUILD_SHARED)
     # The library does its own device link, so that programs using it need no
     # CUDA compilation. The ABI can change between minor versions.
@@ -326,6 +327,10 @@ target_include_directories(heongpu
     PUBLIC
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_PARENT}>
         $<INSTALL_INTERFACE:${INCLUDES_INSTALL_DIR}>
+        # The installed headers include cuda_runtime.h and curand_kernel.h by
+        # name, so a consumer of the installed library needs the shims that
+        # resolve those on AMD GPUs.
+        $<$<BOOL:${USE_HIP}>:$<INSTALL_INTERFACE:include/hip_compat>>
     PRIVATE
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_ROOT}>
         $<BUILD_INTERFACE:${HEONGPU_INCLUDE_ROOT}/host>
@@ -343,8 +348,8 @@ if(HEonGPU_BUILD_SHARED)
             $<COMPILE_ONLY:rngongpu>
             GMP::GMP
             rmm::rmm
-            CUDA::cudart
-            CUDA::curand
+            $<IF:$<BOOL:${USE_HIP}>,hip::host,CUDA::cudart>
+            $<IF:$<BOOL:${USE_HIP}>,hip::hiprand,CUDA::curand>
             OpenSSL::Crypto
             ZLIB::ZLIB
         PRIVATE
@@ -361,7 +366,7 @@ else()
             rngongpu
             GMP::GMP
             rmm::rmm
-            CUDA::curand
+            $<IF:$<BOOL:${USE_HIP}>,hip::hiprand,CUDA::curand>
             OpenSSL::Crypto
             ZLIB::ZLIB
         PRIVATE

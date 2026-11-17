@@ -936,19 +936,25 @@ namespace heongpu
         mpz_init(result);
         mpz_set_ui(result, 1);
 
+        mpz_t modulus;
+        mpz_init(modulus);
+
         for (int i = 0; i < size; i++)
         {
-            mpz_mul_ui(result, result, primes[i].value);
+            set_mpz_u64(modulus, primes[i].value);
+            mpz_mul(result, result, modulus);
         }
 
-        mpz_div_ui(result, result, plain_mod.value);
+        set_mpz_u64(modulus, plain_mod.value);
+        mpz_fdiv_q(result, result, modulus);
 
         mpz_t result_mod;
         mpz_init(result_mod);
 
         for (int i = 0; i < size; i++)
         {
-            mpz_mod_ui(result_mod, result, primes[i].value);
+            set_mpz_u64(modulus, primes[i].value);
+            mpz_mod(result_mod, result, modulus);
 
             size_t mul_size;
             uint64_t* ptr = reinterpret_cast<uint64_t*>(mpz_export(
@@ -958,6 +964,7 @@ namespace heongpu
             free(ptr);
         }
 
+        mpz_clear(modulus);
         mpz_clear(result);
         mpz_clear(result_mod);
 

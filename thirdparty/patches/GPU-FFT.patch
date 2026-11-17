@@ -1,0 +1,106 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index cd2dfc5..3ffe89a 100755
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -5,12 +5,21 @@
+ 
+ cmake_minimum_required(VERSION 3.26)
+ 
+-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES OR CMAKE_CUDA_ARCHITECTURES STREQUAL "")
++if(USE_HIP)
++    if(NOT DEFINED CMAKE_HIP_ARCHITECTURES OR CMAKE_HIP_ARCHITECTURES STREQUAL "")
++        set(CMAKE_HIP_ARCHITECTURES gfx90a CACHE STRING "HIP GPU architectures" FORCE)
++    endif()
++elseif(NOT DEFINED CMAKE_CUDA_ARCHITECTURES OR CMAKE_CUDA_ARCHITECTURES STREQUAL "")
+     set(CMAKE_CUDA_ARCHITECTURES 80;86;89;90 CACHE STRING "CUDA GPU architectures" FORCE)
+ endif()
+ 
+ # Keep the version equal to the release tag (v<major>.<minor>.<patch>).
+-project(GPUFFT VERSION 1.0.0 LANGUAGES C CXX CUDA ASM)
++option(USE_HIP "Build with HIP for AMD GPUs" OFF)
++if(USE_HIP)
++    project(GPUFFT VERSION 1.0.0 LANGUAGES C CXX HIP)
++else()
++    project(GPUFFT VERSION 1.0.0 LANGUAGES C CXX CUDA ASM)
++endif()
+ 
+ if(NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
+   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type (Debug or Release)" )
+@@ -33,7 +42,9 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+ set(CMAKE_CUDA_FLAGS_DEBUG   "${CMAKE_CUDA_FLAGS_DEBUG} -g")
+ set(CMAKE_CUDA_FLAGS_RELEASE "${CMAKE_CUDA_FLAGS_RELEASE} -O3")
+ 
+-find_package(CUDAToolkit REQUIRED)
++if(NOT USE_HIP)
++    find_package(CUDAToolkit REQUIRED)
++endif()
+ message(STATUS "Setting CMAKE_CUDA_ARCHITECTURES to ${CMAKE_CUDA_ARCHITECTURES} for GPUFFT")
+ 
+ ##################
+diff --git a/cmake/Config.cmake.in b/cmake/Config.cmake.in
+index 43e9499..a38fbda 100644
+--- a/cmake/Config.cmake.in
++++ b/cmake/Config.cmake.in
+@@ -5,7 +5,11 @@
+ 
+ include(CMakeFindDependencyMacro)
+ 
+-find_dependency(CUDAToolkit REQUIRED)
++if("@USE_HIP@")
++    find_dependency(hip REQUIRED)
++else()
++    find_dependency(CUDAToolkit REQUIRED)
++endif()
+ 
+ # GPU architectures libfft is compiled for (CMAKE_CUDA_ARCHITECTURES of the
+ # GPU-FFT build).
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 69f75e5..fd90d11 100755
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -18,6 +18,10 @@ set(LIB_HEADER_FILES
+     include/gpufft/twiddles.cuh
+ )
+ 
++if(USE_HIP)
++    set_source_files_properties(${LIB_SOURCE_FILES} PROPERTIES LANGUAGE HIP)
++endif()
++
+ add_library(fft STATIC ${LIB_SOURCE_FILES})
+ add_library(GPUFFT::fft ALIAS fft)
+ if(CMAKE_CXX_COMPILE_FEATURES)
+@@ -51,7 +55,11 @@ if(GPUFFT_ENABLE_WARNINGS)
+     )
+ endif()
+ 
+-target_link_libraries(fft PUBLIC CUDA::cudart)
++if(USE_HIP)
++    target_link_libraries(fft PUBLIC hip::host)
++else()
++    target_link_libraries(fft PUBLIC CUDA::cudart)
++endif()
+ 
+ # gpufft/config.cuh holds the version and the architectures for code that uses
+ # the headers.
+@@ -73,13 +81,20 @@ target_include_directories(
+     $<INSTALL_INTERFACE:include/GPUFFT-${GPUFFT_VERSION_DIR}>
+ )
+ 
+-set_target_properties(fft PROPERTIES
++if(USE_HIP)
++  set_target_properties(fft PROPERTIES
++        POSITION_INDEPENDENT_CODE ON
++        HIP_ARCHITECTURES "${CMAKE_HIP_ARCHITECTURES}"
++  )
++else()
++  set_target_properties(fft PROPERTIES
+     CUDA_SEPARABLE_COMPILATION ON
+     POSITION_INDEPENDENT_CODE ON
+     CUDA_RESOLVE_DEVICE_SYMBOLS ON
+     CUDA_RUNTIME_LIBRARY Static
+     CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
+ )
++endif()
+ 
+ install(TARGETS fft
+   EXPORT ${GPUFFT_TARGETS_EXPORT_NAME}

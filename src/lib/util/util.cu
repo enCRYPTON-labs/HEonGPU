@@ -984,13 +984,19 @@ namespace heongpu
             mpz_init(result);
             mpz_set_ui(result, 1);
 
+            mpz_t prime;
+            mpz_init(prime);
+
             for (int j = 0; j < size; j++)
             {
                 if (i != j)
                 {
-                    mpz_mul_ui(result, result, prime_vector[j].value);
+                    set_mpz_u64(prime, prime_vector[j].value);
+                    mpz_mul(result, result, prime);
                 }
             }
+
+            mpz_clear(prime);
 
             size_t mul_size;
             uint64_t* ptr = reinterpret_cast<uint64_t*>(mpz_export(
@@ -1039,10 +1045,16 @@ namespace heongpu
         mpz_init(result);
         mpz_set_ui(result, 1);
 
+        mpz_t prime;
+        mpz_init(prime);
+
         for (int i = 0; i < size; i++)
         {
-            mpz_mul_ui(result, result, prime_vector[i].value);
+            set_mpz_u64(prime, prime_vector[i].value);
+            mpz_mul(result, result, prime);
         }
+
+        mpz_clear(prime);
 
         size_t mul_size;
         uint64_t* ptr = reinterpret_cast<uint64_t*>(
@@ -1069,10 +1081,16 @@ namespace heongpu
         mpz_init(result);
         mpz_set_ui(result, 1);
 
+        mpz_t prime;
+        mpz_init(prime);
+
         for (int i = 0; i < size; i++)
         {
-            mpz_mul_ui(result, result, prime_vector[i].value);
+            set_mpz_u64(prime, prime_vector[i].value);
+            mpz_mul(result, result, prime);
         }
+
+        mpz_clear(prime);
 
         mpz_add_ui(result, result, 1);
         mpz_div_2exp(result, result, 1);

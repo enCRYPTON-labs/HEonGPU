@@ -567,7 +567,7 @@ namespace heongpu
                 os.write((char*) &custom_galois_elt_size,
                          sizeof(custom_galois_elt_size));
                 os.write((char*) custom_galois_elt.data(),
-                         sizeof(u_int32_t) * custom_galois_elt_size);
+                         sizeof(uint32_t) * custom_galois_elt_size);
             }
             else
             {
@@ -684,7 +684,7 @@ namespace heongpu
                         sizeof(custom_galois_elt_size));
                 custom_galois_elt.resize(custom_galois_elt_size);
                 is.read((char*) custom_galois_elt.data(),
-                        sizeof(u_int32_t) * custom_galois_elt_size);
+                        sizeof(uint32_t) * custom_galois_elt_size);
             }
             else
             {

@@ -6,6 +6,8 @@
 
 cmake_minimum_required(VERSION 4.0 FATAL_ERROR)
 
+option(USE_HIP "Build with HIP for AMD GPUs" OFF)
+
 # Whether the CUDA architectures are given. Otherwise project() sets
 # CMAKE_CUDA_ARCHITECTURES to the default of nvcc (52 for CUDA 12, 75 for
 # CUDA 13), and HEonGPU detects the architecture of the GPU instead.
@@ -15,16 +17,20 @@ else()
     set(HEONGPU_CUDA_ARCH_GIVEN OFF)
 endif()
 
-project(HEonGPU VERSION 2.1.1 LANGUAGES C CXX CUDA ASM)
+if(USE_HIP)
+    project(HEonGPU VERSION 2.1.1 LANGUAGES C CXX HIP ASM)
+else()
+    project(HEonGPU VERSION 2.1.1 LANGUAGES C CXX CUDA ASM)
 
-# The CCCL version that RMM 26.08 needs makes older nvcc versions crash
-# (tested: 12.4 and 12.6 fail, 12.8 and 13.x work).
-if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 12.8)
-    message(FATAL_ERROR
-        "HEonGPU needs CUDA 12.8 or newer, found CUDA "
-        "${CMAKE_CUDA_COMPILER_VERSION} (${CMAKE_CUDA_COMPILER}). Select a "
-        "newer CUDA Toolkit, for example with -D CMAKE_CUDA_COMPILER=<path to "
-        "nvcc>.")
+    # The CCCL version that RMM 26.08 needs makes older nvcc versions crash
+    # (tested: 12.4 and 12.6 fail, 12.8 and 13.x work).
+    if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 12.8)
+        message(FATAL_ERROR
+            "HEonGPU needs CUDA 12.8 or newer, found CUDA "
+            "${CMAKE_CUDA_COMPILER_VERSION} (${CMAKE_CUDA_COMPILER}). Select a "
+            "newer CUDA Toolkit, for example with -D CMAKE_CUDA_COMPILER=<path to "
+            "nvcc>.")
+    endif()
 endif()
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -43,22 +49,62 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message(STATUS "C++ Standard is: ${CMAKE_CXX_STANDARD}")
 
-set(CMAKE_CUDA_STANDARD 20)
-set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-message(STATUS "CUDA Standard: ${CMAKE_CUDA_STANDARD}")
+if(USE_HIP)
+    set(CMAKE_HIP_STANDARD 20)
+    set(CMAKE_HIP_STANDARD_REQUIRED ON)
+    message(STATUS "HIP Standard: ${CMAKE_HIP_STANDARD}")
 
-set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} -g")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
-set(CMAKE_CUDA_FLAGS_DEBUG   "${CMAKE_CUDA_FLAGS_DEBUG} -g")
-set(CMAKE_CUDA_FLAGS_RELEASE "${CMAKE_CUDA_FLAGS_RELEASE} -O3")
+    # CMAKE_HIP_ARCHITECTURES is auto-detected from the local GPU when unset;
+    # set it explicitly to cross-compile for another architecture.
+    message(STATUS "CMAKE_HIP_ARCHITECTURES: ${CMAKE_HIP_ARCHITECTURES}")
 
-find_package(CUDAToolkit REQUIRED)
-find_package(Thrust REQUIRED)
+    # clang-cl takes the MSVC spellings and CMake already supplies /Zi and
+    # /O2 /Ob2 there, so these would be unused arguments -- which is fatal in
+    # a subproject that compiles with warnings as errors.
+    if(NOT MSVC)
+        set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} -g")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+        set(CMAKE_HIP_FLAGS_DEBUG   "${CMAKE_HIP_FLAGS_DEBUG} -g")
+        set(CMAKE_HIP_FLAGS_RELEASE "${CMAKE_HIP_FLAGS_RELEASE} -O3")
+    endif()
+
+    # CMake gives C++ sources /EHsc under clang-cl but not HIP sources, which
+    # then compile with C++ exceptions disabled: a throw still leaves them,
+    # but their catch handlers are dropped, so nothing they catch is caught.
+    if(CMAKE_HIP_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+        add_compile_options($<$<COMPILE_LANGUAGE:HIP>:/EHsc>)
+    endif()
+
+    # Find hip and hiprand
+    find_package(hip REQUIRED)
+    find_package(hiprand REQUIRED)
+
+    # rocThrust is a drop-in for Thrust on HIP. hipMM looks it up again from
+    # its own directory and makes its targets global, which CMake allows only
+    # for imported targets that are global already or created there.
+    find_package(rocthrust REQUIRED GLOBAL)
+else()
+    set(CMAKE_CUDA_STANDARD 20)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+    message(STATUS "CUDA Standard: ${CMAKE_CUDA_STANDARD}")
+
+    set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} -g")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+    set(CMAKE_CUDA_FLAGS_DEBUG   "${CMAKE_CUDA_FLAGS_DEBUG} -g")
+    set(CMAKE_CUDA_FLAGS_RELEASE "${CMAKE_CUDA_FLAGS_RELEASE} -O3")
+
+    find_package(CUDAToolkit REQUIRED)
+    find_package(Thrust REQUIRED)
+endif()
 find_package(OpenMP REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenSSL 1.1.1 REQUIRED COMPONENTS Crypto SSL)
 
-message(STATUS "CUDA Version: ${CUDAToolkit_VERSION}")
+if(USE_HIP)
+    message(STATUS "Building with HIP for ROCm")
+else()
+    message(STATUS "CUDA Version: ${CUDAToolkit_VERSION}")
+endif()
 if(OpenMP_CXX_VERSION)
     message(STATUS "OpenMP Version: ${OpenMP_CXX_VERSION}")
 endif()
@@ -69,31 +115,33 @@ if(OPENSSL_VERSION)
     message(STATUS "OpenSSL Version: ${OPENSSL_VERSION}")
 endif()
 
-set(HEONGPU_CUDA_ARCH_AUTO_DETECTED OFF CACHE BOOL "Set to ON when HEonGPU auto-detects CUDA arch")
-set(HEONGPU_CUDA_ARCH_FORCE_MANUAL OFF CACHE BOOL "Set to ON to prevent HEonGPU from auto-detecting CUDA arch")
-# A reconfigure detects again unless CMAKE_CUDA_ARCHITECTURES was changed
-# from the detected value.
-if(HEONGPU_CUDA_ARCH_AUTO_DETECTED AND
-   (CMAKE_CUDA_ARCHITECTURES STREQUAL HEONGPU_CUDA_ARCH_DETECTED_VALUE))
-    set(HEONGPU_CUDA_ARCH_GIVEN OFF)
-endif()
-if(NOT HEONGPU_CUDA_ARCH_FORCE_MANUAL AND (NOT HEONGPU_CUDA_ARCH_GIVEN OR CMAKE_CUDA_ARCHITECTURES STREQUAL "" OR CMAKE_CUDA_ARCHITECTURES STREQUAL "native" OR CMAKE_CUDA_ARCHITECTURES STREQUAL "52"))
-    include(cmake/DetectCudaArch.cmake)
-    heongpu_detect_cuda_arch(HEONGPU_DETECTED_CUDA_ARCH)
-    if(HEONGPU_DETECTED_CUDA_ARCH)
-        set(CMAKE_CUDA_ARCHITECTURES "${HEONGPU_DETECTED_CUDA_ARCH}" CACHE STRING "CUDA GPU architectures" FORCE)
-        set(HEONGPU_CUDA_ARCH_DETECTED_VALUE "${HEONGPU_DETECTED_CUDA_ARCH}" CACHE INTERNAL "CUDA architecture HEonGPU detected")
-        set(HEONGPU_CUDA_ARCH_AUTO_DETECTED ON CACHE BOOL "Set to ON when HEonGPU auto-detects CUDA arch" FORCE)
-        message(STATUS "Auto-detected CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES} for HEonGPU")
-    else()
-        set(CMAKE_CUDA_ARCHITECTURES native CACHE STRING "CUDA GPU architectures" FORCE)
-        set(HEONGPU_CUDA_ARCH_DETECTED_VALUE native CACHE INTERNAL "CUDA architecture HEonGPU detected")
-        set(HEONGPU_CUDA_ARCH_AUTO_DETECTED ON CACHE BOOL "Set to ON when HEonGPU auto-detects CUDA arch" FORCE)
-        message(WARNING "CUDA arch auto-detection failed; falling back to CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}")
+if(NOT USE_HIP)
+    set(HEONGPU_CUDA_ARCH_AUTO_DETECTED OFF CACHE BOOL "Set to ON when HEonGPU auto-detects CUDA arch")
+    set(HEONGPU_CUDA_ARCH_FORCE_MANUAL OFF CACHE BOOL "Set to ON to prevent HEonGPU from auto-detecting CUDA arch")
+    # A reconfigure detects again unless CMAKE_CUDA_ARCHITECTURES was changed
+    # from the detected value.
+    if(HEONGPU_CUDA_ARCH_AUTO_DETECTED AND
+       (CMAKE_CUDA_ARCHITECTURES STREQUAL HEONGPU_CUDA_ARCH_DETECTED_VALUE))
+        set(HEONGPU_CUDA_ARCH_GIVEN OFF)
     endif()
-else()
-    set(HEONGPU_CUDA_ARCH_AUTO_DETECTED OFF CACHE BOOL "Set to ON when HEonGPU auto-detects CUDA arch" FORCE)
-    message(STATUS "Setting CMAKE_CUDA_ARCHITECTURES to ${CMAKE_CUDA_ARCHITECTURES} for HEonGPU")
+    if(NOT HEONGPU_CUDA_ARCH_FORCE_MANUAL AND (NOT HEONGPU_CUDA_ARCH_GIVEN OR CMAKE_CUDA_ARCHITECTURES STREQUAL "" OR CMAKE_CUDA_ARCHITECTURES STREQUAL "native" OR CMAKE_CUDA_ARCHITECTURES STREQUAL "52"))
+        include(cmake/DetectCudaArch.cmake)
+        heongpu_detect_cuda_arch(HEONGPU_DETECTED_CUDA_ARCH)
+        if(HEONGPU_DETECTED_CUDA_ARCH)
+            set(CMAKE_CUDA_ARCHITECTURES "${HEONGPU_DETECTED_CUDA_ARCH}" CACHE STRING "CUDA GPU architectures" FORCE)
+            set(HEONGPU_CUDA_ARCH_DETECTED_VALUE "${HEONGPU_DETECTED_CUDA_ARCH}" CACHE INTERNAL "CUDA architecture HEonGPU detected")
+            set(HEONGPU_CUDA_ARCH_AUTO_DETECTED ON CACHE BOOL "Set to ON when HEonGPU auto-detects CUDA arch" FORCE)
+            message(STATUS "Auto-detected CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES} for HEonGPU")
+        else()
+            set(CMAKE_CUDA_ARCHITECTURES native CACHE STRING "CUDA GPU architectures" FORCE)
+            set(HEONGPU_CUDA_ARCH_DETECTED_VALUE native CACHE INTERNAL "CUDA architecture HEonGPU detected")
+            set(HEONGPU_CUDA_ARCH_AUTO_DETECTED ON CACHE BOOL "Set to ON when HEonGPU auto-detects CUDA arch" FORCE)
+            message(WARNING "CUDA arch auto-detection failed; falling back to CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES}")
+        endif()
+    else()
+        set(HEONGPU_CUDA_ARCH_AUTO_DETECTED OFF CACHE BOOL "Set to ON when HEonGPU auto-detects CUDA arch" FORCE)
+        message(STATUS "Setting CMAKE_CUDA_ARCHITECTURES to ${CMAKE_CUDA_ARCHITECTURES} for HEonGPU")
+    endif()
 endif()
 
 ##################

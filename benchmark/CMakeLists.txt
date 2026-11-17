@@ -14,13 +14,28 @@ set(EXECUTABLES
 
 function(add_benchmark exe source)
     add_executable(${exe} ${source})
-    target_link_libraries(${exe} PRIVATE heongpu CUDA::cudart)
-    set_target_properties(${exe} PROPERTIES
-        CUDA_SEPARABLE_COMPILATION ON
-        POSITION_INDEPENDENT_CODE ON
-        CUDA_RUNTIME_LIBRARY Shared
-        CUDA_ARCHITECTURES ${CMAKE_CUDA_ARCHITECTURES}
-    )
+    if(USE_HIP)
+        # Benchmark sources include HEonGPU headers that use __umul64hi and
+        # warpSize in non-template device functions (util.cuh,
+        # bigintegerarith.cuh). The HIP headers declare those only when
+        # a source is compiled as HIP.
+        set_source_files_properties(${source} PROPERTIES LANGUAGE HIP)
+        target_link_libraries(${exe} PRIVATE heongpu hip::host)
+        target_include_directories(${exe} SYSTEM BEFORE PRIVATE ${CMAKE_SOURCE_DIR}/thirdparty/hip_compat)
+        target_compile_definitions(${exe} PRIVATE USE_HIP)
+        set_target_properties(${exe} PROPERTIES
+            POSITION_INDEPENDENT_CODE ON
+            HIP_ARCHITECTURES "${CMAKE_HIP_ARCHITECTURES}"
+        )
+    else()
+        target_link_libraries(${exe} PRIVATE heongpu CUDA::cudart)
+        set_target_properties(${exe} PROPERTIES
+            CUDA_SEPARABLE_COMPILATION ON
+            POSITION_INDEPENDENT_CODE ON
+            CUDA_RUNTIME_LIBRARY Shared
+            CUDA_ARCHITECTURES ${CMAKE_CUDA_ARCHITECTURES}
+        )
+    endif()
 endfunction()
 
 list(LENGTH EXECUTABLES EXECUTABLES_LENGTH)

@@ -81,7 +81,27 @@ set(EXECUTABLES
 
 function(add_test exe source)
     add_executable(${exe} ${source})
-    target_link_libraries(${exe} PRIVATE heongpu CUDA::cudart GTest::gtest_main)
+    if(USE_HIP)
+        # Test files include HEonGPU headers that use __umul64hi and warpSize in
+        # non-template device functions (util.cuh, bigintegerarith.cuh).
+        # The HIP headers declare those only when a source is compiled as HIP.
+        set_source_files_properties(${source} PROPERTIES LANGUAGE HIP)
+        target_link_libraries(${exe} PRIVATE heongpu GTest::gtest_main hip::host)
+        target_include_directories(${exe} SYSTEM BEFORE PRIVATE ${CMAKE_SOURCE_DIR}/thirdparty/hip_compat)
+        target_compile_definitions(${exe} PRIVATE USE_HIP)
+        set_target_properties(${exe} PROPERTIES
+            POSITION_INDEPENDENT_CODE ON
+            HIP_ARCHITECTURES "${CMAKE_HIP_ARCHITECTURES}"
+        )
+    else()
+        target_link_libraries(${exe} PRIVATE heongpu CUDA::cudart GTest::gtest_main)
+        set_target_properties(${exe} PROPERTIES
+            CUDA_SEPARABLE_COMPILATION ON
+            POSITION_INDEPENDENT_CODE ON
+            CUDA_RUNTIME_LIBRARY Shared
+            CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
+        )
+    endif()
     if((exe STREQUAL "ckks_secretkey_randomness_testcases" OR exe STREQUAL "secretkey_security_testcases") AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
         target_compile_definitions(${exe} PRIVATE HEONGPU_TEST_WRAP_RAND_PRIV_BYTES)
         target_link_libraries(${exe} PRIVATE ${CMAKE_DL_LIBS})
@@ -94,12 +114,6 @@ function(add_test exe source)
         target_compile_definitions(${exe} PRIVATE HEONGPU_TEST_WRAP_RAND_BYTES)
         target_link_libraries(${exe} PRIVATE ${CMAKE_DL_LIBS})
     endif()
-    set_target_properties(${exe} PROPERTIES
-        CUDA_SEPARABLE_COMPILATION ON
-        POSITION_INDEPENDENT_CODE ON
-        CUDA_RUNTIME_LIBRARY Shared
-        CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
-    )
     gtest_discover_tests(${exe}
         PROPERTIES
           LABELS "unit"
@@ -132,7 +146,18 @@ if(HEonGPU_BUILD_SHARED)
         target_compile_definitions(heongpu_test_${plugin}
             PRIVATE HEONGPU_PLUGIN=${plugin})
         target_link_libraries(heongpu_test_${plugin} PRIVATE heongpu)
+        if(USE_HIP)
+            target_link_libraries(heongpu_test_${plugin} PRIVATE hip::host)
+            target_include_directories(heongpu_test_${plugin} SYSTEM BEFORE PRIVATE ${CMAKE_SOURCE_DIR}/thirdparty/hip_compat)
+            target_compile_definitions(heongpu_test_${plugin} PRIVATE USE_HIP)
+            set_target_properties(heongpu_test_${plugin} PROPERTIES
+                HIP_ARCHITECTURES "${CMAKE_HIP_ARCHITECTURES}"
+            )
+        endif()
     endforeach()
+    if(USE_HIP)
+        set_source_files_properties(shared_state_plugin.cpp PROPERTIES LANGUAGE HIP)
+    endif()
     add_test(shared_state_testcases test_shared_state.cpp)
     target_link_libraries(shared_state_testcases
         PRIVATE heongpu_test_plugin_a heongpu_test_plugin_b)

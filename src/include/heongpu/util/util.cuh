@@ -6,6 +6,10 @@
 #ifndef HEONGPU_UTIL_H
 #define HEONGPU_UTIL_H
 
+// No <curand_kernel.h> here: host translation units reach this header through
+// heongpu.hpp before device_launch_parameters.h, and that inclusion order does
+// not compile. The kernel headers that use cuRAND include it themselves.
+#include <cuda_runtime.h>
 #include "gpuntt/common/common.cuh"
 #include "gpuntt/common/nttparameters.cuh"
 #include <string>
@@ -377,6 +381,16 @@ namespace heongpu
     calculate_factor(const std::vector<Modulus64>& prime_vector,
                      const int Q_size, const int P_size);
 
+    // GMP's *_ui entry points take an unsigned long. That is 64 bits under the
+    // LP64 data model but only 32 under LLP64, while the moduli passed to them
+    // here are up to 60 bits wide, so passing one directly silently drops the
+    // high half. Importing the value as a single 64-bit word is exact on both
+    // models.
+    inline void set_mpz_u64(mpz_t output, Data64 value)
+    {
+        mpz_import(output, 1, -1, sizeof(Data64), 0, 0, &value);
+    }
+
     std::vector<Data64> calculate_Mi(const std::vector<Modulus64>& prime_vector,
                                      const int size);
 
@@ -397,9 +411,15 @@ namespace heongpu
 
     static __device__ __forceinline__ uint32_t warp_reduce(uint32_t input)
     {
+        // Use warpSize for the reduction loop; it is correct at runtime on both
+        // CUDA (32) and HIP (64 on CDNA, 32 on RDNA).
         for (int offset = warpSize / 2; offset > 0; offset >>= 1)
         {
-#if defined(__CUDA_ARCH__)
+#if defined(__HIP_DEVICE_COMPILE__)
+            // HIP's __shfl_down operates over the whole wavefront, so no lane
+            // mask constant is needed and none is width-dependent.
+            input += __shfl_down(input, offset);
+#elif defined(__CUDA_ARCH__)
             input += __shfl_down_sync(0xFFFFFFFF, input, offset);
 #endif
         }

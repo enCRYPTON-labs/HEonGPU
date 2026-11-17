@@ -1,0 +1,276 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index efb7ca3..e1d43d4 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -4,7 +4,12 @@
+ # Developer: Alişah Özcan
+ 
+ cmake_minimum_required(VERSION 3.26)
+-project(RNGonGPU VERSION 1.0 LANGUAGES C CXX CUDA ASM)
++option(USE_HIP "Build with HIP for AMD GPUs" OFF)
++if(USE_HIP)
++    project(RNGonGPU VERSION 1.0 LANGUAGES C CXX HIP)
++else()
++    project(RNGonGPU VERSION 1.0 LANGUAGES C CXX CUDA ASM)
++endif()
+ 
+ if(NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
+   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type (Debug or Release)" )
+@@ -28,9 +33,15 @@ set(CMAKE_CUDA_FLAGS_DEBUG   "${CMAKE_CUDA_FLAGS_DEBUG} -g")
+ set(CMAKE_CUDA_FLAGS_RELEASE "${CMAKE_CUDA_FLAGS_RELEASE} -O3")
+ 
+ find_package(OpenSSL REQUIRED)
+-find_package(CUDAToolkit REQUIRED)
++if(NOT USE_HIP)
++    find_package(CUDAToolkit REQUIRED)
++endif()
+ 
+-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES OR CMAKE_CUDA_ARCHITECTURES STREQUAL "")
++if(USE_HIP)
++    if(NOT DEFINED CMAKE_HIP_ARCHITECTURES OR CMAKE_HIP_ARCHITECTURES STREQUAL "")
++        set(CMAKE_HIP_ARCHITECTURES gfx90a CACHE STRING "HIP GPU architectures" FORCE)
++    endif()
++elseif(NOT DEFINED CMAKE_CUDA_ARCHITECTURES OR CMAKE_CUDA_ARCHITECTURES STREQUAL "")
+     set(CMAKE_CUDA_ARCHITECTURES 80;86;89;90 CACHE STRING "CUDA GPU architectures" FORCE)
+ endif()
+ message(STATUS "Setting CMAKE_CUDA_ARCHITECTURES to ${CMAKE_CUDA_ARCHITECTURES} for RNGonGPU")
+diff --git a/cmake/Config.cmake.in b/cmake/Config.cmake.in
+index 5d7bb0f..0c45faf 100644
+--- a/cmake/Config.cmake.in
++++ b/cmake/Config.cmake.in
+@@ -1,6 +1,11 @@
+ include(CMakeFindDependencyMacro)
+ 
+-find_dependency(CUDAToolkit REQUIRED)
++if("@USE_HIP@")
++    find_dependency(hip REQUIRED)
++    find_dependency(hiprand REQUIRED)
++else()
++    find_dependency(CUDAToolkit REQUIRED)
++endif()
+ find_dependency(OpenSSL REQUIRED)
+ find_dependency(GPUNTT REQUIRED)
+ 
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index ad6e5b3..54fd2f5 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -11,6 +11,10 @@ set(LIB_SOURCE_FILES
+     lib/rand_cuda/cuda_rng_kernels.cu
+ )
+ 
++if(USE_HIP)
++    set_source_files_properties(${LIB_SOURCE_FILES} PROPERTIES LANGUAGE HIP)
++endif()
++
+ add_library(rngongpu STATIC ${LIB_SOURCE_FILES})
+ add_library(RNGonGPU::rngongpu ALIAS rngongpu)
+ if(CMAKE_CXX_COMPILE_FEATURES)
+@@ -52,18 +56,25 @@ set_target_properties(rngongpu PROPERTIES
+ 
+ target_link_libraries(rngongpu PUBLIC 
+     GPUNTT::ntt
+-    CUDA::curand
++    $<IF:$<BOOL:${USE_HIP}>,hip::hiprand,CUDA::curand>
+     OpenSSL::SSL
+     OpenSSL::Crypto
+ )
+ 
+-set_target_properties(rngongpu PROPERTIES
++if(USE_HIP)
++  set_target_properties(rngongpu PROPERTIES
++        POSITION_INDEPENDENT_CODE ON
++        HIP_ARCHITECTURES "${CMAKE_HIP_ARCHITECTURES}"
++  )
++else()
++  set_target_properties(rngongpu PROPERTIES
+         CUDA_SEPARABLE_COMPILATION ON
+         POSITION_INDEPENDENT_CODE ON
+         CUDA_RESOLVE_DEVICE_SYMBOLS ON
+         CUDA_RUNTIME_LIBRARY Static
+         CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
+ )
++endif()
+ 
+ target_include_directories(
+     rngongpu
+diff --git a/src/include/rngongpu/common/aes.cuh b/src/include/rngongpu/common/aes.cuh
+index f275dde..c18ab1c 100644
+--- a/src/include/rngongpu/common/aes.cuh
++++ b/src/include/rngongpu/common/aes.cuh
+@@ -18,6 +18,7 @@
+ #include <string>
+ #include <cuda_runtime.h>
+ #include <algorithm>
++#include <type_traits>
+ #include "gpuntt/common/modular_arith.cuh"
+ 
+ typedef unsigned char Data8;
+@@ -610,6 +611,20 @@ namespace rngongpu
+ 
+     __device__ Data64 reverseBytesULL(Data64 x);
+ 
++    // Truncates a signed Gaussian sample towards zero and reinterprets it as
++    // the unsigned residue type, so that adding the modulus turns a negative
++    // sample into its representative. Converting a negative floating-point
++    // value straight to an unsigned integer is undefined and the GPU back ends
++    // do not agree on it: one saturates the result to zero, the other keeps
++    // only the low 32 bits of the two's-complement value. Going through the
++    // signed type first makes the truncation well defined everywhere.
++    template <typename T, typename U>
++    __device__ __forceinline__ T truncate_signed(U value)
++    {
++        return static_cast<T>(
++            static_cast<typename std::make_signed<T>::type>(value));
++    }
++
+ } // namespace rngongpu
+ 
+ #endif // AES_H
+\ No newline at end of file
+diff --git a/src/lib/common/base_rng.cu b/src/lib/common/base_rng.cu
+index fdb1d74..af85135 100644
+--- a/src/lib/common/base_rng.cu
++++ b/src/lib/common/base_rng.cu
+@@ -205,9 +205,10 @@ namespace rngongpu
+                 uint32_t flag1 =
+                     static_cast<uint32_t>(-static_cast<int32_t>(z1 < 0));
+ 
+-                pointer[2 * i] = static_cast<T>(z0) + (flag0 & modulus.value);
++                pointer[2 * i] =
++                    truncate_signed<T>(z0) + (flag0 & modulus.value);
+                 pointer[2 * i + 1] =
+-                    static_cast<T>(z1) + (flag1 & modulus.value);
++                    truncate_signed<T>(z1) + (flag1 & modulus.value);
+             }
+             else if constexpr (std::is_same_v<T, Data64>)
+             {
+@@ -216,9 +217,10 @@ namespace rngongpu
+                 uint64_t flag1 =
+                     static_cast<uint64_t>(-static_cast<int64_t>(z1 < 0));
+ 
+-                pointer[2 * i] = static_cast<T>(z0) + (flag0 & modulus.value);
++                pointer[2 * i] =
++                    truncate_signed<T>(z0) + (flag0 & modulus.value);
+                 pointer[2 * i + 1] =
+-                    static_cast<T>(z1) + (flag1 & modulus.value);
++                    truncate_signed<T>(z1) + (flag1 & modulus.value);
+             }
+         }
+     }
+@@ -274,9 +276,11 @@ namespace rngongpu
+                     {
+                         int in_offset = k << log_size;
+                         output[global_index + in_offset] =
+-                            static_cast<T>(z0) + (flag0 & modulus[k].value);
++                            truncate_signed<T>(z0) +
++                            (flag0 & modulus[k].value);
+                         output[global_index + 1 + in_offset] =
+-                            static_cast<T>(z1) + (flag1 & modulus[k].value);
++                            truncate_signed<T>(z1) +
++                            (flag1 & modulus[k].value);
+                     }
+                 }
+                 else if constexpr (std::is_same_v<T, Data64>)
+@@ -291,9 +295,11 @@ namespace rngongpu
+                     {
+                         int in_offset = k << log_size;
+                         output[global_index + in_offset] =
+-                            static_cast<T>(z0) + (flag0 & modulus[k].value);
++                            truncate_signed<T>(z0) +
++                            (flag0 & modulus[k].value);
+                         output[global_index + 1 + in_offset] =
+-                            static_cast<T>(z1) + (flag1 & modulus[k].value);
++                            truncate_signed<T>(z1) +
++                            (flag1 & modulus[k].value);
+                     }
+                 }
+             }
+@@ -349,10 +355,10 @@ namespace rngongpu
+                         int new_index = mod_index[k];
+                         int in_offset = k << log_size;
+                         output[global_index + in_offset] =
+-                            static_cast<T>(z0) +
++                            truncate_signed<T>(z0) +
+                             (flag0 & modulus[new_index].value);
+                         output[global_index + 1 + in_offset] =
+-                            static_cast<T>(z1) +
++                            truncate_signed<T>(z1) +
+                             (flag1 & modulus[new_index].value);
+                     }
+                 }
+@@ -369,10 +375,10 @@ namespace rngongpu
+                         int new_index = mod_index[k];
+                         int in_offset = k << log_size;
+                         output[global_index + in_offset] =
+-                            static_cast<T>(z0) +
++                            truncate_signed<T>(z0) +
+                             (flag0 & modulus[new_index].value);
+                         output[global_index + 1 + in_offset] =
+-                            static_cast<T>(z1) +
++                            truncate_signed<T>(z1) +
+                             (flag1 & modulus[new_index].value);
+                     }
+                 }
+diff --git a/src/lib/rand_cuda/cuda_rng_kernels.cu b/src/lib/rand_cuda/cuda_rng_kernels.cu
+index a5b4882..c963ed7 100644
+--- a/src/lib/rand_cuda/cuda_rng_kernels.cu
++++ b/src/lib/rand_cuda/cuda_rng_kernels.cu
+@@ -213,7 +213,8 @@ namespace rngongpu
+                 uint32_t flag =
+                     static_cast<uint32_t>(-static_cast<int32_t>(num_f < 0));
+ 
+-                pointer[i] = static_cast<T>(num_f) + (flag & modulus.value);
++                pointer[i] =
++                    truncate_signed<T>(num_f) + (flag & modulus.value);
+             }
+             else if constexpr (std::is_same_v<T, Data64>)
+             {
+@@ -223,7 +224,8 @@ namespace rngongpu
+                 uint64_t flag =
+                     static_cast<uint64_t>(-static_cast<int64_t>(num_f < 0));
+ 
+-                pointer[i] = static_cast<T>(num_f) + (flag & modulus.value);
++                pointer[i] =
++                    truncate_signed<T>(num_f) + (flag & modulus.value);
+             }
+         }
+ 
+@@ -260,7 +262,8 @@ namespace rngongpu
+                     {
+                         int in_offset = k << log_size;
+                         pointer[global_index + in_offset] =
+-                            static_cast<T>(num_f) + (flag & modulus[k].value);
++                            truncate_signed<T>(num_f) +
++                            (flag & modulus[k].value);
+                     }
+                 }
+                 else if constexpr (std::is_same_v<T, Data64>)
+@@ -276,7 +279,8 @@ namespace rngongpu
+                     {
+                         int in_offset = k << log_size;
+                         pointer[global_index + in_offset] =
+-                            static_cast<T>(num_f) + (flag & modulus[k].value);
++                            truncate_signed<T>(num_f) +
++                            (flag & modulus[k].value);
+                     }
+                 }
+             }
+@@ -318,7 +322,7 @@ namespace rngongpu
+                         int new_index = mod_index[k];
+                         int in_offset = k << log_size;
+                         pointer[global_index + in_offset] =
+-                            static_cast<T>(num_f) +
++                            truncate_signed<T>(num_f) +
+                             (flag & modulus[new_index].value);
+                     }
+                 }
+@@ -336,7 +340,7 @@ namespace rngongpu
+                         int new_index = mod_index[k];
+                         int in_offset = k << log_size;
+                         pointer[global_index + in_offset] =
+-                            static_cast<T>(num_f) +
++                            truncate_signed<T>(num_f) +
+                             (flag & modulus[new_index].value);
+                     }
+                 }

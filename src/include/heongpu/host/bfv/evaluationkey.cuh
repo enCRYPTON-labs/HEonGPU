@@ -746,7 +746,7 @@ namespace heongpu
 
         storage_type storage_type_;
         Data64 galoiskey_size_;
-        std::vector<u_int32_t> custom_galois_elt;
+        std::vector<uint32_t> custom_galois_elt;
 
         bool galois_key_generated_ = false;
 

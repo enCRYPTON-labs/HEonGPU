@@ -402,12 +402,14 @@ TEST(HEonGPU, MemoryPool_Reads_The_Available_Host_Memory)
         EXPECT_EQ(read_available_host_memory(root.path()), 0u);
     }
 
+#ifndef _WIN32
     // The host of the test.
     const size_t available = read_available_host_memory();
     struct sysinfo info;
     ASSERT_EQ(sysinfo(&info), 0);
     EXPECT_GT(available, 0u);
     EXPECT_LE(available, size_t(info.totalram) * info.mem_unit);
+#endif
 }
 
 namespace
@@ -891,9 +893,16 @@ TEST(HEonGPU, MemoryPool_Releasing_Device_Pool_Returns_Unused_Memory)
             // The memory beyond the threshold returns to the system at the
             // synchronization.
             ASSERT_EQ(cudaDeviceSynchronize(), cudaSuccess);
+#ifdef __HIP_PLATFORM_AMD__
+            // HIP reserves pool memory in blocks of 128 MiB and keeps a block
+            // while any allocation in it is live.
+            constexpr size_t slack = 128ULL << 20;
+#else
+            constexpr size_t slack = 32ULL << 20;
+#endif
             EXPECT_LE(pool.get_free_device_pool_memory() +
                           pool.get_current_device_pool_memory_usage(),
-                      threshold + (32ULL << 20));
+                      threshold + slack);
 
             // The pool stays within its max size.
             EXPECT_THROW(

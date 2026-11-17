@@ -276,8 +276,8 @@ namespace heongpu
         int block_x = blockIdx.x;
 
         int lane = idx & (warpSize - 1);
-        int wid = idx >> 5;
-        int n_warps = (blockDim.x + warpSize - 1) >> 5;
+        int wid = idx / warpSize;
+        int n_warps = (blockDim.x + warpSize - 1) / warpSize;
 
         for (int seg = block_x; seg < k; seg += gridDim.x)
         {

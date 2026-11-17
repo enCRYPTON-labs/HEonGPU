@@ -75,6 +75,20 @@ namespace heongpu
         __device__ __forceinline__ int add(Data64* number1, Data64* number2,
                                            int wordsize, Data64* result)
         {
+#if defined(__HIP_PLATFORM_AMD__) || defined(USE_HIP)
+            // HIP path: use plain C++ with overflow detection
+            Data64 carry = 0;
+            for (int i = 0; i < wordsize; i++) {
+                Data64 a = number1[i];
+                Data64 b = number2[i];
+                Data64 sum = a + b + carry;
+                // Detect overflow: sum < a when (a + carry) overflows, or sum < b when b overflows
+                carry = (sum < a || (carry && sum == a)) ? 1 : 0;
+                result[i] = sum;
+            }
+            return static_cast<int>(carry);
+#else
+            // CUDA path: PTX inline assembly
             int carry = 0;
 
             asm("add.cc.u64 %0, %1, %2;"
@@ -89,11 +103,25 @@ namespace heongpu
             asm("addc.u32 %0, 0, 0;" : "=r"(carry));
 
             return carry;
+#endif
         }
 
         __device__ __forceinline__ int
         add_inplace(Data64* number1, Data64* number2, int wordsize)
         {
+#if defined(__HIP_PLATFORM_AMD__) || defined(USE_HIP)
+            // HIP path: use plain C++ with overflow detection
+            Data64 carry = 0;
+            for (int i = 0; i < wordsize; i++) {
+                Data64 a = number1[i];
+                Data64 b = number2[i];
+                Data64 sum = a + b + carry;
+                carry = (sum < a || (carry && sum == a)) ? 1 : 0;
+                number1[i] = sum;
+            }
+            return static_cast<int>(carry);
+#else
+            // CUDA path: PTX inline assembly
             int carry = 0;
 
             asm("add.cc.u64 %0, %0, %1;" : "+l"(number1[0]) : "l"(number2[0]));
@@ -106,11 +134,26 @@ namespace heongpu
             asm("addc.u32 %0, 0, 0;" : "=r"(carry));
 
             return carry;
+#endif
         }
 
         __device__ __forceinline__ int sub(Data64* number1, Data64* number2,
                                            int wordsize, Data64* result)
         {
+#if defined(__HIP_PLATFORM_AMD__) || defined(USE_HIP)
+            // HIP path: use plain C++ with borrow detection
+            Data64 borrow = 0;
+            for (int i = 0; i < wordsize; i++) {
+                Data64 a = number1[i];
+                Data64 b = number2[i];
+                Data64 diff = a - b - borrow;
+                // Borrow occurs if a < b, or a == b and there was a borrow
+                borrow = (a < b || (a == b && borrow)) ? 1 : 0;
+                result[i] = diff;
+            }
+            return static_cast<int>(borrow);
+#else
+            // CUDA path: PTX inline assembly
             int borrow = 0;
 
             asm("sub.cc.u64 %0, %1, %2;"
@@ -124,11 +167,24 @@ namespace heongpu
             asm("subc.u32 %0, 0, 0;" : "=r"(borrow));
 
             return borrow;
+#endif
         }
 
         __device__ __forceinline__ void sub2(Data64* number1, Data64* number2,
                                              int wordsize, Data64* result)
         {
+#if defined(__HIP_PLATFORM_AMD__) || defined(USE_HIP)
+            // HIP path: use plain C++ with borrow detection
+            Data64 borrow = 0;
+            for (int i = 0; i < wordsize; i++) {
+                Data64 a = number1[i];
+                Data64 b = number2[i];
+                Data64 diff = a - b - borrow;
+                borrow = (a < b || (a == b && borrow)) ? 1 : 0;
+                result[i] = diff;
+            }
+#else
+            // CUDA path: PTX inline assembly
             asm("sub.cc.u64 %0, %1, %2;"
                 : "=l"(result[0])
                 : "l"(number1[0]), "l"(number2[0]));
@@ -136,6 +192,7 @@ namespace heongpu
                 asm("subc.cc.u64 %0, %1, %2;"
                     : "=l"(result[i])
                     : "l"(number1[i]), "l"(number2[i]));
+#endif
         }
 
         /*
@@ -157,6 +214,29 @@ namespace heongpu
             int wordsize =
                 min_(number1_wordsize, result_wordsize); // TODO: Fix it
 
+#if defined(__HIP_PLATFORM_AMD__) || defined(USE_HIP)
+            // HIP path: use __umul64hi intrinsic for high part
+            // Compute low parts first
+            for (int i = 0; i < wordsize; i++)
+            {
+                result[i] = number1[i] * number2;  // low 64 bits
+            }
+
+            // Add high parts with carry chain
+            Data64 carry = 0;
+            for (int i = 0; i < wordsize; i++)
+            {
+                Data64 hi = __umul64hi(number1[i], number2);
+                if (i + 1 < result_wordsize)
+                {
+                    Data64 prev = result[i + 1];
+                    Data64 sum = prev + hi + carry;
+                    carry = (sum < prev || (carry && sum == prev)) ? 1 : 0;
+                    result[i + 1] = sum;
+                }
+            }
+#else
+            // CUDA path: PTX inline assembly
             for (int i = 0; i < wordsize; i++)
             {
                 asm("mul.lo.u64 %0, %1, %2;"
@@ -178,6 +258,7 @@ namespace heongpu
                 asm("madc.hi.u64  %0, %1, %2, %0;"
                     : "+l"(result[wordsize])
                     : "l"(number1[wordsize - 1]), "l"(number2));
+#endif
         }
 
         __device__ __forceinline__ void set_zero(Data64* number,

@@ -1,9 +1,12 @@
 [submodule "thirdparty/GPU-FFT"]
 	path = thirdparty/GPU-FFT
 	url = https://github.com/Alisah-Ozcan/GPU-FFT
+	ignore = dirty
 [submodule "thirdparty/GPU-NTT"]
 	path = thirdparty/GPU-NTT
 	url = https://github.com/Alisah-Ozcan/GPU-NTT
+	ignore = dirty
 [submodule "thirdparty/RNGonGPU"]
 	path = thirdparty/RNGonGPU
 	url = https://github.com/Alisah-Ozcan/RNGonGPU
+	ignore = dirty
