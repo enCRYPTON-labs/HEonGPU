@@ -5,6 +5,7 @@
 // Developer: Alişah Özcan
 
 #include <heongpu/host/ckks/evaluationkey.cuh>
+#include <heongpu/util/serialization_payload.cuh>
 
 namespace heongpu
 {
@@ -50,6 +51,11 @@ namespace heongpu
 
     void Relinkey<Scheme::CKKS>::store_in_host(cudaStream_t stream)
     {
+        if (detail::objects_stay_on_device())
+        {
+            detail::wait_for_host_access(device_location_.stream(), stream);
+            return;
+        }
         if (storage_type_ == storage_type::device)
         {
             host_location_ = HostVector<Data64>(relinkey_size_);
@@ -149,15 +155,9 @@ namespace heongpu
 
             if (storage_type_ == storage_type::device)
             {
-                HostVector<Data64> host_locations_temp(relinkey_size_);
-                cudaMemcpy(host_locations_temp.data(), device_location_.data(),
-                           relinkey_size_ * sizeof(Data64),
-                           cudaMemcpyDeviceToHost);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
-                cudaDeviceSynchronize();
-
-                os.write((char*) host_locations_temp.data(),
-                         sizeof(Data64) * relinkey_size_);
+                detail::write_device_payload(os, device_location_.data(),
+                                             relinkey_size_,
+                                             device_location_.stream());
             }
             else
             {
@@ -221,15 +221,10 @@ namespace heongpu
             storage_type_ = storage_type::device;
             relin_key_generated_ = true;
 
-            HostVector<Data64> host_locations_temp(relinkey_size_);
-            is.read((char*) host_locations_temp.data(),
-                    sizeof(Data64) * relinkey_size_);
-
             device_location_.resize(relinkey_size_);
-            cudaMemcpy(device_location_.data(), host_locations_temp.data(),
-                       relinkey_size_ * sizeof(Data64), cudaMemcpyHostToDevice);
-            HEONGPU_CUDA_CHECK(cudaGetLastError());
-            cudaDeviceSynchronize();
+            detail::read_device_payload(is, device_location_.data(),
+                                        relinkey_size_,
+                                        device_location_.stream());
         }
         else
         {
@@ -615,6 +610,12 @@ namespace heongpu
 
     void Galoiskey<Scheme::CKKS>::store_in_host(cudaStream_t stream)
     {
+        if (detail::objects_stay_on_device())
+        {
+            detail::wait_for_host_access(zero_device_location_.stream(),
+                                         stream);
+            return;
+        }
         if (storage_type_ == storage_type::device)
         {
             for (auto& galois_ : device_location_)
@@ -756,29 +757,16 @@ namespace heongpu
 
                 for (auto& galois_key_mem : device_location_)
                 {
-                    HostVector<Data64> host_locations_temp(galoiskey_size_);
-                    cudaMemcpy(host_locations_temp.data(),
-                               galois_key_mem.second.data(),
-                               galoiskey_size_ * sizeof(Data64),
-                               cudaMemcpyDeviceToHost);
-                    HEONGPU_CUDA_CHECK(cudaGetLastError());
-                    cudaDeviceSynchronize();
-
                     os.write((char*) &galois_key_mem.first,
                              sizeof(galois_key_mem.first));
-                    os.write((char*) host_locations_temp.data(),
-                             sizeof(Data64) * galoiskey_size_);
+                    detail::write_device_payload(
+                        os, galois_key_mem.second.data(), galoiskey_size_,
+                        galois_key_mem.second.stream());
                 }
 
-                HostVector<Data64> host_locations_temp(galoiskey_size_);
-                cudaMemcpy(
-                    host_locations_temp.data(), zero_device_location_.data(),
-                    galoiskey_size_ * sizeof(Data64), cudaMemcpyDeviceToHost);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
-                cudaDeviceSynchronize();
-
-                os.write((char*) host_locations_temp.data(),
-                         sizeof(Data64) * galoiskey_size_);
+                detail::write_device_payload(os, zero_device_location_.data(),
+                                             galoiskey_size_,
+                                             zero_device_location_.stream());
             }
             else
             {
@@ -889,24 +877,17 @@ namespace heongpu
             {
                 int first;
                 is.read((char*) &first, sizeof(first));
-                HostVector<Data64> host_locations_temp(galoiskey_size_);
-                is.read((char*) host_locations_temp.data(),
-                        sizeof(Data64) * galoiskey_size_);
-                device_location_[first] =
-                    DeviceVector<Data64>(host_locations_temp);
-                cudaDeviceSynchronize();
+                DeviceVector<Data64> galois_key(galoiskey_size_);
+                detail::read_device_payload(is, galois_key.data(),
+                                            galoiskey_size_,
+                                            galois_key.stream());
+                device_location_[first] = std::move(galois_key);
             }
 
-            HostVector<Data64> host_locations_temp(galoiskey_size_);
-            is.read((char*) host_locations_temp.data(),
-                    sizeof(Data64) * galoiskey_size_);
-
             zero_device_location_.resize(galoiskey_size_);
-            cudaMemcpy(zero_device_location_.data(), host_locations_temp.data(),
-                       galoiskey_size_ * sizeof(Data64),
-                       cudaMemcpyHostToDevice);
-            HEONGPU_CUDA_CHECK(cudaGetLastError());
-            cudaDeviceSynchronize();
+            detail::read_device_payload(is, zero_device_location_.data(),
+                                        galoiskey_size_,
+                                        zero_device_location_.stream());
 
             set_rotation_limits();
         }
@@ -977,6 +958,11 @@ namespace heongpu
 
     void Switchkey<Scheme::CKKS>::store_in_host(cudaStream_t stream)
     {
+        if (detail::objects_stay_on_device())
+        {
+            detail::wait_for_host_access(device_location_.stream(), stream);
+            return;
+        }
         if (storage_type_ == storage_type::device)
         {
             host_location_ = HostVector<Data64>(switchkey_size_);
@@ -1049,15 +1035,9 @@ namespace heongpu
 
             if (storage_type_ == storage_type::device)
             {
-                HostVector<Data64> host_locations_temp(switchkey_size_);
-                cudaMemcpy(host_locations_temp.data(), device_location_.data(),
-                           switchkey_size_ * sizeof(Data64),
-                           cudaMemcpyDeviceToHost);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
-                cudaDeviceSynchronize();
-
-                os.write((char*) host_locations_temp.data(),
-                         sizeof(Data64) * switchkey_size_);
+                detail::write_device_payload(os, device_location_.data(),
+                                             switchkey_size_,
+                                             device_location_.stream());
             }
             else
             {
@@ -1109,16 +1089,10 @@ namespace heongpu
             storage_type_ = storage_type::device;
             switch_key_generated_ = true;
 
-            HostVector<Data64> host_locations_temp(switchkey_size_);
-            is.read((char*) host_locations_temp.data(),
-                    sizeof(Data64) * switchkey_size_);
-
             device_location_.resize(switchkey_size_);
-            cudaMemcpy(device_location_.data(), host_locations_temp.data(),
-                       switchkey_size_ * sizeof(Data64),
-                       cudaMemcpyHostToDevice);
-            HEONGPU_CUDA_CHECK(cudaGetLastError());
-            cudaDeviceSynchronize();
+            detail::read_device_payload(is, device_location_.data(),
+                                        switchkey_size_,
+                                        device_location_.stream());
         }
         else
         {

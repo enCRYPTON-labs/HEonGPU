@@ -146,7 +146,9 @@ TYPED_TEST(RNSSecretKey, PrivateRandomnessExactWeightCopyAndSerialization)
         host_key,
         heongpu::ExecutionOptions().set_stream(stream).set_storage_type(
             heongpu::storage_type::host));
-    EXPECT_FALSE(host_key.is_on_device());
+    // Objects stay on the device in the unified memory mode.
+    EXPECT_EQ(host_key.is_on_device(),
+              heongpu::detail::objects_stay_on_device());
     heongpu::Secretkey<S> loaded_host(context);
     std::stringstream host_input(save(host_key));
     EXPECT_NO_THROW(loaded_host.load(host_input));
@@ -273,7 +275,7 @@ TEST(SecretKeySecurity, TFHEIndependentCompleteBinaryKeysAndHostTransfers)
                    heongpu::storage_type::host));
     generator.generate_secret_key(
         second, heongpu::ExecutionOptions().set_stream(stream));
-    EXPECT_FALSE(first.is_on_device());
+    EXPECT_EQ(first.is_on_device(), heongpu::detail::objects_stay_on_device());
     auto lwe = read(first.lwe_data(), first.lwe_size(), first.is_on_device());
     auto tlwe =
         read(first.tlwe_data(), first.tlwe_size(), first.is_on_device());
@@ -451,7 +453,7 @@ TEST(SecretKeySecurity,
     EXPECT_EQ(actual, (std::vector<bool>{false, false, false, true}))
         << "before host transfer";
     boot.store_in_host(stream);
-    ASSERT_FALSE(boot.is_on_device());
+    ASSERT_EQ(boot.is_on_device(), heongpu::detail::objects_stay_on_device());
     boot.store_in_device(stream);
     HEONGPU_CUDA_CHECK(cudaStreamSynchronize(stream));
     logic.AND(first, second, output, boot);

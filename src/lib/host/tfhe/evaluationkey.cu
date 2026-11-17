@@ -69,6 +69,11 @@ namespace heongpu
 
     void Bootstrappingkey<Scheme::TFHE>::store_in_host(cudaStream_t stream)
     {
+        if (detail::objects_stay_on_device())
+        {
+            detail::wait_for_host_access(this->stream(), stream);
+            return;
+        }
         if (storage_type_ == storage_type::device)
         {
             if (boot_key_generated_)

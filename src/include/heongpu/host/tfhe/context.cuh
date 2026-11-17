@@ -43,9 +43,9 @@ namespace heongpu
         const sec_level_type sec_level_ = sec_level_type::sec128;
 
         Modulus64 prime_;
-        std::shared_ptr<DeviceVector<Root64>> ntt_table_;
-        std::shared_ptr<DeviceVector<Root64>> intt_table_;
-        Ninverse64 n_inverse_;
+        std::shared_ptr<DeviceVector<Data64>> ntt_table_;
+        std::shared_ptr<DeviceVector<Data64>> intt_table_;
+        Data64 n_inverse_;
 
         int ks_base_bit_;
         int ks_length_;
@@ -82,7 +82,7 @@ namespace heongpu
 
         int32_t compute_offset(int l, int bg_bit, int half_bg);
 
-        std::vector<Root64> compute_ntt_table(Data64 psi, Modulus64 primes,
+        std::vector<Data64> compute_ntt_table(Data64 psi, Modulus64 primes,
                                               int n_power);
     };
 

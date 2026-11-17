@@ -7,6 +7,8 @@
 #ifndef HEONGPU_DEFINES_H
 #define HEONGPU_DEFINES_H
 
+#include <cstddef>
+
 // --------------------- //
 // Author: Alisah Ozcan
 // --------------------- //
@@ -37,7 +39,18 @@ constexpr static float initial_device_memorypool_size =
     0.5f; // 50% of GPU memory
 constexpr static float max_device_memorypool_size = 0.95f; // 95% of GPU memory
 
+// The host pool starts with 100 MB; this fraction is not used by default.
 constexpr static float initial_host_memorypool_size = 0.3f; // 30% of CPU memory
 constexpr static float max_host_memorypool_size = 0.4f; // 40% of CPU memory
+
+// On a GPU that shares the memory of the host, both pools take from one
+// budget, a fraction of the available host memory, and the other fractions
+// are of that budget. The device pool starts small and grows on demand.
+constexpr static float unified_memorypool_budget = 0.8f; // 80% of CPU memory
+constexpr static size_t unified_initial_device_memorypool_bytes = 64ULL << 20;
+constexpr static float unified_max_device_memorypool_size = 0.75f;
+constexpr static float unified_max_host_memorypool_size = 0.25f;
+// Memory a releasing device pool keeps beyond what is in use.
+constexpr static size_t device_pool_release_threshold_bytes = 1ULL << 30;
 
 #endif // HEONGPU_DEFINES_H

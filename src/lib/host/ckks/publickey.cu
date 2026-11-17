@@ -5,6 +5,7 @@
 // Developer: Alişah Özcan
 
 #include <heongpu/host/ckks/publickey.cuh>
+#include <heongpu/util/serialization_payload.cuh>
 
 namespace heongpu
 {
@@ -79,6 +80,11 @@ namespace heongpu
 
     void Publickey<Scheme::CKKS>::store_in_host(cudaStream_t stream)
     {
+        if (detail::objects_stay_on_device())
+        {
+            detail::wait_for_host_access(device_locations_.stream(), stream);
+            return;
+        }
         if (storage_type_ == storage_type::device)
         {
             if (memory_size() == 0)
@@ -134,17 +140,11 @@ namespace heongpu
             {
                 uint32_t publickey_memory_size =
                     2 * coeff_modulus_count_ * ring_size_;
-                HostVector<Data64> host_locations_temp(publickey_memory_size);
-                cudaMemcpy(host_locations_temp.data(), device_locations_.data(),
-                           publickey_memory_size * sizeof(Data64),
-                           cudaMemcpyDeviceToHost);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
-                cudaDeviceSynchronize();
-
                 os.write((char*) &publickey_memory_size,
                          sizeof(publickey_memory_size));
-                os.write((char*) host_locations_temp.data(),
-                         sizeof(Data64) * publickey_memory_size);
+                detail::write_device_payload(os, device_locations_.data(),
+                                             publickey_memory_size,
+                                             device_locations_.stream());
             }
             else
             {
@@ -212,16 +212,10 @@ namespace heongpu
                 throw std::runtime_error("Invalid publickey size!");
             }
 
-            HostVector<Data64> host_locations_temp(publickey_memory_size);
-            is.read((char*) host_locations_temp.data(),
-                    sizeof(Data64) * publickey_memory_size);
-
             device_locations_.resize(publickey_memory_size);
-            cudaMemcpy(device_locations_.data(), host_locations_temp.data(),
-                       publickey_memory_size * sizeof(Data64),
-                       cudaMemcpyHostToDevice);
-            HEONGPU_CUDA_CHECK(cudaGetLastError());
-            cudaDeviceSynchronize();
+            detail::read_device_payload(is, device_locations_.data(),
+                                        publickey_memory_size,
+                                        device_locations_.stream());
         }
         else
         {

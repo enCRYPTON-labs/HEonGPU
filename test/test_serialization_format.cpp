@@ -5,8 +5,11 @@
 // Developer: Alişah Özcan
 
 #include <heongpu/heongpu.hpp>
+#include <heongpu/util/serialization_payload.cuh>
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <cstdint>
+#include <numeric>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -204,6 +207,68 @@ namespace
 
 TYPED_TEST_SUITE(SerializationFormat, Schemes);
 
+namespace
+{
+    std::vector<Data64> device_values(const heongpu::DeviceVector<Data64>& v)
+    {
+        std::vector<Data64> values(v.size());
+        EXPECT_EQ(cudaMemcpy(values.data(), v.data(), v.size() * sizeof(Data64),
+                             cudaMemcpyDeviceToHost),
+                  cudaSuccess);
+        return values;
+    }
+} // namespace
+
+// A payload passes through host memory in chunks; the data is the same for
+// every chunk size.
+TEST(SerializationPayload, Chunks_Give_The_Same_Data)
+{
+    std::vector<Data64> values(1000);
+    std::iota(values.begin(), values.end(), Data64(1) << 40);
+    const std::string expected(reinterpret_cast<const char*>(values.data()),
+                               values.size() * sizeof(Data64));
+    heongpu::DeviceVector<Data64> device(values);
+    for (std::size_t chunk : {1, 7, 1000, 4096})
+    {
+        for (bool sensitive : {false, true})
+        {
+            std::stringstream out;
+            heongpu::detail::write_device_payload(
+                out, device.data(), values.size(), device.stream(), sensitive,
+                chunk);
+            EXPECT_EQ(out.str(), expected) << "chunk " << chunk;
+
+            heongpu::DeviceVector<Data64> loaded(values.size());
+            std::stringstream in(expected);
+            heongpu::detail::read_device_payload(in, loaded.data(),
+                                                 values.size(), loaded.stream(),
+                                                 sensitive, chunk);
+            EXPECT_TRUE(in) << "chunk " << chunk;
+            EXPECT_EQ(device_values(loaded), values) << "chunk " << chunk;
+        }
+    }
+}
+
+// Reading a truncated payload fails the stream and copies the values that
+// were read; the value read in part is not checked.
+TEST(SerializationPayload, Truncated_Payload_Copies_The_Values_Read)
+{
+    std::vector<Data64> values(100);
+    std::iota(values.begin(), values.end(), Data64(1));
+    const std::string truncated(reinterpret_cast<const char*>(values.data()),
+                                50 * sizeof(Data64) + 3);
+    heongpu::DeviceVector<Data64> loaded(std::vector<Data64>(100, 0));
+    std::stringstream in(truncated);
+    heongpu::detail::read_device_payload(in, loaded.data(), values.size(),
+                                         loaded.stream(), false, 7);
+    EXPECT_FALSE(in);
+    std::vector<Data64> result = device_values(loaded);
+    std::vector<Data64> expected(values.begin(), values.begin() + 50);
+    expected.resize(100, 0);
+    result[50] = expected[50];
+    EXPECT_EQ(result, expected);
+}
+
 TYPED_TEST(SerializationFormat, Every_Object_Has_A_Header_Before_The_V1_Data)
 {
     auto& a = this->a;
@@ -238,6 +303,35 @@ TYPED_TEST(SerializationFormat, V1_And_V2_Data_Load)
         load(*context, save(*a.context).substr(header));
         EXPECT_EQ(context->context_id(), a.context->context_id());
     }
+}
+
+// A loaded object saves the same data as the object it was saved from. Galois
+// keys write their elements in the order of a hash map, which can change on
+// loading; Loaded_Keys_Give_The_Same_Results checks them.
+TYPED_TEST(SerializationFormat, Loaded_Objects_Save_The_Same_Data)
+{
+    auto& a = this->a;
+    auto expect_same_data = [](const auto& object)
+    {
+        const std::string saved = save(object);
+        std::decay_t<decltype(object)> loaded;
+        load(loaded, saved);
+        const std::string again = save(loaded);
+        const auto difference = std::mismatch(saved.begin(), saved.end(),
+                                              again.begin(), again.end())
+                                    .first -
+                                saved.begin();
+        EXPECT_TRUE(again == saved)
+            << "object type " << int(saved[6]) << ": " << again.size()
+            << " bytes instead of " << saved.size()
+            << ", first difference at byte " << difference;
+    };
+    expect_same_data(a.secret_key);
+    expect_same_data(a.public_key);
+    expect_same_data(a.relin_key);
+    expect_same_data(a.switch_key);
+    expect_same_data(a.encode());
+    expect_same_data(a.encrypt());
 }
 
 TYPED_TEST(SerializationFormat, Serializer_Keeps_The_Context)

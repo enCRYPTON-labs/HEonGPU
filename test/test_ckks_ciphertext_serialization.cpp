@@ -175,8 +175,10 @@ namespace
                 EXPECT_EQ(target.coeff_modulus_count(), 2);
                 EXPECT_EQ(target.depth(), 0);
                 EXPECT_EQ(target.data(), pointer);
+                // Objects stay on the device in the unified memory mode.
                 EXPECT_EQ(target.is_on_device(),
-                          storage == heongpu::storage_type::device);
+                          storage == heongpu::storage_type::device ||
+                              heongpu::detail::objects_stay_on_device());
                 EXPECT_THROW(save(target), std::runtime_error);
                 std::stringstream good(binary);
                 ASSERT_NO_THROW(target.load(good));

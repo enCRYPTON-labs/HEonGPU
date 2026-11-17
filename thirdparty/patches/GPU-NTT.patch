@@ -1,20 +1,21 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 9302105..4484c85 100644
+index c344d89..d7994c8 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -1,5 +1,10 @@
+@@ -1,6 +1,11 @@
  cmake_minimum_required(VERSION 3.26)
--project(GPUNTT VERSION 1.0 LANGUAGES C CXX CUDA ASM)
+ # Keep the version equal to the release tag (v<major>.<minor>.<patch>).
+-project(GPUNTT VERSION 1.0.0 LANGUAGES C CXX CUDA ASM)
 +option(USE_HIP "Build with HIP for AMD GPUs" OFF)
 +if(USE_HIP)
-+    project(GPUNTT VERSION 1.0 LANGUAGES C CXX HIP)
++    project(GPUNTT VERSION 1.0.0 LANGUAGES C CXX HIP)
 +else()
-+    project(GPUNTT VERSION 1.0 LANGUAGES C CXX CUDA ASM)
++    project(GPUNTT VERSION 1.0.0 LANGUAGES C CXX CUDA ASM)
 +endif()
  
  if(NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type (Debug or Release)" )
-@@ -16,9 +21,15 @@ set(CMAKE_CXX_STANDARD 17)
+@@ -17,9 +22,15 @@ set(CMAKE_CXX_STANDARD 17)
  set(CMAKE_CUDA_STANDARD 17)
  set(CMAKE_CXX_STANDARD_REQUIRED ON)
  
@@ -33,10 +34,10 @@ index 9302105..4484c85 100644
  endif()
  message(STATUS "Setting CMAKE_CUDA_ARCHITECTURES to ${CMAKE_CUDA_ARCHITECTURES} for GPUNTT")
 diff --git a/cmake/Config.cmake.in b/cmake/Config.cmake.in
-index e04f8da..3828337 100644
+index 0fe75b9..58f6355 100644
 --- a/cmake/Config.cmake.in
 +++ b/cmake/Config.cmake.in
-@@ -1,5 +1,9 @@
+@@ -1,6 +1,10 @@
  include(CMakeFindDependencyMacro)
  
 -find_dependency(CUDAToolkit REQUIRED)
@@ -46,12 +47,13 @@ index e04f8da..3828337 100644
 +    find_dependency(CUDAToolkit REQUIRED)
 +endif()
  
- include("${CMAKE_CURRENT_LIST_DIR}/@GPUNTT_TARGETS_EXPORT_NAME@.cmake")
+ # GPU architectures libntt is compiled for (CMAKE_CUDA_ARCHITECTURES of the
+ # GPU-NTT build).
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index e9c2848..63a0584 100644
+index 40cb4d8..074561a 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -17,6 +17,10 @@ set(LIB_HEADER_FILES
+@@ -19,6 +19,10 @@ set(LIB_HEADER_FILES
      include/gpuntt/ntt_merge/ntt_cpu.cuh
  )
  
@@ -62,7 +64,7 @@ index e9c2848..63a0584 100644
  add_library(ntt STATIC ${LIB_SOURCE_FILES})
  add_library(GPUNTT::ntt ALIAS ntt)
  if(CMAKE_CXX_COMPILE_FEATURES)
-@@ -50,7 +54,11 @@ if(GPUNTT_ENABLE_WARNINGS)
+@@ -61,7 +65,11 @@ if(GPUNTT_ENABLE_WARNINGS)
      )
  endif()
  
@@ -75,8 +77,8 @@ index e9c2848..63a0584 100644
  
  set_target_properties(ntt PROPERTIES
    VERSION ${PROJECT_VERSION}
-@@ -65,13 +73,20 @@ target_include_directories(
-     $<INSTALL_INTERFACE:include/GPUNTT-${PROJECT_VERSION}>
+@@ -77,13 +85,20 @@ target_include_directories(
+     $<INSTALL_INTERFACE:include/GPUNTT-${GPUNTT_VERSION_DIR}>
  )
  
 -set_target_properties(ntt PROPERTIES
@@ -98,224 +100,107 @@ index e9c2848..63a0584 100644
  install(TARGETS ntt
    EXPORT ${GPUNTT_TARGETS_EXPORT_NAME}
 diff --git a/src/include/gpuntt/common/modular_arith.cuh b/src/include/gpuntt/common/modular_arith.cuh
-index 333ddfb..6fc856e 100644
+index 12dfead..3618e67 100644
 --- a/src/include/gpuntt/common/modular_arith.cuh
 +++ b/src/include/gpuntt/common/modular_arith.cuh
-@@ -209,14 +209,37 @@ namespace modular_operation_gpu
-                 value.y = 0;
-             }
- 
-+            // A shift count of 0 or of 64 and above makes the 64-bit shifts
-+            // below undefined, and the back ends disagree on what they do.
-+            // AMDGPU keeps only the low 6 bits of the count, so a shift of 64
-+            // acts as a shift of 0 and one limb is OR-ed into the other instead
-+            // of replacing it. PTX clamps the count to the register width and
-+            // yields 0, which happens to produce the right 128-bit result at a
-+            // count of exactly 64 but discards the whole value above it. The
-+            // Barrett reduction below shifts by modulus.bit + 3, so a 61-bit
-+            // modulus reaches 64 and a 62-bit one, the widest supported for
-+            // Data64, reaches 65. Handling the cases explicitly is a
-+            // correctness fix on both back ends, not only on AMD.
-             __device__ __forceinline__ uint128_t
-             operator<<(const std::uint32_t& shift)
+@@ -40,7 +40,7 @@ namespace gpuntt
+         __host__ __device__ Modulus(T1 mod) : value(mod)
+         {
+             bit = bit_generator();
+-#ifndef __CUDA_ARCH__
++#if !defined(__CUDA_ARCH__) && !defined(__HIP_DEVICE_COMPILE__)
+             if (bit > max_bit)
              {
-                 uint128_t result;
+                 throw std::invalid_argument(
+@@ -244,21 +244,29 @@ namespace gpuntt
+                 static __device__ __forceinline__ Data64
+                 shift_left(const Data64& input, const std::uint32_t& shift)
+                 {
++#ifdef __HIP_PLATFORM_AMD__
++                    return shift < 64 ? input << shift : 0;
++#else
+                     Data64 result;
+                     asm("shl.b64 %0, %1, %2;"
+                         : "=l"(result)
+                         : "l"(input), "r"(shift));
+                     return result;
++#endif
+                 }
  
--                result.value.y = value.y << shift;
--                result.value.y = (value.x >> (64 - shift)) | result.value.y;
--                result.value.x = value.x << shift;
-+                if (shift == 0)
-+                {
-+                    result.value = value;
-+                }
-+                else if (shift < 64)
-+                {
+                 static __device__ __forceinline__ Data64
+                 shift_right(const Data64& input, const std::uint32_t& shift)
+                 {
++#ifdef __HIP_PLATFORM_AMD__
++                    return shift < 64 ? input >> shift : 0;
++#else
+                     Data64 result;
+                     asm("shr.b64 %0, %1, %2;"
+                         : "=l"(result)
+                         : "l"(input), "r"(shift));
+                     return result;
++#endif
+                 }
+ 
+                 // For shifts from 0 to 64, the shifts of the Barrett
+@@ -291,6 +299,14 @@ namespace gpuntt
+                 {
+                     uint128_t result;
+ 
++#ifdef __HIP_PLATFORM_AMD__
++                    // value.x is the low limb, value.y the high limb; the
++                    // borrow out of the low subtraction is (x < other.x).
++                    result.value.x = value.x - other.value.x;
 +                    result.value.y =
-+                        (value.y << shift) | (value.x >> (64 - shift));
-+                    result.value.x = value.x << shift;
-+                }
-+                else if (shift < 128)
-+                {
-+                    result.value.y = value.x << (shift - 64);
-+                    result.value.x = 0;
-+                }
++                        value.y - other.value.y -
++                        static_cast<Data64>(value.x < other.value.x);
++#else
+                     asm("{\n\t"
+                         "sub.cc.u64      %1, %3, %5;    \n\t"
+                         "subc.u64        %0, %2, %4;    \n\t"
+@@ -298,6 +314,7 @@ namespace gpuntt
+                         : "=l"(result.value.y), "=l"(result.value.x)
+                         : "l"(value.y), "l"(value.x), "l"(other.value.y),
+                           "l"(other.value.x));
++#endif
  
-                 return result;
-             }
-@@ -226,9 +249,21 @@ namespace modular_operation_gpu
-             {
-                 uint128_t result;
- 
--                result.value.x = value.x >> shift;
--                result.value.x = (value.y << (64 - shift)) | result.value.x;
--                result.value.y = value.y >> shift;
-+                if (shift == 0)
-+                {
-+                    result.value = value;
-+                }
-+                else if (shift < 64)
-+                {
-+                    result.value.x =
-+                        (value.x >> shift) | (value.y << (64 - shift));
-+                    result.value.y = value.y >> shift;
-+                }
-+                else if (shift < 128)
-+                {
-+                    result.value.x = value.y >> (shift - 64);
-+                    result.value.y = 0;
-+                }
- 
-                 return result;
-             }
-@@ -237,6 +272,13 @@ namespace modular_operation_gpu
-             {
-                 uint128_t result;
- 
+                     return result;
+                 }
+@@ -306,6 +323,12 @@ namespace gpuntt
+                 operator-=(const uint128_t& other)
+                 {
+                     uint128_t result;
 +#ifdef __HIP_PLATFORM_AMD__
-+                // value.x is the low limb, value.y the high limb; the borrow
-+                // out of the low subtraction is exactly (x < other.x).
-+                result.value.x = value.x - other.value.x;
-+                result.value.y = value.y - other.value.y -
-+                                 static_cast<Data64>(value.x < other.value.x);
++                    result.value.x = value.x - other.value.x;
++                    result.value.y =
++                        value.y - other.value.y -
++                        static_cast<Data64>(value.x < other.value.x);
++#else
+                     asm("{\n\t"
+                         "sub.cc.u64      %1, %3, %5;    \n\t"
+                         "subc.u64        %0, %2, %4;    \n\t"
+@@ -313,6 +336,7 @@ namespace gpuntt
+                         : "=l"(result.value.y), "=l"(result.value.x)
+                         : "l"(value.y), "l"(value.x), "l"(other.value.y),
+                           "l"(other.value.x));
++#endif
+ 
+                     return result;
+                 }
+@@ -352,12 +376,17 @@ namespace gpuntt
+                                                                 const Data64& b)
+             {
+                 uint128_t result;
++#ifdef __HIP_PLATFORM_AMD__
++                result.value.x = a * b;
++                result.value.y = __umul64hi(a, b);
 +#else
                  asm("{\n\t"
-                     "sub.cc.u64      %1, %3, %5;    \n\t"
-                     "subc.u64        %0, %2, %4;    \n\t"
-@@ -244,6 +286,7 @@ namespace modular_operation_gpu
+                     "mul.lo.u64      %1, %2, %3;    \n\t"
+                     "mul.hi.u64      %0, %2, %3;    \n\t"
+                     "}"
                      : "=l"(result.value.y), "=l"(result.value.x)
-                     : "l"(value.y), "l"(value.x), "l"(other.value.y),
-                       "l"(other.value.x));
+                     : "l"(a), "l"(b));
 +#endif
- 
                  return result;
              }
-@@ -252,6 +295,11 @@ namespace modular_operation_gpu
-             operator-=(const uint128_t& other)
-             {
-                 uint128_t result;
-+#ifdef __HIP_PLATFORM_AMD__
-+                result.value.x = value.x - other.value.x;
-+                result.value.y = value.y - other.value.y -
-+                                 static_cast<Data64>(value.x < other.value.x);
-+#else
-                 asm("{\n\t"
-                     "sub.cc.u64      %1, %3, %5;    \n\t"
-                     "subc.u64        %0, %2, %4;    \n\t"
-@@ -259,6 +307,7 @@ namespace modular_operation_gpu
-                     : "=l"(result.value.y), "=l"(result.value.x)
-                     : "l"(value.y), "l"(value.x), "l"(other.value.y),
-                       "l"(other.value.x));
-+#endif
  
-                 return result;
-             }
-@@ -298,12 +347,17 @@ namespace modular_operation_gpu
-                                                             const Data64& b)
-         {
-             uint128_t result;
-+#ifdef __HIP_PLATFORM_AMD__
-+            result.value.x = a * b;
-+            result.value.y = __umul64hi(a, b);
-+#else
-             asm("{\n\t"
-                 "mul.lo.u64      %1, %2, %3;    \n\t"
-                 "mul.hi.u64      %0, %2, %3;    \n\t"
-                 "}"
-                 : "=l"(result.value.y), "=l"(result.value.x)
-                 : "l"(a), "l"(b));
-+#endif
-             return result;
-         }
- 
-diff --git a/src/lib/common/nttparameters.cu b/src/lib/common/nttparameters.cu
-index e499c51..46b040e 100644
---- a/src/lib/common/nttparameters.cu
-+++ b/src/lib/common/nttparameters.cu
-@@ -85,13 +85,13 @@ namespace gpuntt
-     {
-         if constexpr (std::is_same<T, Data32>::value)
-         {
--            customAssert(0 < logn <= 25,
-+            customAssert(0 < logn && logn <= 25,
-                          "LOGN should be in range 2^0 to 2^25.");
-             return Modulus32(469762049);
-         }
-         else
-         {
--            customAssert(0 < logn <= 28,
-+            customAssert(0 < logn && logn <= 28,
-                          "LOGN should be in range 2^0 to 2^28.");
-             return Modulus64(576460756061519873ULL);
-         }
-@@ -101,7 +101,7 @@ namespace gpuntt
-     {
-         if constexpr (std::is_same<T, Data32>::value)
-         {
--            customAssert(0 < logn <= 25,
-+            customAssert(0 < logn && logn <= 25,
-                          "LOGN should be in range 2^0 to 2^25.");
-             Data32 w = 900;
-             Modulus32 mod = modulus_pool();
-@@ -110,7 +110,7 @@ namespace gpuntt
-         }
-         else
-         {
--            customAssert(0 < logn <= 28,
-+            customAssert(0 < logn && logn <= 28,
-                          "LOGN should be in range 2^0 to 2^28.");
-             Data64 w = 229929041166717729ULL;
-             Modulus64 mod = modulus_pool();
-@@ -123,7 +123,7 @@ namespace gpuntt
-     {
-         if constexpr (std::is_same<T, Data32>::value)
-         {
--            customAssert(0 < logn <= 25,
-+            customAssert(0 < logn && logn <= 25,
-                          "LOGN should be in range 2^0 to 2^25.");
-             Data32 w = 30;
-             Modulus32 mod = modulus_pool();
-@@ -132,7 +132,7 @@ namespace gpuntt
-         }
-         else
-         {
--            customAssert(0 < logn <= 28,
-+            customAssert(0 < logn && logn <= 28,
-                          "LOGN should be in range 2^0 to 2^28.");
-             Data64 psi = 4517306222ULL;
-             Modulus64 mod = modulus_pool();
-@@ -228,7 +228,7 @@ namespace gpuntt
- 
-     template <typename T> Modulus<T> NTTParameters4Step<T>::modulus_pool()
-     {
--        customAssert(12 <= logn <= 24, "LOGN should be in range 12 to 24.");
-+        customAssert(12 <= logn && logn <= 24, "LOGN should be in range 12 to 24.");
-         if constexpr (std::is_same<T, Data32>::value)
-         {
-             static Data32 primes[] = {
-@@ -255,7 +255,7 @@ namespace gpuntt
-     }
-     template <typename T> T NTTParameters4Step<T>::omega_pool()
-     {
--        customAssert(12 <= logn <= 24, "LOGN should be in range 12 to 24.");
-+        customAssert(12 <= logn && logn <= 24, "LOGN should be in range 12 to 24.");
-         if constexpr (std::is_same<T, Data32>::value)
-         {
-             static Data32 W[] = {36747374, 249229369, 4092529, 175218169,
-@@ -281,7 +281,7 @@ namespace gpuntt
- 
-     template <typename T> T NTTParameters4Step<T>::psi_pool()
-     {
--        customAssert(12 <= logn <= 24, "LOGN should be in range 12 to 24.");
-+        customAssert(12 <= logn && logn <= 24, "LOGN should be in range 12 to 24.");
-         if constexpr (std::is_same<T, Data32>::value)
-         {
-             static Data32 PSI[] = {77090, 15787, 2023, 13237, 3264, 15452, 490,
-@@ -305,7 +305,7 @@ namespace gpuntt
-     template <typename T>
-     std::vector<int> NTTParameters4Step<T>::matrix_dimention()
-     {
--        customAssert(12 <= logn <= 24, "LOGN should be in range 12 to 24.");
-+        customAssert(12 <= logn && logn <= 24, "LOGN should be in range 12 to 24.");
-         std::vector<int> shape;
-         switch (logn)
-         {

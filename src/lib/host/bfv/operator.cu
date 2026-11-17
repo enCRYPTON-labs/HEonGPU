@@ -431,7 +431,6 @@ namespace heongpu
             .ntt_type = gpuntt::FORWARD,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .stream = stream};
 
         gpuntt::ntt_rns_configuration<Data64> cfg_intt = {
@@ -439,7 +438,6 @@ namespace heongpu
             .ntt_type = gpuntt::INVERSE,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .mod_inverse = context_->q_Bsk_n_inverse_->data(),
             .stream = stream};
 
@@ -517,7 +515,6 @@ namespace heongpu
                 .ntt_type = gpuntt::FORWARD,
                 .ntt_layout = gpuntt::PerPolynomial,
                 .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-                .zero_padding = false,
                 .stream = stream};
 
             gpuntt::ntt_rns_configuration<Data64> cfg_intt = {
@@ -525,7 +522,6 @@ namespace heongpu
                 .ntt_type = gpuntt::INVERSE,
                 .ntt_layout = gpuntt::PerPolynomial,
                 .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-                .zero_padding = false,
                 .mod_inverse = context_->n_inverse_->data(),
                 .stream = stream};
 
@@ -578,7 +574,6 @@ namespace heongpu
             .ntt_type = gpuntt::FORWARD,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .stream = stream};
 
         gpuntt::GPU_NTT_Inplace(temp1_relin, context_->ntt_table_->data(),
@@ -616,7 +611,6 @@ namespace heongpu
             .ntt_type = gpuntt::INVERSE,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .mod_inverse = context_->n_inverse_->data(),
             .stream = stream};
 
@@ -828,7 +822,6 @@ namespace heongpu
             .ntt_type = gpuntt::FORWARD,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .stream = stream};
 
         gpuntt::GPU_NTT_Inplace(
@@ -885,7 +878,6 @@ namespace heongpu
             .ntt_type = gpuntt::INVERSE,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .mod_inverse = context_->n_inverse_->data(),
             .stream = stream};
 
@@ -957,7 +949,6 @@ namespace heongpu
             .ntt_type = gpuntt::FORWARD,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .stream = stream};
 
         gpuntt::GPU_NTT_Inplace(temp2_rotation, context_->ntt_table_->data(),
@@ -997,7 +988,6 @@ namespace heongpu
             .ntt_type = gpuntt::INVERSE,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .mod_inverse = context_->n_inverse_->data(),
             .stream = stream};
 
@@ -1055,7 +1045,6 @@ namespace heongpu
             .ntt_type = gpuntt::FORWARD,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .stream = stream};
 
         gpuntt::GPU_NTT_Inplace(temp2_rotation, context_->ntt_table_->data(),
@@ -1094,7 +1083,6 @@ namespace heongpu
             .ntt_type = gpuntt::INVERSE,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .mod_inverse = context_->n_inverse_->data(),
             .stream = stream};
 
@@ -1176,7 +1164,6 @@ namespace heongpu
             .ntt_type = gpuntt::FORWARD,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .stream = stream};
 
         gpuntt::GPU_NTT(temp1_plain_mul, output_memory.data(),
@@ -1200,7 +1187,6 @@ namespace heongpu
             .ntt_type = gpuntt::FORWARD,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .stream = stream};
 
         gpuntt::GPU_NTT(input1.data(), output_memory.data(),
@@ -1224,7 +1210,6 @@ namespace heongpu
             .ntt_type = gpuntt::INVERSE,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .mod_inverse = context_->n_inverse_->data(),
             .stream = stream};
 
@@ -1292,7 +1277,6 @@ namespace heongpu
             .ntt_type = gpuntt::INVERSE,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .mod_inverse = context_->n_plain_inverse_->data(),
             .stream = 0};
 

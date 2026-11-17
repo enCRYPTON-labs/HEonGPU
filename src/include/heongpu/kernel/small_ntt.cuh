@@ -13,14 +13,14 @@ namespace heongpu
 {
     template <typename T>
     __device__ void
-    SmallForwardNTT(T* polynomial_in_shared, const Root<T>* root_of_unity_table,
+    SmallForwardNTT(T* polynomial_in_shared, const T* root_of_unity_table,
                     const Modulus<T> modulus, bool reduction_poly_check);
 
     template <typename T>
-    __device__ void
-    SmallInverseNTT(T* polynomial_in_shared, const Root<T>* root_of_unity_table,
-                    const Modulus<T> modulus, const Ninverse<T> n_inverse,
-                    bool reduction_poly_check);
+    __device__ void SmallInverseNTT(T* polynomial_in_shared,
+                                    const T* root_of_unity_table,
+                                    const Modulus<T> modulus, const T n_inverse,
+                                    bool reduction_poly_check);
 
 // The definitions live in the header, not in a translation unit of their own,
 // because the AMD GPU build compiles without relocatable device code and a
@@ -38,7 +38,7 @@ namespace heongpu
 
     template <typename T>
     __device__ inline void
-    SmallForwardNTT(T* polynomial_in_shared, const Root<T>* root_of_unity_table,
+    SmallForwardNTT(T* polynomial_in_shared, const T* root_of_unity_table,
                     const Modulus<T> modulus, bool reduction_poly_check)
     {
         const int idx_x = threadIdx.x;
@@ -108,8 +108,8 @@ namespace heongpu
 
     template <typename T>
     __device__ inline void
-    SmallInverseNTT(T* polynomial_in_shared, const Root<T>* root_of_unity_table,
-                    const Modulus<T> modulus, const Ninverse<T> n_inverse,
+    SmallInverseNTT(T* polynomial_in_shared, const T* root_of_unity_table,
+                    const Modulus<T> modulus, const T n_inverse,
                     bool reduction_poly_check)
     {
         const int idx_x = threadIdx.x;

@@ -71,7 +71,6 @@ namespace heongpu
             .ntt_type = gpuntt::FORWARD,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .stream = stream};
 
         gpuntt::GPU_NTT_Inplace(errors_a.data(), context_->ntt_table_->data(),
@@ -199,7 +198,6 @@ namespace heongpu
                             .ntt_layout = gpuntt::PerPolynomial,
                             .reduction_poly =
                                 gpuntt::ReductionPolynomial::X_N_plus,
-                            .zero_padding = false,
                             .stream = options.stream_};
 
                         gpuntt::GPU_NTT_Inplace(
@@ -315,7 +313,6 @@ namespace heongpu
                                      .ntt_layout = gpuntt::PerPolynomial,
                                      .reduction_poly =
                                          gpuntt::ReductionPolynomial::X_N_plus,
-                                     .zero_padding = false,
                                      .stream = options.stream_};
 
                                 gpuntt::GPU_NTT_Inplace(
@@ -561,7 +558,6 @@ namespace heongpu
                             .ntt_layout = gpuntt::PerPolynomial,
                             .reduction_poly =
                                 gpuntt::ReductionPolynomial::X_N_plus,
-                            .zero_padding = false,
                             .stream = options.stream_};
 
                         gpuntt::GPU_NTT_Inplace(
@@ -590,7 +586,8 @@ namespace heongpu
                             context_->Q_size, context_->P_size);
                         HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                        if (options.storage_ == storage_type::device)
+                        if (detail::stored_type(options.storage_) ==
+                            storage_type::device)
                         {
                             gk.device_location_[galois.second] =
                                 std::move(output_memory);
@@ -622,7 +619,6 @@ namespace heongpu
                         .ntt_type = gpuntt::FORWARD,
                         .ntt_layout = gpuntt::PerPolynomial,
                         .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-                        .zero_padding = false,
                         .stream = options.stream_};
 
                     gpuntt::GPU_NTT_Inplace(error_poly,
@@ -648,7 +644,8 @@ namespace heongpu
                         context_->P_size);
                     HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                    if (options.storage_ == storage_type::device)
+                    if (detail::stored_type(options.storage_) ==
+                        storage_type::device)
                     {
                         gk.zero_device_location_ = std::move(output_memory);
                     }
@@ -681,7 +678,6 @@ namespace heongpu
                             .ntt_layout = gpuntt::PerPolynomial,
                             .reduction_poly =
                                 gpuntt::ReductionPolynomial::X_N_plus,
-                            .zero_padding = false,
                             .stream = options.stream_};
 
                         gpuntt::GPU_NTT_Inplace(
@@ -709,7 +705,8 @@ namespace heongpu
                             context_->Q_size, context_->P_size);
                         HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                        if (options.storage_ == storage_type::device)
+                        if (detail::stored_type(options.storage_) ==
+                            storage_type::device)
                         {
                             gk.device_location_[galois_] =
                                 std::move(output_memory);
@@ -741,7 +738,6 @@ namespace heongpu
                         .ntt_type = gpuntt::FORWARD,
                         .ntt_layout = gpuntt::PerPolynomial,
                         .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-                        .zero_padding = false,
                         .stream = options.stream_};
 
                     gpuntt::GPU_NTT_Inplace(error_poly,
@@ -767,7 +763,8 @@ namespace heongpu
                         context_->P_size);
                     HEONGPU_CUDA_CHECK(cudaGetLastError());
 
-                    if (options.storage_ == storage_type::device)
+                    if (detail::stored_type(options.storage_) ==
+                        storage_type::device)
                     {
                         gk.zero_device_location_ = std::move(output_memory);
                     }
@@ -784,7 +781,7 @@ namespace heongpu
                 }
 
                 gk.galois_key_generated_ = true;
-                gk.storage_type_ = options.storage_;
+                gk.storage_type_ = detail::stored_type(options.storage_);
             },
             options, false);
     }
@@ -884,7 +881,7 @@ namespace heongpu
                 HEONGPU_CUDA_CHECK(cudaGetLastError());
             }
 
-            if (options.storage_ == storage_type::device)
+            if (detail::stored_type(options.storage_) == storage_type::device)
             {
                 gk.device_location_[galois.second] = std::move(output_memory);
             }
@@ -921,7 +918,7 @@ namespace heongpu
             HEONGPU_CUDA_CHECK(cudaGetLastError());
         }
 
-        if (options.storage_ == storage_type::device)
+        if (detail::stored_type(options.storage_) == storage_type::device)
         {
             gk.zero_device_location_ = std::move(output_memory);
         }
@@ -949,7 +946,7 @@ namespace heongpu
             }
         }
 
-        gk.storage_type_ = options.storage_;
+        gk.storage_type_ = detail::stored_type(options.storage_);
     }
 
     __host__ void HEMultiPartyManager<Scheme::CKKS>::partial_decrypt_stage_1(
@@ -985,7 +982,6 @@ namespace heongpu
             .ntt_type = gpuntt::FORWARD,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .stream = stream};
 
         gpuntt::GPU_NTT_Inplace(error_poly.data(), context_->ntt_table_->data(),
@@ -1095,7 +1091,6 @@ namespace heongpu
             .ntt_type = gpuntt::FORWARD,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .stream = stream};
 
         gpuntt::GPU_NTT_Inplace(random_message_rns_gpu.data(),
@@ -1259,7 +1254,6 @@ namespace heongpu
             .ntt_type = gpuntt::INVERSE,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .mod_inverse = context_->n_inverse_->data(),
             .stream = stream};
 
@@ -1339,7 +1333,6 @@ namespace heongpu
             .ntt_type = gpuntt::FORWARD,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .stream = stream};
 
         gpuntt::GPU_NTT_Inplace(o_c0, context_->ntt_table_->data(),

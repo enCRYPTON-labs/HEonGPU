@@ -336,16 +336,16 @@ namespace heongpu
     generate_primitive_root_of_unity(size_t poly_modulus_degree,
                                      std::vector<Modulus64> primes);
 
-    std::vector<Root64>
+    std::vector<Data64>
     generate_ntt_table(std::vector<Data64> psi, std::vector<Modulus64> primes,
                        int n_power); // bit reverse order for GPU-NTT
 
-    std::vector<Root64>
+    std::vector<Data64>
     generate_intt_table(std::vector<Data64> psi, std::vector<Modulus64> primes,
                         int n_power); // bit reverse order for GPU-NTT
 
-    std::vector<Ninverse64> generate_n_inverse(size_t poly_modulus_degree,
-                                               std::vector<Modulus64> primes);
+    std::vector<Data64> generate_n_inverse(size_t poly_modulus_degree,
+                                           std::vector<Modulus64> primes);
 
     __global__ void unsigned_signed_convert(Data64* input, Data64* output,
                                             Modulus64* modulus);

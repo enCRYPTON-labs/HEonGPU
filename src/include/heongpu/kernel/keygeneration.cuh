@@ -124,19 +124,19 @@ namespace heongpu
 
     __global__ void tfhe_convert_rlwekey_ntt_domain_kernel(
         Data64* key_out, int32_t* key_in,
-        const Root64* __restrict__ forward_root_of_unity_table,
+        const Data64* __restrict__ forward_root_of_unity_table,
         const Modulus64 modulus, int N);
 
     __global__ void tfhe_generate_bootkey_kernel(
         const Data64* sk_rlwe, const int32_t* sk_lwe, int32_t* boot_key,
-        const Root64* __restrict__ forward_root_of_unity_table,
-        const Root64* __restrict__ inverse_root_of_unity_table,
-        const Ninverse64 n_inverse, const Modulus64 modulus, int N, int k,
+        const Data64* __restrict__ forward_root_of_unity_table,
+        const Data64* __restrict__ inverse_root_of_unity_table,
+        const Data64 n_inverse, const Modulus64 modulus, int N, int k,
         int bk_bit, int bk_length);
 
     __global__ void tfhe_convert_bootkey_ntt_domain_kernel(
         Data64* key_out, int32_t* key_in,
-        const Root64* __restrict__ forward_root_of_unity_table,
+        const Data64* __restrict__ forward_root_of_unity_table,
         const Modulus64 modulus, int N, int k, int bk_length);
 
 } // namespace heongpu

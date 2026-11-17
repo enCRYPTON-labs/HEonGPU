@@ -5,6 +5,7 @@
 // Developer: Alişah Özcan
 
 #include <heongpu/host/bfv/ciphertext.cuh>
+#include <heongpu/util/serialization_payload.cuh>
 
 namespace heongpu
 {
@@ -36,7 +37,7 @@ namespace heongpu
 
         relinearization_required_ = false;
 
-        storage_type_ = options.storage_;
+        storage_type_ = detail::stored_type(options.storage_);
 
         if (storage_type_ == storage_type::device)
         {
@@ -75,6 +76,11 @@ namespace heongpu
 
     void Ciphertext<Scheme::BFV>::store_in_host(cudaStream_t stream)
     {
+        if (detail::objects_stay_on_device())
+        {
+            detail::wait_for_host_access(device_locations_.stream(), stream);
+            return;
+        }
         if (storage_type_ == storage_type::device)
         {
             if (memory_size() == 0)
@@ -220,17 +226,11 @@ namespace heongpu
             {
                 uint32_t ciphertext_memory_size =
                     cipher_size_ * coeff_modulus_count_ * ring_size_;
-                HostVector<Data64> host_locations_temp(ciphertext_memory_size);
-                cudaMemcpy(host_locations_temp.data(), device_locations_.data(),
-                           ciphertext_memory_size * sizeof(Data64),
-                           cudaMemcpyDeviceToHost);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
-                cudaDeviceSynchronize();
-
                 os.write((char*) &ciphertext_memory_size,
                          sizeof(ciphertext_memory_size));
-                os.write((char*) host_locations_temp.data(),
-                         sizeof(Data64) * ciphertext_memory_size);
+                detail::write_device_payload(os, device_locations_.data(),
+                                             ciphertext_memory_size,
+                                             device_locations_.stream());
             }
             else
             {
@@ -295,16 +295,10 @@ namespace heongpu
                 throw std::runtime_error("Invalid ciphertext size!");
             }
 
-            HostVector<Data64> host_locations_temp(ciphertext_memory_size);
-            is.read((char*) host_locations_temp.data(),
-                    sizeof(Data64) * ciphertext_memory_size);
-
             device_locations_.resize(ciphertext_memory_size);
-            cudaMemcpy(device_locations_.data(), host_locations_temp.data(),
-                       ciphertext_memory_size * sizeof(Data64),
-                       cudaMemcpyHostToDevice);
-            HEONGPU_CUDA_CHECK(cudaGetLastError());
-            cudaDeviceSynchronize();
+            detail::read_device_payload(is, device_locations_.data(),
+                                        ciphertext_memory_size,
+                                        device_locations_.stream());
         }
         else
         {

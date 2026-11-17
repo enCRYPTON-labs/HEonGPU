@@ -228,9 +228,9 @@ namespace heongpu
         int total_bit_count_;
 
         std::shared_ptr<DeviceVector<Modulus64>> modulus_;
-        std::shared_ptr<DeviceVector<Root64>> ntt_table_;
-        std::shared_ptr<DeviceVector<Root64>> intt_table_;
-        std::shared_ptr<DeviceVector<Ninverse64>> n_inverse_;
+        std::shared_ptr<DeviceVector<Data64>> ntt_table_;
+        std::shared_ptr<DeviceVector<Data64>> intt_table_;
+        std::shared_ptr<DeviceVector<Data64>> n_inverse_;
         std::shared_ptr<DeviceVector<Data64>> last_q_modinv_;
         std::shared_ptr<DeviceVector<Data64>> half_p_;
         std::shared_ptr<DeviceVector<Data64>> half_mod_;
@@ -238,9 +238,9 @@ namespace heongpu
 
         // BFV BEHZ multiplication parameters
         std::shared_ptr<DeviceVector<Modulus64>> base_Bsk_;
-        std::shared_ptr<DeviceVector<Root64>> bsk_ntt_tables_;
-        std::shared_ptr<DeviceVector<Root64>> bsk_intt_tables_;
-        std::shared_ptr<DeviceVector<Ninverse64>> bsk_n_inverse_;
+        std::shared_ptr<DeviceVector<Data64>> bsk_ntt_tables_;
+        std::shared_ptr<DeviceVector<Data64>> bsk_intt_tables_;
+        std::shared_ptr<DeviceVector<Data64>> bsk_n_inverse_;
 
         Modulus64 m_tilde_;
         std::shared_ptr<DeviceVector<Data64>> base_change_matrix_Bsk_;
@@ -261,15 +261,15 @@ namespace heongpu
         std::shared_ptr<DeviceVector<Data64>> prod_B_mod_q_;
 
         std::shared_ptr<DeviceVector<Modulus64>> q_Bsk_merge_modulus_;
-        std::shared_ptr<DeviceVector<Root64>> q_Bsk_merge_ntt_tables_;
-        std::shared_ptr<DeviceVector<Root64>> q_Bsk_merge_intt_tables_;
-        std::shared_ptr<DeviceVector<Ninverse64>> q_Bsk_n_inverse_;
+        std::shared_ptr<DeviceVector<Data64>> q_Bsk_merge_ntt_tables_;
+        std::shared_ptr<DeviceVector<Data64>> q_Bsk_merge_intt_tables_;
+        std::shared_ptr<DeviceVector<Data64>> q_Bsk_n_inverse_;
 
         // BFV decryption parameters
         std::shared_ptr<DeviceVector<Modulus64>> plain_modulus2_;
-        std::shared_ptr<DeviceVector<Ninverse64>> n_plain_inverse_;
-        std::shared_ptr<DeviceVector<Root64>> plain_ntt_tables_;
-        std::shared_ptr<DeviceVector<Root64>> plain_intt_tables_;
+        std::shared_ptr<DeviceVector<Data64>> n_plain_inverse_;
+        std::shared_ptr<DeviceVector<Data64>> plain_ntt_tables_;
+        std::shared_ptr<DeviceVector<Data64>> plain_intt_tables_;
 
         Modulus64 gamma_;
         std::shared_ptr<DeviceVector<Data64>> coeeff_div_plainmod_;
@@ -301,9 +301,9 @@ namespace heongpu
         int r_prime;
 
         std::shared_ptr<DeviceVector<Modulus64>> B_prime_;
-        std::shared_ptr<DeviceVector<Root64>> B_prime_ntt_tables_;
-        std::shared_ptr<DeviceVector<Root64>> B_prime_intt_tables_;
-        std::shared_ptr<DeviceVector<Ninverse64>> B_prime_n_inverse_;
+        std::shared_ptr<DeviceVector<Data64>> B_prime_ntt_tables_;
+        std::shared_ptr<DeviceVector<Data64>> B_prime_intt_tables_;
+        std::shared_ptr<DeviceVector<Data64>> B_prime_n_inverse_;
 
         std::shared_ptr<DeviceVector<Data64>> base_change_matrix_D_to_B_;
         std::shared_ptr<DeviceVector<Data64>> base_change_matrix_B_to_D_;

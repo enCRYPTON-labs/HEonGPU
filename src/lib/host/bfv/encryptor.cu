@@ -70,7 +70,6 @@ namespace heongpu
             .ntt_type = gpuntt::FORWARD,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .stream = stream};
 
         gpuntt::GPU_NTT_Inplace(u_poly, ctx->ntt_table_->data(),
@@ -87,7 +86,6 @@ namespace heongpu
             .ntt_type = gpuntt::INVERSE,
             .ntt_layout = gpuntt::PerPolynomial,
             .reduction_poly = gpuntt::ReductionPolynomial::X_N_plus,
-            .zero_padding = false,
             .mod_inverse = ctx->n_inverse_->data(),
             .stream = stream};
 

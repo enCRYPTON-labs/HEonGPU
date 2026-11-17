@@ -694,15 +694,15 @@ namespace heongpu
         return root_of_unity;
     }
 
-    std::vector<Root64> generate_ntt_table(std::vector<Data64> psi,
+    std::vector<Data64> generate_ntt_table(std::vector<Data64> psi,
                                            std::vector<Modulus64> primes,
                                            int n_power)
     {
         int n_ = 1 << n_power;
-        std::vector<Root64> forward_table; // bit reverse order
+        std::vector<Data64> forward_table; // bit reverse order
         for (int i = 0; i < primes.size(); i++)
         {
-            std::vector<Root64> table;
+            std::vector<Data64> table;
             table.push_back(1);
 
             for (int j = 1; j < n_; j++)
@@ -721,15 +721,15 @@ namespace heongpu
         return forward_table;
     }
 
-    std::vector<Root64> generate_intt_table(std::vector<Data64> psi,
+    std::vector<Data64> generate_intt_table(std::vector<Data64> psi,
                                             std::vector<Modulus64> primes,
                                             int n_power)
     {
         int n_ = 1 << n_power;
-        std::vector<Root64> inverse_table; // bit reverse order
+        std::vector<Data64> inverse_table; // bit reverse order
         for (int i = 0; i < primes.size(); i++)
         {
-            std::vector<Root64> table;
+            std::vector<Data64> table;
             table.push_back(1);
 
             Data64 inv_root = OPERATOR64::modinv(psi[i], primes[i]);
@@ -749,11 +749,11 @@ namespace heongpu
         return inverse_table;
     }
 
-    std::vector<Ninverse64> generate_n_inverse(size_t poly_modulus_degree,
-                                               std::vector<Modulus64> primes)
+    std::vector<Data64> generate_n_inverse(size_t poly_modulus_degree,
+                                           std::vector<Modulus64> primes)
     {
         Data64 n_ = poly_modulus_degree;
-        std::vector<Ninverse64> n_inverse;
+        std::vector<Data64> n_inverse;
         for (int i = 0; i < primes.size(); i++)
         {
             n_inverse.push_back(OPERATOR64::modinv(n_, primes[i]));

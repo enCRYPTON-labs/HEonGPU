@@ -148,17 +148,16 @@ namespace heongpu
     __global__ void tfhe_bootstrapping_kernel(
         const int32_t* input_a, const int32_t* input_b, int32_t* output,
         const Data64* boot_key,
-        const Root64* __restrict__ forward_root_of_unity_table,
-        const Root64* __restrict__ inverse_root_of_unity_table,
-        const Ninverse64 n_inverse, const Modulus64 modulus,
-        const int32_t encoded, const int32_t bk_offset, const int32_t bk_mask,
-        const int32_t bk_half, int n, int N, int N_power, int k, int bk_bit,
-        int bk_length);
+        const Data64* __restrict__ forward_root_of_unity_table,
+        const Data64* __restrict__ inverse_root_of_unity_table,
+        const Data64 n_inverse, const Modulus64 modulus, const int32_t encoded,
+        const int32_t bk_offset, const int32_t bk_mask, const int32_t bk_half,
+        int n, int N, int N_power, int k, int bk_bit, int bk_length);
     /*
         __global__ void tfhe_bootstrapping_kernel_unique_step1
         (
             const int32_t* input_a, const int32_t* input_b, Data64* output,
-       const Data64* boot_key, const Root64* __restrict__
+       const Data64* boot_key, const Data64* __restrict__
        forward_root_of_unity_table, const Modulus64 modulus, const int32_t
        encoded, const int32_t bk_offset, const int32_t bk_mask, const int32_t
        bk_half, int n, int N, int N_power, int k, int bk_bit, int bk_length);
@@ -167,7 +166,7 @@ namespace heongpu
     __global__ void tfhe_bootstrapping_kernel_unique_step1(
         const int32_t* input_a, const int32_t* input_b, Data64* output,
         const Data64* boot_key,
-        const Root64* __restrict__ forward_root_of_unity_table,
+        const Data64* __restrict__ forward_root_of_unity_table,
         const Modulus64 modulus, const int32_t encoded, const int32_t bk_offset,
         const int32_t bk_mask, const int32_t bk_half, int n, int N, int N_power,
         int k, int bk_bit, int bk_length);
@@ -175,22 +174,22 @@ namespace heongpu
     __global__ void tfhe_bootstrapping_kernel_regular_step1(
         const int32_t* input_a, const int32_t* input_b, const int32_t* input_c,
         Data64* output, const Data64* boot_key, int boot_index,
-        const Root64* __restrict__ forward_root_of_unity_table,
+        const Data64* __restrict__ forward_root_of_unity_table,
         const Modulus64 modulus, const int32_t bk_offset, const int32_t bk_mask,
         const int32_t bk_half, int n, int N, int N_power, int k, int bk_bit,
         int bk_length);
 
     __global__ void tfhe_bootstrapping_kernel_unique_step2(
         const Data64* input, const int32_t* input_b, int32_t* output,
-        const Root64* __restrict__ inverse_root_of_unity_table,
-        const Ninverse64 n_inverse, const Modulus64 modulus,
-        const int32_t encoded, int n, int N, int N_power, int k, int bk_length);
+        const Data64* __restrict__ inverse_root_of_unity_table,
+        const Data64 n_inverse, const Modulus64 modulus, const int32_t encoded,
+        int n, int N, int N_power, int k, int bk_length);
 
     __global__ void tfhe_bootstrapping_kernel_regular_step2(
         const Data64* input, int32_t* output,
-        const Root64* __restrict__ inverse_root_of_unity_table,
-        const Ninverse64 n_inverse, const Modulus64 modulus, int n, int N,
-        int k, int bk_length);
+        const Data64* __restrict__ inverse_root_of_unity_table,
+        const Data64 n_inverse, const Modulus64 modulus, int n, int N, int k,
+        int bk_length);
 
     __global__ void tfhe_sample_extraction_kernel(const int32_t* input,
                                                   int32_t* output_a,

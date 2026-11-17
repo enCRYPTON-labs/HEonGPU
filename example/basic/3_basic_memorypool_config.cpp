@@ -31,6 +31,12 @@ int main(int argc, char* argv[])
     // Configure the memory pool before generating the context-> The pool size
     // can be set either by percentage (0.0-1.0) or by percentage (0-100), or by
     // absolute bytes. If a field is not set, defaults are used.
+    //
+    // On a GPU that shares the memory of the host, both pools take from one
+    // budget, 80% of the available host memory, and the percentages are of
+    // that budget. The maximum sizes below add up to 140%, so they are scaled
+    // down to about 64% and 36% of the budget there, and the initial device
+    // size stays within the device maximum.
     heongpu::MemoryPoolConfig pool_config;
 
     // Device pool: set as a percentage of available GPU memory.

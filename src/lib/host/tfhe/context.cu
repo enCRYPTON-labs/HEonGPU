@@ -24,12 +24,12 @@ namespace heongpu
         Data64 psi = 1689264667710614ULL;
         Data64 psi_inv = OPERATOR64::modinv(psi, prime_);
 
-        std::vector<Root64> forward_table = compute_ntt_table(psi, prime_, 10);
-        std::vector<Root64> inverse_table =
+        std::vector<Data64> forward_table = compute_ntt_table(psi, prime_, 10);
+        std::vector<Data64> inverse_table =
             compute_ntt_table(psi_inv, prime_, 10);
 
-        ntt_table_ = std::make_shared<DeviceVector<Root64>>(forward_table);
-        intt_table_ = std::make_shared<DeviceVector<Root64>>(inverse_table);
+        ntt_table_ = std::make_shared<DeviceVector<Data64>>(forward_table);
+        intt_table_ = std::make_shared<DeviceVector<Data64>>(inverse_table);
 
         n_inverse_ = OPERATOR64::modinv(1024, prime_);
 
@@ -83,14 +83,14 @@ namespace heongpu
         return static_cast<int>(result);
     }
 
-    std::vector<Root64>
+    std::vector<Data64>
     HEContextImpl<Scheme::TFHE>::compute_ntt_table(Data64 psi, Modulus64 primes,
                                                    int n_power)
     {
         int n = 1 << n_power;
-        std::vector<Root64> forward_table; // bit reverse order
+        std::vector<Data64> forward_table; // bit reverse order
 
-        std::vector<Root64> table;
+        std::vector<Data64> table;
         table.push_back(1);
 
         for (int j = 1; j < n; j++)

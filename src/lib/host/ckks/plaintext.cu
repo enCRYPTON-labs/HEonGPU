@@ -5,6 +5,7 @@
 // Developer: Alişah Özcan
 
 #include <heongpu/host/ckks/plaintext.cuh>
+#include <heongpu/util/serialization_payload.cuh>
 
 namespace heongpu
 {
@@ -25,7 +26,7 @@ namespace heongpu
         depth_ = 0;
         scale_ = 0;
         encoding_ = encoding::slot;
-        storage_type_ = options.storage_;
+        storage_type_ = detail::stored_type(options.storage_);
     }
 
     void Plaintext<Scheme::CKKS>::store_in_device(cudaStream_t stream)
@@ -56,6 +57,11 @@ namespace heongpu
 
     void Plaintext<Scheme::CKKS>::store_in_host(cudaStream_t stream)
     {
+        if (detail::objects_stay_on_device())
+        {
+            detail::wait_for_host_access(device_locations_.stream(), stream);
+            return;
+        }
         if (storage_type_ == storage_type::device)
         {
             if (memory_size() == 0)
@@ -135,16 +141,10 @@ namespace heongpu
 
             if (storage_type_ == storage_type::device)
             {
-                HostVector<Data64> host_locations_temp(plain_size_);
-                cudaMemcpy(host_locations_temp.data(), device_locations_.data(),
-                           plain_size_ * sizeof(Data64),
-                           cudaMemcpyDeviceToHost);
-                HEONGPU_CUDA_CHECK(cudaGetLastError());
-                cudaDeviceSynchronize();
-
                 os.write((char*) &plain_size_, sizeof(plain_size_));
-                os.write((char*) host_locations_temp.data(),
-                         sizeof(Data64) * plain_size_);
+                detail::write_device_payload(os, device_locations_.data(),
+                                             plain_size_,
+                                             device_locations_.stream());
             }
             else
             {
@@ -212,16 +212,10 @@ namespace heongpu
                 throw std::runtime_error("Invalid plaintext size!");
             }
 
-            HostVector<Data64> host_locations_temp(plaintext_memory_size);
-            is.read((char*) host_locations_temp.data(),
-                    sizeof(Data64) * plaintext_memory_size);
-
             device_locations_.resize(plaintext_memory_size);
-            cudaMemcpy(device_locations_.data(), host_locations_temp.data(),
-                       plaintext_memory_size * sizeof(Data64),
-                       cudaMemcpyHostToDevice);
-            HEONGPU_CUDA_CHECK(cudaGetLastError());
-            cudaDeviceSynchronize();
+            detail::read_device_payload(is, device_locations_.data(),
+                                        plaintext_memory_size,
+                                        device_locations_.stream());
         }
         else
         {

@@ -105,7 +105,8 @@ TEST_F(CKKSEncodeDepth, Plaintext_Matches_A_Ciphertext_Of_That_Depth)
                     ciphertext.depth(),
                     heongpu::ExecutionOptions().set_storage_type(
                         heongpu::storage_type::host));
-    EXPECT_FALSE(addend.is_on_device());
+    // Objects stay on the device in the unified memory mode.
+    EXPECT_EQ(addend.is_on_device(), heongpu::detail::objects_stay_on_device());
     operators->add_plain_inplace(ciphertext, addend);
 
     heongpu::Plaintext<scheme> result_plaintext(context);
