@@ -360,8 +360,6 @@ $ sudo cmake --install build
 
 `CMAKE_HIP_ARCHITECTURES` is auto-detected from the GPU in the build machine; set it explicitly to cross-compile for another card.
 
-On an AMD GPU that shares its memory with the system, such as an APU, the default device memory pool takes 50% of the memory the runtime reports as available, and on such a part that is half of the whole machine rather than of a dedicated card. Choose a smaller initial device pool at runtime, sized for what the application needs, as shown under Memory Pool Configuration (Runtime) below. Discrete cards keep the default, where reserving half of the dedicated VRAM is cheap.
-
 ### Uninstall
 
 To uninstall HEonGPU and thirdparty libraries:
